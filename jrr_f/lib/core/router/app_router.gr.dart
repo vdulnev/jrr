@@ -11,17 +11,96 @@
 part of 'app_router.dart';
 
 /// generated route for
-/// [PlaceholderScreen]
-class PlaceholderRoute extends PageRouteInfo<void> {
-  const PlaceholderRoute({List<PageRouteInfo>? children})
-    : super(PlaceholderRoute.name, initialChildren: children);
+/// [ConnectingScreen]
+class ConnectingRoute extends PageRouteInfo<ConnectingRouteArgs> {
+  ConnectingRoute({
+    Key? key,
+    required String address,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ConnectingRoute.name,
+         args: ConnectingRouteArgs(key: key, address: address),
+         initialChildren: children,
+       );
 
-  static const String name = 'PlaceholderRoute';
+  static const String name = 'ConnectingRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return const PlaceholderScreen();
+      final args = data.argsAs<ConnectingRouteArgs>();
+      return ConnectingScreen(key: args.key, address: args.address);
+    },
+  );
+}
+
+class ConnectingRouteArgs {
+  const ConnectingRouteArgs({this.key, required this.address});
+
+  final Key? key;
+
+  final String address;
+
+  @override
+  String toString() {
+    return 'ConnectingRouteArgs{key: $key, address: $address}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ConnectingRouteArgs) return false;
+    return key == other.key && address == other.address;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ address.hashCode;
+}
+
+/// generated route for
+/// [PlayerPlaceholderScreen]
+class PlayerPlaceholderRoute extends PageRouteInfo<void> {
+  const PlayerPlaceholderRoute({List<PageRouteInfo>? children})
+    : super(PlayerPlaceholderRoute.name, initialChildren: children);
+
+  static const String name = 'PlayerPlaceholderRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const PlayerPlaceholderScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [RootScreen]
+class RootRoute extends PageRouteInfo<void> {
+  const RootRoute({List<PageRouteInfo>? children})
+    : super(RootRoute.name, initialChildren: children);
+
+  static const String name = 'RootRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const RootScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [ServerSetupScreen]
+class ServerSetupRoute extends PageRouteInfo<void> {
+  const ServerSetupRoute({List<PageRouteInfo>? children})
+    : super(ServerSetupRoute.name, initialChildren: children);
+
+  static const String name = 'ServerSetupRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ServerSetupScreen();
     },
   );
 }

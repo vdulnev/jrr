@@ -23,9 +23,7 @@ class _AppState extends ConsumerState<App> {
     return MaterialApp.router(
       title: 'JRiver Remote',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0066CC),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0066CC)),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(

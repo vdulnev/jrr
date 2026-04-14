@@ -7,10 +7,11 @@ class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._tokenGetter);
 
   @override
-  void onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) {
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (options.extra['skipAuth'] == true) {
+      handler.next(options);
+      return;
+    }
     final token = _tokenGetter();
     if (token == null) {
       handler.reject(

@@ -14,10 +14,7 @@ class LoggingInterceptor extends Interceptor {
   }
 
   @override
-  void onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) {
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     _talker.debug('→ ${options.method} ${_redact(options.uri)}');
     handler.next(options);
   }
@@ -27,19 +24,13 @@ class LoggingInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    _talker.debug(
-      '← ${response.statusCode} ${_redact(response.realUri)}',
-    );
+    _talker.debug('← ${response.statusCode} ${_redact(response.realUri)}');
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    _talker.error(
-      '✕ ${_redact(err.requestOptions.uri)}',
-      err,
-      err.stackTrace,
-    );
+    _talker.error('✕ ${_redact(err.requestOptions.uri)}', err, err.stackTrace);
     handler.next(err);
   }
 }

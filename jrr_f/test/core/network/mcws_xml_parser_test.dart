@@ -18,13 +18,10 @@ void main() {
 ''';
       final result = parser.parse(xml);
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (m) {
-          expect(m['Token'], 'abc123');
-          expect(m['ReadOnly'], '0');
-        },
-      );
+      result.fold((_) => fail('expected Right'), (m) {
+        expect(m['Token'], 'abc123');
+        expect(m['ReadOnly'], '0');
+      });
     });
 
     test('returns serverFailure for Failure status', () {
@@ -51,10 +48,7 @@ void main() {
       const xml = '<Response Status="OK"></Response>';
       final result = parser.parse(xml);
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (m) => expect(m, isEmpty),
-      );
+      result.fold((_) => fail('expected Right'), (m) => expect(m, isEmpty));
     });
 
     test('handles item values with special characters', () {
@@ -66,13 +60,10 @@ void main() {
 ''';
       final result = parser.parse(xml);
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (m) {
-          expect(m['Name'], 'Beethoven &amp; Mozart');
-          expect(m['Path'], r'C:\Music\file.flac');
-        },
-      );
+      result.fold((_) => fail('expected Right'), (m) {
+        expect(m['Name'], 'Beethoven &amp; Mozart');
+        expect(m['Path'], r'C:\Music\file.flac');
+      });
     });
 
     test('handles multiline item values', () {
@@ -102,15 +93,12 @@ Line 2</Item>
 ''';
       final result = parser.parse(xml);
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (m) {
-          expect(m['RuntimeGUID'], '{GUID-1234}');
-          expect(m['FriendlyName'], 'My JRiver Server');
-          expect(m['ProgramVersion'], '33.0.1');
-          expect(m['Platform'], 'Windows');
-        },
-      );
+      result.fold((_) => fail('expected Right'), (m) {
+        expect(m['RuntimeGUID'], '{GUID-1234}');
+        expect(m['FriendlyName'], 'My JRiver Server');
+        expect(m['ProgramVersion'], '33.0.1');
+        expect(m['Platform'], 'Windows');
+      });
     });
   });
 

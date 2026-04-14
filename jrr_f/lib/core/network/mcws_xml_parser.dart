@@ -17,17 +17,13 @@ class McwsXmlParser {
     final statusMatch = _statusRe.firstMatch(xml);
     if (statusMatch == null) {
       return left(
-        const AppException.parseError(
-          details: 'Missing Response element',
-        ),
+        const AppException.parseError(details: 'Missing Response element'),
       );
     }
 
     final status = statusMatch.group(1);
     if (status != 'OK') {
-      return left(
-        AppException.serverFailure(message: 'MCWS status: $status'),
-      );
+      return left(AppException.serverFailure(message: 'MCWS status: $status'));
     }
 
     final result = <String, String>{};

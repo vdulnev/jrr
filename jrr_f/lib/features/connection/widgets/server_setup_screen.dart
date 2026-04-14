@@ -1,0 +1,146 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/widgets/error_view.dart';
+import '../providers/session_provider.dart';
+
+@RoutePage()
+class ServerSetupScreen extends ConsumerStatefulWidget {
+  const ServerSetupScreen({super.key});
+
+  @override
+  ConsumerState<ServerSetupScreen> createState() => _ServerSetupScreenState();
+}
+
+class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _hostController = TextEditingController();
+  final _portController = TextEditingController(text: '52199');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  AsyncValue<void>? _connectState;
+
+  @override
+  void dispose() {
+    _hostController.dispose();
+    _portController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _connectState = const AsyncValue.loading());
+
+    final error = await ref
+        .read(sessionProvider.notifier)
+        .connect(
+          host: _hostController.text.trim(),
+          port: int.parse(_portController.text.trim()),
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+        );
+
+    if (!mounted) return;
+
+    if (error != null) {
+      setState(
+        () => _connectState = AsyncValue.error(error, StackTrace.current),
+      );
+    } else {
+      setState(() => _connectState = null);
+    }
+  }
+
+  bool get _isLoading => _connectState is AsyncLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Connect to JRiver')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _hostController,
+                    enabled: !_isLoading,
+                    decoration: const InputDecoration(
+                      labelText: 'Host',
+                      hintText: '192.168.1.100',
+                    ),
+                    keyboardType: TextInputType.url,
+                    textInputAction: TextInputAction.next,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _portController,
+                    enabled: !_isLoading,
+                    decoration: const InputDecoration(labelText: 'Port'),
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.next,
+                    validator: (v) {
+                      final n = int.tryParse(v ?? '');
+                      if (n == null || n < 1 || n > 65535) {
+                        return 'Port must be 1–65535';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _usernameController,
+                    enabled: !_isLoading,
+                    decoration: const InputDecoration(labelText: 'Username'),
+                    textInputAction: TextInputAction.next,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    enabled: !_isLoading,
+                    decoration: const InputDecoration(labelText: 'Password'),
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _connect(),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_connectState is AsyncError) ...[
+                    ErrorView(error: (_connectState! as AsyncError).error),
+                    const SizedBox(height: 16),
+                  ],
+                  FilledButton(
+                    onPressed: _isLoading ? null : _connect,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Connect'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

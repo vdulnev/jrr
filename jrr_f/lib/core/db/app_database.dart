@@ -9,8 +9,7 @@ part 'app_database.g.dart';
 class SavedServers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get host => text()();
-  IntColumn get port =>
-      integer().withDefault(const Constant(52199))();
+  IntColumn get port => integer().withDefault(const Constant(52199))();
   TextColumn get username => text()();
 
   /// Key used to look up the password in flutter_secure_storage.
