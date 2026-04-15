@@ -17,7 +17,7 @@ class Session extends _$Session {
   SessionState build() {
     // Attempt silent reconnect on initial build.
     _attemptSilentReconnect();
-    return const SessionState.unauthenticated();
+    return const SessionState.restoring();
   }
 
   Future<void> _attemptSilentReconnect() async {
@@ -27,12 +27,14 @@ class Session extends _$Session {
 
     if (server == null) {
       _talker.debug('[Session] No saved server with token — showing login');
+      state = const SessionState.unauthenticated();
       return;
     }
 
     final password = await repo.getPassword(server.passwordKey);
     if (password == null) {
       _talker.debug('[Session] Saved server has no password — showing login');
+      state = const SessionState.unauthenticated();
       return;
     }
 
@@ -45,7 +47,10 @@ class Session extends _$Session {
     );
 
     result.fold(
-      (e) => _talker.warning('[Session] Silent reconnect failed: $e'),
+      (e) {
+        _talker.warning('[Session] Silent reconnect failed: $e');
+        state = const SessionState.unauthenticated();
+      },
       (info) {
         _talker.info(
           '[Session] Silent reconnect succeeded: ${info.name} '
