@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/error_view.dart';
+import '../providers/last_server_provider.dart';
 import '../providers/server_setup_provider.dart';
 
 @RoutePage()
@@ -20,6 +21,14 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _prefilled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefill());
+  }
+
   @override
   void dispose() {
     _hostController.dispose();
@@ -29,14 +38,27 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     super.dispose();
   }
 
+  Future<void> _prefill() async {
+    if (!mounted || _prefilled) return;
+    final data = await ref.read(lastServerProvider.future);
+    if (!mounted || data == null) return;
+    _prefilled = true;
+    _hostController.text = data.host;
+    _portController.text = data.port.toString();
+    _usernameController.text = data.username;
+    if (data.password != null) _passwordController.text = data.password!;
+  }
+
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    await ref.read(serverSetupFormProvider.notifier).connect(
-      host: _hostController.text.trim(),
-      port: int.parse(_portController.text.trim()),
-      username: _usernameController.text.trim(),
-      password: _passwordController.text,
-    );
+    await ref
+        .read(serverSetupFormProvider.notifier)
+        .connect(
+          host: _hostController.text.trim(),
+          port: int.parse(_portController.text.trim()),
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+        );
   }
 
   @override

@@ -2,7 +2,14 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+
 import '../error/app_exception.dart';
+import '../../features/player/data/models/playback_state.dart';
+import '../../features/player/data/models/player_status.dart';
+import '../../features/player/data/models/repeat_mode.dart';
+import '../../features/player/data/models/shuffle_mode.dart';
+import '../../features/player/data/models/track_info.dart';
+import '../../features/zones/data/models/zone.dart';
 import 'mcws_xml_parser.dart';
 
 class McwsClient {
@@ -12,6 +19,8 @@ class McwsClient {
   McwsClient({required Dio dio, required McwsXmlParser parser})
     : _dio = dio,
       _parser = parser;
+
+  String get baseUrl => _dio.options.baseUrl;
 
   /// Makes a GET request and parses the XML response into a field map.
   Future<Either<AppException, Map<String, String>>> get(
@@ -35,6 +44,18 @@ class McwsClient {
       return left(_mapDioException(e));
     }
   }
+
+  /// Sends a command and returns Unit (discards the response fields).
+  Future<Either<AppException, Unit>> command(
+    String endpoint, {
+    Map<String, String> params = const {},
+  }) async {
+    return (await get(endpoint, params: params)).map((_) => unit);
+  }
+
+  // -------------------------------------------------------------------------
+  // Connection
+  // -------------------------------------------------------------------------
 
   /// Authenticates via HTTP Basic auth. Returns the session token.
   Future<Either<AppException, String>> authenticate({
@@ -78,6 +99,204 @@ class McwsClient {
   Future<Either<AppException, Map<String, String>>> alive() async {
     return get('Alive');
   }
+
+  // -------------------------------------------------------------------------
+  // Zones
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, List<Zone>>> getZones() async {
+    return (await get('Playback/Zones')).flatMap((fields) {
+      final count = int.tryParse(fields['NumberZones'] ?? '');
+      if (count == null) {
+        return left(
+          const AppException.parseError(details: 'Missing NumberZones'),
+        );
+      }
+      final zones = <Zone>[];
+      for (var i = 0; i < count; i++) {
+        final id = fields['ZoneID$i'];
+        final name = fields['ZoneName$i'];
+        final guid = fields['ZoneGUID$i'];
+        if (id == null || name == null || guid == null) {
+          return left(
+            AppException.parseError(details: 'Missing zone fields at index $i'),
+          );
+        }
+        zones.add(
+          Zone(
+            id: id,
+            name: name,
+            guid: guid,
+            isDLNA: fields['ZoneDLNA$i'] == '1',
+          ),
+        );
+      }
+      return right(zones);
+    });
+  }
+
+  Future<Either<AppException, Unit>> setActiveZone(String zoneId) {
+    return command(
+      'Playback/SetZone',
+      params: {'Zone': zoneId, 'ZoneType': 'ID'},
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Player info
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, PlayerStatus>> getPlaybackInfo(
+    String zoneId,
+  ) async {
+    return (await get(
+      'Playback/Info',
+      params: {'Zone': zoneId, 'ZoneType': 'ID'},
+    )).flatMap((fields) {
+      final zId = fields['ZoneID'] ?? zoneId;
+      final zName = fields['ZoneName'] ?? '';
+      final state = PlaybackState.fromMcws(fields['State'] ?? '0');
+
+      final posMs = int.tryParse(fields['PositionMS'] ?? '0') ?? 0;
+      final durMs = int.tryParse(fields['DurationMS'] ?? '0') ?? 0;
+      final posDisplay = fields['PositionDisplay'] ?? '';
+
+      // Volume: MCWS returns 0–100; normalise to 0.0–1.0.
+      final rawVol = double.tryParse(fields['Volume'] ?? '0') ?? 0.0;
+      final volume = (rawVol > 1.0 ? rawVol / 100.0 : rawVol).clamp(0.0, 1.0);
+      final volDisplay = fields['VolumeDisplay'] ?? '';
+
+      final isMuted =
+          fields['Muted'] == '1' || volDisplay.toLowerCase().contains('muted');
+
+      final shuffleMode = ShuffleMode.fromMcws(fields['Shuffle'] ?? '');
+      final repeatMode = RepeatMode.fromMcws(fields['Repeat'] ?? '');
+
+      final pnPos = int.tryParse(fields['PlayingNowPosition'] ?? '-1') ?? -1;
+      final pnTracks = int.tryParse(fields['PlayingNowTracks'] ?? '0') ?? 0;
+      final pnPosDisplay = fields['PlayingNowPositionDisplay'] ?? '';
+      final pnCounter =
+          int.tryParse(fields['PlayingNowChangeCounter'] ?? '0') ?? 0;
+
+      // TrackInfo is only present when something is loaded in the queue.
+      final fileKey = fields['FileKey'];
+      TrackInfo? trackInfo;
+      if (fileKey != null && fileKey.isNotEmpty && fileKey != '-1') {
+        trackInfo = TrackInfo(
+          fileKey: fileKey,
+          name: fields['Name'] ?? '',
+          artist: fields['Artist'] ?? '',
+          album: fields['Album'] ?? '',
+          imageUrl: fields['ImageURL'] ?? '',
+          bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
+          bitDepth: int.tryParse(fields['Bitdepth'] ?? '0') ?? 0,
+          sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
+          channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
+        );
+      }
+
+      return right(
+        PlayerStatus(
+          zoneId: zId,
+          zoneName: zName,
+          state: state,
+          trackInfo: trackInfo,
+          positionMs: posMs,
+          durationMs: durMs,
+          positionDisplay: posDisplay,
+          volume: volume,
+          volumeDisplay: volDisplay,
+          isMuted: isMuted,
+          shuffleMode: shuffleMode,
+          repeatMode: repeatMode,
+          playingNowPosition: pnPos,
+          playingNowTracks: pnTracks,
+          playingNowPositionDisplay: pnPosDisplay,
+          playingNowChangeCounter: pnCounter,
+        ),
+      );
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Transport
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, Unit>> play(String zoneId) =>
+      command('Playback/Play', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+
+  Future<Either<AppException, Unit>> playPause(String zoneId) =>
+      command('Playback/PlayPause', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+
+  Future<Either<AppException, Unit>> stop(String zoneId) =>
+      command('Playback/Stop', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+
+  Future<Either<AppException, Unit>> stopAll() => command('Playback/StopAll');
+
+  Future<Either<AppException, Unit>> next(String zoneId) =>
+      command('Playback/Next', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+
+  Future<Either<AppException, Unit>> previous(String zoneId) =>
+      command('Playback/Previous', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+
+  // -------------------------------------------------------------------------
+  // Seek, volume, mute
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, Unit>> setPosition(
+    String zoneId,
+    int positionMs,
+  ) => command(
+    'Playback/Position',
+    params: {
+      'Zone': zoneId,
+      'ZoneType': 'ID',
+      'Position': positionMs.toString(),
+      'Mode': 'ms',
+    },
+  );
+
+  Future<Either<AppException, Unit>> setVolume(String zoneId, double level) =>
+      command(
+        'Playback/Volume',
+        params: {
+          'Zone': zoneId,
+          'ZoneType': 'ID',
+          'Level': level.toStringAsFixed(3),
+        },
+      );
+
+  Future<Either<AppException, Unit>> setMute(
+    String zoneId, {
+    required bool mute,
+  }) => command(
+    'Playback/Mute',
+    params: {'Zone': zoneId, 'ZoneType': 'ID', 'Set': mute ? '1' : '0'},
+  );
+
+  // -------------------------------------------------------------------------
+  // Shuffle & repeat
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, Unit>> setShuffle(
+    String zoneId,
+    ShuffleMode mode,
+  ) => command(
+    'Playback/Shuffle',
+    params: {'Zone': zoneId, 'Mode': mode.toMcws()},
+  );
+
+  Future<Either<AppException, Unit>> setRepeat(
+    String zoneId,
+    RepeatMode mode,
+  ) => command(
+    'Playback/Repeat',
+    params: {'Zone': zoneId, 'Mode': mode.toMcws()},
+  );
+
+  // -------------------------------------------------------------------------
+  // Error mapping
+  // -------------------------------------------------------------------------
 
   AppException _mapDioException(DioException e) {
     if (e.error is AppException) return e.error! as AppException;

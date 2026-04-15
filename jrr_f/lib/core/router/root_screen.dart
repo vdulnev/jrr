@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
+import '../router/navigation_notifier.dart';
 import 'app_router.dart';
 
 @RoutePage()
@@ -13,11 +14,12 @@ class RootScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
+    final navStack = ref.watch(navigationProvider);
 
     return AutoRouter.declarative(
       routes: (_) => switch (session) {
         Unauthenticated() => [const ServerSetupRoute()],
-        Authenticated() => [const PlayerPlaceholderRoute()],
+        Authenticated() => [const NowPlayingRoute(), ...navStack],
       },
     );
   }

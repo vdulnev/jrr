@@ -58,17 +58,17 @@ class ConnectingRouteArgs {
 }
 
 /// generated route for
-/// [PlayerPlaceholderScreen]
-class PlayerPlaceholderRoute extends PageRouteInfo<void> {
-  const PlayerPlaceholderRoute({List<PageRouteInfo>? children})
-    : super(PlayerPlaceholderRoute.name, initialChildren: children);
+/// [NowPlayingScreen]
+class NowPlayingRoute extends PageRouteInfo<void> {
+  const NowPlayingRoute({List<PageRouteInfo>? children})
+    : super(NowPlayingRoute.name, initialChildren: children);
 
-  static const String name = 'PlayerPlaceholderRoute';
+  static const String name = 'NowPlayingRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return const PlayerPlaceholderScreen();
+      return const NowPlayingScreen();
     },
   );
 }
@@ -101,6 +101,22 @@ class ServerSetupRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return const ServerSetupScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [ZoneListScreen]
+class ZoneListRoute extends PageRouteInfo<void> {
+  const ZoneListRoute({List<PageRouteInfo>? children})
+    : super(ZoneListRoute.name, initialChildren: children);
+
+  static const String name = 'ZoneListRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ZoneListScreen();
     },
   );
 }

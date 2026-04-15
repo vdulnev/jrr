@@ -1,7 +1,6 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
-@RoutePage()
+// No longer registered as a route — superseded by NowPlayingScreen.
 class PlayerPlaceholderScreen extends StatelessWidget {
   const PlayerPlaceholderScreen({super.key});
 

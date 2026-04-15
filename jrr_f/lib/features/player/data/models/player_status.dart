@@ -1,0 +1,30 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+import 'playback_state.dart';
+import 'repeat_mode.dart';
+import 'shuffle_mode.dart';
+import 'track_info.dart';
+
+part 'player_status.freezed.dart';
+
+@freezed
+abstract class PlayerStatus with _$PlayerStatus {
+  const factory PlayerStatus({
+    required String zoneId,
+    required String zoneName,
+    required PlaybackState state,
+    TrackInfo? trackInfo,
+    required int positionMs,
+    required int durationMs,
+    required String positionDisplay,
+    required double volume,
+    required String volumeDisplay,
+    required bool isMuted,
+    required ShuffleMode shuffleMode,
+    required RepeatMode repeatMode,
+    required int playingNowPosition,
+    required int playingNowTracks,
+    required String playingNowPositionDisplay,
+    required int playingNowChangeCounter,
+  }) = _PlayerStatus;
+}

@@ -36,21 +36,23 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
        _parser = parser,
        _talker = talker;
 
-  String? get token => _token;
+  @override
+  String? get currentToken => _token;
+
+  @override
+  Future<String?> getPassword(String key) => _secureStorage.read(key: key);
 
   /// Override in tests to inject a mock [McwsClient].
   @visibleForTesting
-  McwsClient buildClient(
-    String baseUrl,
-    String? Function() tokenGetter,
-  ) => McwsClient(
-    dio: createDio(
-      baseUrl: baseUrl,
-      tokenGetter: tokenGetter,
-      talker: _talker,
-    ),
-    parser: _parser,
-  );
+  McwsClient buildClient(String baseUrl, String? Function() tokenGetter) =>
+      McwsClient(
+        dio: createDio(
+          baseUrl: baseUrl,
+          tokenGetter: tokenGetter,
+          talker: _talker,
+        ),
+        parser: _parser,
+      );
 
   @override
   Future<Either<AppException, ServerInfo>> connect({
@@ -162,16 +164,18 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         ),
       );
     } else {
-      await _db.into(_db.savedServers).insert(
-        SavedServersCompanion.insert(
-          host: host,
-          port: Value(port),
-          username: username,
-          passwordKey: key,
-          friendlyName: Value(friendlyName),
-          lastUsedAt: Value(now),
-        ),
-      );
+      await _db
+          .into(_db.savedServers)
+          .insert(
+            SavedServersCompanion.insert(
+              host: host,
+              port: Value(port),
+              username: username,
+              passwordKey: key,
+              friendlyName: Value(friendlyName),
+              lastUsedAt: Value(now),
+            ),
+          );
     }
   }
 }

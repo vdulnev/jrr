@@ -19,14 +19,14 @@ class ServerSetupForm extends _$ServerSetupForm {
     required String password,
   }) async {
     state = const AsyncValue.loading();
-    final error = await ref.read(sessionProvider.notifier).connect(
-      host: host,
-      port: port,
-      username: username,
-      password: password,
-    );
-    state = error != null
-        ? AsyncValue.error(error, StackTrace.current)
-        : null;
+    final error = await ref
+        .read(sessionProvider.notifier)
+        .connect(
+          host: host,
+          port: port,
+          username: username,
+          password: password,
+        );
+    state = error != null ? AsyncValue.error(error, StackTrace.current) : null;
   }
 }

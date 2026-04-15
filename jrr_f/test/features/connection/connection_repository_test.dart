@@ -97,7 +97,7 @@ void main() {
         expect(info.name, validServerInfo.name);
         expect(info.address, validServerInfo.address);
       });
-      expect(repo.token, 'token-abc');
+      expect(repo.currentToken, 'token-abc');
     });
 
     test('auth failure: returns Left<AppException.unauthorized>', () async {
@@ -117,7 +117,7 @@ void main() {
         (e) => expect(e, isA<UnauthorizedException>()),
         (_) => fail('Expected Left'),
       );
-      expect(repo.token, isNull);
+      expect(repo.currentToken, isNull);
     });
 
     test(
@@ -164,12 +164,12 @@ void main() {
         password: password,
       );
 
-      expect(repo.token, isNotNull);
+      expect(repo.currentToken, isNotNull);
       expect(getIt.isRegistered<McwsClient>(), isTrue);
 
       await repo.clearSession();
 
-      expect(repo.token, isNull);
+      expect(repo.currentToken, isNull);
       expect(getIt.isRegistered<McwsClient>(), isFalse);
     });
   });

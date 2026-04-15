@@ -15,4 +15,10 @@ abstract interface class ConnectionRepository {
   Future<void> clearSession();
 
   Future<List<SavedServer>> getSavedServers();
+
+  /// The current session token; null when not authenticated.
+  String? get currentToken;
+
+  /// Retrieves the password stored under [key] in secure storage.
+  Future<String?> getPassword(String key);
 }

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../features/connection/widgets/connecting_screen.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
-import 'player_placeholder_screen.dart';
+import '../../features/player/widgets/now_playing_screen.dart';
+import '../../features/zones/widgets/zone_list_screen.dart';
 import 'root_screen.dart';
 
 part 'app_router.gr.dart';
@@ -20,10 +21,10 @@ class AppRouter extends RootStackRouter {
       initial: true,
       children: [
         AutoRoute(page: ServerSetupRoute.page),
-        AutoRoute(page: PlayerPlaceholderRoute.page),
+        AutoRoute(page: NowPlayingRoute.page),
+        AutoRoute(page: ZoneListRoute.page),
         AutoRoute(page: ConnectingRoute.page),
       ],
     ),
   ];
 }
-
