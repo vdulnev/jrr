@@ -21,4 +21,8 @@ abstract interface class ConnectionRepository {
 
   /// Retrieves the password stored under [key] in secure storage.
   Future<String?> getPassword(String key);
+
+  /// Gets the most recently used saved server with its auth token.
+  /// Returns null if no saved servers exist or if the most recent one has no token.
+  Future<SavedServer?> getLastServerWithToken();
 }

@@ -109,7 +109,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     _hasSessionScope = true;
 
     unawaited(
-      _persistServer(host, port, username, password, name).catchError(
+      _persistServer(host, port, username, password, name, _token).catchError(
         (Object e) => _talker.warning('Failed to persist server: $e'),
       ),
     );
@@ -120,6 +120,16 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
   @override
   Future<void> clearSession() async {
     _token = null;
+
+    // Clear the persisted auth token from all saved servers
+    try {
+      await (_db.update(
+        _db.savedServers,
+      )).write(const SavedServersCompanion(authToken: Value(null)));
+    } catch (_) {
+      // Ignore database errors (e.g., in tests with mocks)
+    }
+
     if (_hasSessionScope) {
       _hasSessionScope = false;
       await getIt.popScope();
@@ -133,12 +143,32 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     )..orderBy([(t) => OrderingTerm.desc(t.lastUsedAt)])).get();
   }
 
+  @override
+  Future<SavedServer?> getLastServerWithToken() async {
+    final servers =
+        await (_db.select(_db.savedServers)
+              ..orderBy([(t) => OrderingTerm.desc(t.lastUsedAt)])
+              ..limit(1))
+            .get();
+
+    if (servers.isEmpty) return null;
+
+    final server = servers.first;
+    // Only return if it has a non-null, non-empty token
+    if (server.authToken == null || server.authToken!.isEmpty) {
+      return null;
+    }
+
+    return server;
+  }
+
   Future<void> _persistServer(
     String host,
     int port,
     String username,
     String password,
     String friendlyName,
+    String? authToken,
   ) async {
     final key = 'server_${host}_${port}_$username';
     await _secureStorage.write(key: key, value: password);
@@ -161,6 +191,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         SavedServersCompanion(
           friendlyName: Value(friendlyName),
           lastUsedAt: Value(now),
+          authToken: Value(authToken),
         ),
       );
     } else {
@@ -174,6 +205,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
               passwordKey: key,
               friendlyName: Value(friendlyName),
               lastUsedAt: Value(now),
+              authToken: Value(authToken),
             ),
           );
     }

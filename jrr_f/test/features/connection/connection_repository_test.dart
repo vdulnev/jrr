@@ -17,6 +17,10 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
+class MockUpdateStatement extends Mock {
+  Future<void> write(SavedServersCompanion data) async {}
+}
+
 /// Test double that injects a mock McwsClient via buildClient override.
 class _TestConnectionRepository extends ConnectionRepositoryImpl {
   final McwsClient _mockClient;
@@ -60,9 +64,10 @@ void main() {
 
   setUp(() {
     mockClient = MockMcwsClient();
+    final mockDb = MockAppDatabase();
 
     repo = _TestConnectionRepository(
-      db: MockAppDatabase(),
+      db: mockDb,
       secureStorage: MockFlutterSecureStorage(),
       parser: McwsXmlParser(),
       talker: Talker(),
@@ -71,7 +76,14 @@ void main() {
   });
 
   tearDown(() async {
-    await repo.clearSession();
+    // Clean up any remaining session scope
+    try {
+      await repo.clearSession();
+    } catch (_) {
+      // Ignore cleanup errors
+    }
+    // Reset getIt to clean state for next test
+    getIt.reset();
   });
 
   group('connect()', () {
@@ -157,13 +169,14 @@ void main() {
         () => mockClient.alive(),
       ).thenAnswer((_) async => right(aliveFields));
 
-      await repo.connect(
+      final result = await repo.connect(
         host: host,
         port: port,
         username: username,
         password: password,
       );
 
+      expect(result.isRight(), true);
       expect(repo.currentToken, isNotNull);
       expect(getIt.isRegistered<McwsClient>(), isTrue);
 

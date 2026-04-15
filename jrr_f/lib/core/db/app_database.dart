@@ -20,6 +20,9 @@ class SavedServers extends Table {
 
   /// Last successful connection timestamp (unix ms). Used for auto-selection.
   IntColumn get lastUsedAt => integer().nullable()();
+
+  /// Cached auth token from the last successful authentication.
+  TextColumn get authToken => text().nullable()();
 }
 
 @DriftDatabase(tables: [SavedServers])

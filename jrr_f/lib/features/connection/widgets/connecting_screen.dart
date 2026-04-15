@@ -5,12 +5,15 @@ import '../../../shared/widgets/loading_view.dart';
 
 @RoutePage()
 class ConnectingScreen extends StatelessWidget {
-  final String address;
+  final String? address;
 
-  const ConnectingScreen({super.key, required this.address});
+  const ConnectingScreen({super.key, this.address});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: LoadingView(message: 'Connecting to $address…'));
+    final message = address != null
+        ? 'Connecting to $address…'
+        : 'Connecting to server…';
+    return Scaffold(body: LoadingView(message: message));
   }
 }

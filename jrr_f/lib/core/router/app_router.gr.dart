@@ -13,33 +13,32 @@ part of 'app_router.dart';
 /// generated route for
 /// [ConnectingScreen]
 class ConnectingRoute extends PageRouteInfo<ConnectingRouteArgs> {
-  ConnectingRoute({
-    Key? key,
-    required String address,
-    List<PageRouteInfo>? children,
-  }) : super(
-         ConnectingRoute.name,
-         args: ConnectingRouteArgs(key: key, address: address),
-         initialChildren: children,
-       );
+  ConnectingRoute({Key? key, String? address, List<PageRouteInfo>? children})
+    : super(
+        ConnectingRoute.name,
+        args: ConnectingRouteArgs(key: key, address: address),
+        initialChildren: children,
+      );
 
   static const String name = 'ConnectingRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      final args = data.argsAs<ConnectingRouteArgs>();
+      final args = data.argsAs<ConnectingRouteArgs>(
+        orElse: () => const ConnectingRouteArgs(),
+      );
       return ConnectingScreen(key: args.key, address: args.address);
     },
   );
 }
 
 class ConnectingRouteArgs {
-  const ConnectingRouteArgs({this.key, required this.address});
+  const ConnectingRouteArgs({this.key, this.address});
 
   final Key? key;
 
-  final String address;
+  final String? address;
 
   @override
   String toString() {

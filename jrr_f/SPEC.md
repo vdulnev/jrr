@@ -176,6 +176,12 @@ All repositories that need to make MCWS requests resolve the client at call-time
 - Compose providers with `ref.watch(otherProvider)`.
 - Form submission state (`AsyncValue<void>?`: null = idle, loading, error) belongs in a dedicated screen-scoped `@riverpod` notifier, auto-disposed when the screen leaves the tree.
 
+### Code style
+- **Always run `dart format .` after code changes** — code must be formatted before committing.
+- Follow Dart's official style guide (80-character line limit, etc.).
+- Use `dart format .` to automatically apply formatting.
+- CI should reject commits with unformatted code.
+
 ## Routing (auto_route)
 - **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through a Riverpod provider.
 - Single `AppRouter` with `@AutoRouterConfig`.
@@ -329,7 +335,7 @@ dart fix --apply
 ```
 
 Pre-commit checklist (matches the global Dart rules):
-1. `dart format .`
+1. `dart format .` — **mandatory**, must be run before every commit
 2. `flutter analyze` — zero warnings
 3. `flutter test` — green
 

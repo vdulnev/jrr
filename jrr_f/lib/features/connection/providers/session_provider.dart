@@ -11,7 +11,38 @@ part 'session_provider.g.dart';
 @riverpod
 class Session extends _$Session {
   @override
-  SessionState build() => const SessionState.unauthenticated();
+  SessionState build() {
+    // Attempt silent reconnect on initial build
+    _attemptSilentReconnect();
+    return const SessionState.unauthenticated();
+  }
+
+  Future<void> _attemptSilentReconnect() async {
+    final repo = getIt<ConnectionRepository>();
+    final server = await repo.getLastServerWithToken();
+
+    if (server == null) return;
+
+    final password = await repo.getPassword(server.passwordKey);
+    if (password == null) return;
+
+    // Try to connect silently
+    final result = await repo.connect(
+      host: server.host,
+      port: server.port,
+      username: server.username,
+      password: password,
+    );
+
+    result.fold(
+      (e) {
+        // Silent fail - keep state as unauthenticated
+      },
+      (info) {
+        state = SessionState.authenticated(serverInfo: info);
+      },
+    );
+  }
 
   /// Returns null on success, AppException on failure.
   Future<AppException?> connect({

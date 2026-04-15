@@ -85,6 +85,17 @@ class $SavedServersTable extends SavedServers
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _authTokenMeta = const VerificationMeta(
+    'authToken',
+  );
+  @override
+  late final GeneratedColumn<String> authToken = GeneratedColumn<String>(
+    'auth_token',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -94,6 +105,7 @@ class $SavedServersTable extends SavedServers
     passwordKey,
     friendlyName,
     lastUsedAt,
+    authToken,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -161,6 +173,12 @@ class $SavedServersTable extends SavedServers
         ),
       );
     }
+    if (data.containsKey('auth_token')) {
+      context.handle(
+        _authTokenMeta,
+        authToken.isAcceptableOrUnknown(data['auth_token']!, _authTokenMeta),
+      );
+    }
     return context;
   }
 
@@ -198,6 +216,10 @@ class $SavedServersTable extends SavedServers
         DriftSqlType.int,
         data['${effectivePrefix}last_used_at'],
       ),
+      authToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auth_token'],
+      ),
     );
   }
 
@@ -221,6 +243,9 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
 
   /// Last successful connection timestamp (unix ms). Used for auto-selection.
   final int? lastUsedAt;
+
+  /// Cached auth token from the last successful authentication.
+  final String? authToken;
   const SavedServer({
     required this.id,
     required this.host,
@@ -229,6 +254,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     required this.passwordKey,
     this.friendlyName,
     this.lastUsedAt,
+    this.authToken,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -243,6 +269,9 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     }
     if (!nullToAbsent || lastUsedAt != null) {
       map['last_used_at'] = Variable<int>(lastUsedAt);
+    }
+    if (!nullToAbsent || authToken != null) {
+      map['auth_token'] = Variable<String>(authToken);
     }
     return map;
   }
@@ -260,6 +289,9 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       lastUsedAt: lastUsedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastUsedAt),
+      authToken: authToken == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authToken),
     );
   }
 
@@ -276,6 +308,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       passwordKey: serializer.fromJson<String>(json['passwordKey']),
       friendlyName: serializer.fromJson<String?>(json['friendlyName']),
       lastUsedAt: serializer.fromJson<int?>(json['lastUsedAt']),
+      authToken: serializer.fromJson<String?>(json['authToken']),
     );
   }
   @override
@@ -289,6 +322,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       'passwordKey': serializer.toJson<String>(passwordKey),
       'friendlyName': serializer.toJson<String?>(friendlyName),
       'lastUsedAt': serializer.toJson<int?>(lastUsedAt),
+      'authToken': serializer.toJson<String?>(authToken),
     };
   }
 
@@ -300,6 +334,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     String? passwordKey,
     Value<String?> friendlyName = const Value.absent(),
     Value<int?> lastUsedAt = const Value.absent(),
+    Value<String?> authToken = const Value.absent(),
   }) => SavedServer(
     id: id ?? this.id,
     host: host ?? this.host,
@@ -308,6 +343,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     passwordKey: passwordKey ?? this.passwordKey,
     friendlyName: friendlyName.present ? friendlyName.value : this.friendlyName,
     lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
+    authToken: authToken.present ? authToken.value : this.authToken,
   );
   SavedServer copyWithCompanion(SavedServersCompanion data) {
     return SavedServer(
@@ -324,6 +360,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       lastUsedAt: data.lastUsedAt.present
           ? data.lastUsedAt.value
           : this.lastUsedAt,
+      authToken: data.authToken.present ? data.authToken.value : this.authToken,
     );
   }
 
@@ -336,7 +373,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
           ..write('username: $username, ')
           ..write('passwordKey: $passwordKey, ')
           ..write('friendlyName: $friendlyName, ')
-          ..write('lastUsedAt: $lastUsedAt')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('authToken: $authToken')
           ..write(')'))
         .toString();
   }
@@ -350,6 +388,7 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     passwordKey,
     friendlyName,
     lastUsedAt,
+    authToken,
   );
   @override
   bool operator ==(Object other) =>
@@ -361,7 +400,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
           other.username == this.username &&
           other.passwordKey == this.passwordKey &&
           other.friendlyName == this.friendlyName &&
-          other.lastUsedAt == this.lastUsedAt);
+          other.lastUsedAt == this.lastUsedAt &&
+          other.authToken == this.authToken);
 }
 
 class SavedServersCompanion extends UpdateCompanion<SavedServer> {
@@ -372,6 +412,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
   final Value<String> passwordKey;
   final Value<String?> friendlyName;
   final Value<int?> lastUsedAt;
+  final Value<String?> authToken;
   const SavedServersCompanion({
     this.id = const Value.absent(),
     this.host = const Value.absent(),
@@ -380,6 +421,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     this.passwordKey = const Value.absent(),
     this.friendlyName = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
+    this.authToken = const Value.absent(),
   });
   SavedServersCompanion.insert({
     this.id = const Value.absent(),
@@ -389,6 +431,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     required String passwordKey,
     this.friendlyName = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
+    this.authToken = const Value.absent(),
   }) : host = Value(host),
        username = Value(username),
        passwordKey = Value(passwordKey);
@@ -400,6 +443,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     Expression<String>? passwordKey,
     Expression<String>? friendlyName,
     Expression<int>? lastUsedAt,
+    Expression<String>? authToken,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -409,6 +453,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
       if (passwordKey != null) 'password_key': passwordKey,
       if (friendlyName != null) 'friendly_name': friendlyName,
       if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (authToken != null) 'auth_token': authToken,
     });
   }
 
@@ -420,6 +465,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     Value<String>? passwordKey,
     Value<String?>? friendlyName,
     Value<int?>? lastUsedAt,
+    Value<String?>? authToken,
   }) {
     return SavedServersCompanion(
       id: id ?? this.id,
@@ -429,6 +475,7 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
       passwordKey: passwordKey ?? this.passwordKey,
       friendlyName: friendlyName ?? this.friendlyName,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      authToken: authToken ?? this.authToken,
     );
   }
 
@@ -456,6 +503,9 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     if (lastUsedAt.present) {
       map['last_used_at'] = Variable<int>(lastUsedAt.value);
     }
+    if (authToken.present) {
+      map['auth_token'] = Variable<String>(authToken.value);
+    }
     return map;
   }
 
@@ -468,7 +518,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
           ..write('username: $username, ')
           ..write('passwordKey: $passwordKey, ')
           ..write('friendlyName: $friendlyName, ')
-          ..write('lastUsedAt: $lastUsedAt')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('authToken: $authToken')
           ..write(')'))
         .toString();
   }
@@ -494,6 +545,7 @@ typedef $$SavedServersTableCreateCompanionBuilder =
       required String passwordKey,
       Value<String?> friendlyName,
       Value<int?> lastUsedAt,
+      Value<String?> authToken,
     });
 typedef $$SavedServersTableUpdateCompanionBuilder =
     SavedServersCompanion Function({
@@ -504,6 +556,7 @@ typedef $$SavedServersTableUpdateCompanionBuilder =
       Value<String> passwordKey,
       Value<String?> friendlyName,
       Value<int?> lastUsedAt,
+      Value<String?> authToken,
     });
 
 class $$SavedServersTableFilterComposer
@@ -547,6 +600,11 @@ class $$SavedServersTableFilterComposer
 
   ColumnFilters<int> get lastUsedAt => $composableBuilder(
     column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authToken => $composableBuilder(
+    column: $table.authToken,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -594,6 +652,11 @@ class $$SavedServersTableOrderingComposer
     column: $table.lastUsedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get authToken => $composableBuilder(
+    column: $table.authToken,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SavedServersTableAnnotationComposer
@@ -631,6 +694,9 @@ class $$SavedServersTableAnnotationComposer
     column: $table.lastUsedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get authToken =>
+      $composableBuilder(column: $table.authToken, builder: (column) => column);
 }
 
 class $$SavedServersTableTableManager
@@ -671,6 +737,7 @@ class $$SavedServersTableTableManager
                 Value<String> passwordKey = const Value.absent(),
                 Value<String?> friendlyName = const Value.absent(),
                 Value<int?> lastUsedAt = const Value.absent(),
+                Value<String?> authToken = const Value.absent(),
               }) => SavedServersCompanion(
                 id: id,
                 host: host,
@@ -679,6 +746,7 @@ class $$SavedServersTableTableManager
                 passwordKey: passwordKey,
                 friendlyName: friendlyName,
                 lastUsedAt: lastUsedAt,
+                authToken: authToken,
               ),
           createCompanionCallback:
               ({
@@ -689,6 +757,7 @@ class $$SavedServersTableTableManager
                 required String passwordKey,
                 Value<String?> friendlyName = const Value.absent(),
                 Value<int?> lastUsedAt = const Value.absent(),
+                Value<String?> authToken = const Value.absent(),
               }) => SavedServersCompanion.insert(
                 id: id,
                 host: host,
@@ -697,6 +766,7 @@ class $$SavedServersTableTableManager
                 passwordKey: passwordKey,
                 friendlyName: friendlyName,
                 lastUsedAt: lastUsedAt,
+                authToken: authToken,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
