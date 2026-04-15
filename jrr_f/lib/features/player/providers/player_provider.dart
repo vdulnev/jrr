@@ -64,6 +64,9 @@ class Player extends _$Player {
     await _run((id) => getIt<PlayerRepository>().setShuffle(id, next));
   }
 
+  Future<void> playByIndex(int index) =>
+      _run((id) => getIt<PlayerRepository>().playByIndex(id, index));
+
   Future<void> cycleRepeat() async {
     final current = state.asData?.value.repeatMode ?? RepeatMode.off;
     final next = switch (current) {

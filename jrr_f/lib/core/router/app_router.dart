@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../features/connection/widgets/connecting_screen.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
+import '../../features/queue/widgets/queue_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import 'root_screen.dart';
 
@@ -23,6 +24,7 @@ class AppRouter extends RootStackRouter {
         AutoRoute(page: ServerSetupRoute.page),
         AutoRoute(page: NowPlayingRoute.page),
         AutoRoute(page: ZoneListRoute.page),
+        AutoRoute(page: QueueRoute.page),
         AutoRoute(page: ConnectingRoute.page),
       ],
     ),

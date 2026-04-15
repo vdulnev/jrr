@@ -22,4 +22,5 @@ abstract interface class PlayerRepository {
     ShuffleMode mode,
   );
   Future<Either<AppException, Unit>> setRepeat(String zoneId, RepeatMode mode);
+  Future<Either<AppException, Unit>> playByIndex(String zoneId, int index);
 }

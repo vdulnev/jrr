@@ -73,6 +73,22 @@ class NowPlayingRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [QueueScreen]
+class QueueRoute extends PageRouteInfo<void> {
+  const QueueRoute({List<PageRouteInfo>? children})
+    : super(QueueRoute.name, initialChildren: children);
+
+  static const String name = 'QueueRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const QueueScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [RootScreen]
 class RootRoute extends PageRouteInfo<void> {
   const RootRoute({List<PageRouteInfo>? children})

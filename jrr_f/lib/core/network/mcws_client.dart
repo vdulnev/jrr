@@ -9,6 +9,7 @@ import '../../features/player/data/models/player_status.dart';
 import '../../features/player/data/models/repeat_mode.dart';
 import '../../features/player/data/models/shuffle_mode.dart';
 import '../../features/player/data/models/track_info.dart';
+import '../../features/queue/data/models/playing_now_item.dart';
 import '../../features/zones/data/models/zone.dart';
 import 'mcws_xml_parser.dart';
 
@@ -292,6 +293,90 @@ class McwsClient {
   ) => command(
     'Playback/Repeat',
     params: {'Zone': zoneId, 'Mode': mode.toMcws()},
+  );
+
+  // -------------------------------------------------------------------------
+  // Playing Now queue
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, List<PlayingNowItem>>> getPlayingNow(
+    String zoneId,
+  ) async {
+    // The Fields parameter uses semicolons as delimiters. Dio percent-encodes
+    // semicolons (%3B) in queryParameters, which MCWS does not recognise.
+    // Embed Fields (and other static params) directly in the path so they are
+    // never re-encoded; only the dynamic zoneId goes through queryParameters.
+    try {
+      final response = await _dio.get<String>(
+        'Playback/Playlist?Action=JSON&ZoneType=ID&Fields=Name;Artist;Album&NoLocalFilenames=1',
+        queryParameters: {'Zone': zoneId},
+        options: Options(responseType: ResponseType.plain),
+      );
+      final body = response.data;
+      if (body == null) {
+        return left(
+          const AppException.parseError(details: 'Empty playlist response'),
+        );
+      }
+      final raw = jsonDecode(body) as List<dynamic>;
+      final items = raw.indexed.map((entry) {
+        final (i, item) = entry;
+        final map = item as Map<String, dynamic>;
+        return PlayingNowItem(
+          index: i,
+          fileKey: (map['Key'] ?? 0).toString(),
+          name: (map['Name'] as String?) ?? '',
+          artist: (map['Artist'] as String?) ?? '',
+          album: (map['Album'] as String?) ?? '',
+        );
+      }).toList();
+      return right(items);
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } on FormatException catch (e) {
+      return left(
+        AppException.parseError(details: 'Invalid playlist JSON: $e'),
+      );
+    } on TypeError catch (e) {
+      return left(
+        AppException.parseError(
+          details: 'Playlist response is not a JSON array: $e',
+        ),
+      );
+    }
+  }
+
+  Future<Either<AppException, Unit>> playByIndex(String zoneId, int index) =>
+      command(
+        'Playback/PlayByIndex',
+        params: {'Zone': zoneId, 'Index': index.toString()},
+      );
+
+  Future<Either<AppException, Unit>> removeFromQueue(
+    String zoneId,
+    int index,
+  ) => command(
+    'Playback/EditPlaylist',
+    params: {'Zone': zoneId, 'Action': 'Remove', 'Source': index.toString()},
+  );
+
+  Future<Either<AppException, Unit>> moveInQueue(
+    String zoneId,
+    int source,
+    int target,
+  ) => command(
+    'Playback/EditPlaylist',
+    params: {
+      'Zone': zoneId,
+      'Action': 'Move',
+      'Source': source.toString(),
+      'Target': target.toString(),
+    },
+  );
+
+  Future<Either<AppException, Unit>> clearQueue(String zoneId) => command(
+    'Playback/ClearPlaylist',
+    params: {'Zone': zoneId, 'ZoneType': 'ID'},
   );
 
   // -------------------------------------------------------------------------

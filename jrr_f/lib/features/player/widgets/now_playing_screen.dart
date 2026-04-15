@@ -7,6 +7,7 @@ import '../../../core/router/navigation_notifier.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../connection/providers/session_provider.dart';
+import '../../queue/providers/queue_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../zones/providers/zone_provider.dart';
 import '../providers/player_provider.dart';
@@ -26,6 +27,8 @@ class NowPlayingScreen extends ConsumerWidget {
     ref.watch(pollingProvider);
     // Trigger zone list load and auto-selection.
     ref.watch(zoneListProvider);
+    // Keep queue provider alive while on this screen so change counter is watched.
+    ref.watch(queueProvider);
 
     final activeZone = ref.watch(activeZoneProvider);
     if (activeZone == null) {
@@ -38,6 +41,12 @@ class NowPlayingScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(activeZone.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.queue_music_outlined),
+            tooltip: 'Queue',
+            onPressed: () =>
+                ref.read(navigationProvider.notifier).push(const QueueRoute()),
+          ),
           IconButton(
             icon: const Icon(Icons.speaker_group_outlined),
             tooltip: 'Zones',

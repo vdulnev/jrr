@@ -56,4 +56,8 @@ class PlayerRepositoryImpl implements PlayerRepository {
     String zoneId,
     RepeatMode mode,
   ) => getIt<McwsClient>().setRepeat(zoneId, mode);
+
+  @override
+  Future<Either<AppException, Unit>> playByIndex(String zoneId, int index) =>
+      getIt<McwsClient>().playByIndex(zoneId, index);
 }
