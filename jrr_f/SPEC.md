@@ -150,6 +150,9 @@ test/
 - **Repositories**: resolve `McwsClient` from get_it, parse DTOs, return typed `Either<AppException, T>`. No Flutter imports.
 - **Models**: Freezed only; no logic beyond `fromJson` / computed getters.
 
+### Widget file convention
+Every public widget class lives in its own file. One public widget per file — no exceptions, including router scaffolding screens and placeholders.
+
 ### get_it scopes
 
 get_it manages two scope layers:
