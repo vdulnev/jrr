@@ -32,8 +32,8 @@ class Session extends _$Session {
     });
   }
 
-  void logout() {
-    getIt<ConnectionRepository>().clearSession();
+  Future<void> logout() async {
+    await getIt<ConnectionRepository>().clearSession();
     state = const SessionState.unauthenticated();
     ref.read(navigationProvider.notifier).clear();
   }

@@ -2,6 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/db/app_database.dart';
+import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
@@ -15,6 +16,23 @@ class MockMcwsClient extends Mock implements McwsClient {}
 class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
+/// Test double that injects a mock McwsClient via buildClient override.
+class _TestConnectionRepository extends ConnectionRepository {
+  final McwsClient _mockClient;
+
+  _TestConnectionRepository({
+    required super.db,
+    required super.secureStorage,
+    required super.parser,
+    required super.talker,
+    required McwsClient mockClient,
+  }) : _mockClient = mockClient;
+
+  @override
+  McwsClient buildClient(String baseUrl, String? Function() tokenGetter) =>
+      _mockClient;
+}
 
 void main() {
   late MockMcwsClient mockClient;
@@ -43,13 +61,17 @@ void main() {
   setUp(() {
     mockClient = MockMcwsClient();
 
-    repo = ConnectionRepository(
+    repo = _TestConnectionRepository(
       db: MockAppDatabase(),
       secureStorage: MockFlutterSecureStorage(),
       parser: McwsXmlParser(),
       talker: Talker(),
-      clientFactory: (baseUrl, tokenGetter) => mockClient,
+      mockClient: mockClient,
     );
+  });
+
+  tearDown(() async {
+    await repo.clearSession();
   });
 
   group('connect()', () {
@@ -143,11 +165,12 @@ void main() {
       );
 
       expect(repo.token, isNotNull);
+      expect(getIt.isRegistered<McwsClient>(), isTrue);
 
-      repo.clearSession();
+      await repo.clearSession();
 
       expect(repo.token, isNull);
-      expect(repo.client, isNull);
+      expect(getIt.isRegistered<McwsClient>(), isFalse);
     });
   });
 }

@@ -1,43 +1,55 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:talker/talker.dart';
 
 import '../../../../core/db/app_database.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/dio_factory.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../../../../core/network/mcws_xml_parser.dart';
 import '../models/server_info.dart';
 
+const _sessionScopeName = 'session';
+
 class ConnectionRepository {
   final AppDatabase _db;
   final FlutterSecureStorage _secureStorage;
   final McwsXmlParser _parser;
   final Talker _talker;
-  final McwsClient Function(String baseUrl, String? Function() tokenGetter)?
-  _clientFactory;
 
-  McwsClient? _client;
   String? _token;
+  bool _hasSessionScope = false;
 
   ConnectionRepository({
     required AppDatabase db,
     required FlutterSecureStorage secureStorage,
     required McwsXmlParser parser,
     required Talker talker,
-    McwsClient Function(String baseUrl, String? Function() tokenGetter)?
-    clientFactory,
   }) : _db = db,
        _secureStorage = secureStorage,
        _parser = parser,
-       _talker = talker,
-       _clientFactory = clientFactory;
+       _talker = talker;
 
   String? get token => _token;
-  McwsClient? get client => _client;
+
+  /// Override in tests to inject a mock [McwsClient].
+  @visibleForTesting
+  McwsClient buildClient(
+    String baseUrl,
+    String? Function() tokenGetter,
+  ) => McwsClient(
+    dio: createDio(
+      baseUrl: baseUrl,
+      tokenGetter: tokenGetter,
+      talker: _talker,
+    ),
+    parser: _parser,
+  );
 
   Future<Either<AppException, ServerInfo>> connect({
     required String host,
@@ -45,18 +57,11 @@ class ConnectionRepository {
     required String username,
     required String password,
   }) async {
+    // Clear any previous session before starting a new one.
+    await clearSession();
+
     final baseUrl = 'http://$host:$port/MCWS/v1/';
-    final factory = _clientFactory;
-    final client = factory != null
-        ? factory(baseUrl, () => _token)
-        : McwsClient(
-            dio: createDio(
-              baseUrl: baseUrl,
-              tokenGetter: () => _token,
-              talker: _talker,
-            ),
-            parser: _parser,
-          );
+    final client = buildClient(baseUrl, () => _token);
 
     final authResult = await client.authenticate(
       username: username,
@@ -65,10 +70,7 @@ class ConnectionRepository {
     if (authResult.isLeft()) {
       return left(authResult.getLeft().toNullable()!);
     }
-    final token = authResult.getRight().toNullable()!;
-
-    _token = token;
-    _client = client;
+    _token = authResult.getRight().toNullable()!;
 
     final aliveResult = await client.alive();
     if (aliveResult.isLeft()) {
@@ -97,6 +99,14 @@ class ConnectionRepository {
       address: 'http://$host:$port',
     );
 
+    // Push a scope so McwsClient is available to all repositories and
+    // is automatically discarded when the session ends.
+    getIt.pushNewScope(
+      scopeName: _sessionScopeName,
+      init: (gi) => gi.registerSingleton<McwsClient>(client),
+    );
+    _hasSessionScope = true;
+
     unawaited(
       _persistServer(host, port, username, password, name).catchError(
         (Object e) => _talker.warning('Failed to persist server: $e'),
@@ -106,9 +116,12 @@ class ConnectionRepository {
     return right(serverInfo);
   }
 
-  void clearSession() {
+  Future<void> clearSession() async {
     _token = null;
-    _client = null;
+    if (_hasSessionScope) {
+      _hasSessionScope = false;
+      await getIt.popScope();
+    }
   }
 
   Future<List<SavedServer>> getSavedServers() async {

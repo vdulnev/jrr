@@ -38,7 +38,7 @@ lib/
   app.dart                         # MaterialApp.router wired to AppRouter
   core/
     di/
-      injection.dart               # get_it registrations
+      injection.dart               # get_it base-scope registrations (startup singletons)
     error/
       app_exception.dart           # sealed Freezed AppException union
       app_exception.freezed.dart
@@ -147,8 +147,22 @@ test/
 ### Layered responsibilities
 - **Widgets**: render + dispatch. No direct repository or Dio access. Read providers via `ref.watch` / `ref.listen`.
 - **Providers (Riverpod)**: hold state, expose actions, call repositories. Use `AsyncNotifier` for anything that loads.
-- **Repositories**: own a `Dio` (or `WsClient`), parse DTOs, throw typed `AppException`s. No Flutter imports.
+- **Repositories**: resolve `McwsClient` from get_it, parse DTOs, return typed `Either<AppException, T>`. No Flutter imports.
 - **Models**: Freezed only; no logic beyond `fromJson` / computed getters.
+
+### get_it scopes
+
+get_it manages two scope layers:
+
+| Scope | Lifetime | Registered types |
+|---|---|---|
+| **base** (default) | app lifetime | `Talker`, `AppDatabase`, `FlutterSecureStorage`, `SharedPreferences`, `McwsXmlParser`, `ConnectionRepository` |
+| **`'session'`** | login → logout | `McwsClient` |
+
+`ConnectionRepository.connect()` pushes the `'session'` scope and registers `McwsClient` there (with the auth token baked into the `AuthInterceptor` closure).  
+`ConnectionRepository.clearSession()` calls `await getIt.popScope()` — `McwsClient` and its `Dio` instance are discarded automatically.
+
+All repositories that need to make MCWS requests resolve the client at call-time: `getIt<McwsClient>()`. They must only be called while a session scope is active (i.e. after successful authentication).
 
 ### Riverpod rules
 - Use `late`, not `late final`, for fields initialized in `build()` — Riverpod can rebuild a notifier and reassign its dependencies.
@@ -224,12 +238,15 @@ Migrations are versioned in `app_database.dart`; never edit a past migration —
 Only ephemeral UI flags (last selected tab, last viewed symbol). Never credentials. Never anything the parent spec lists as persistent.
 
 ### Logout
-`SessionManager.logout()`:
-1. Invalidate the in-memory auth token (set to `null` in `connectionProvider`).
+`Session.logout()` (Riverpod notifier):
+1. `await getIt<ConnectionRepository>().clearSession()` — pops the `'session'` get_it scope, discarding `McwsClient` and its token.
 2. Cancel the active polling timer (`pollingProvider`).
 3. Clear the active zone (`activeZoneProvider`).
-4. Reset the navigation stack to the server setup screen via `navigationProvider.notifier.clear()`.
-5. Do **not** delete the saved server record — let the user reconnect without re-entering credentials.
+4. Set state to `SessionState.unauthenticated()`.
+5. Reset the navigation stack via `ref.read(navigationProvider.notifier).clear()`.
+6. Do **not** delete the saved server record — let the user reconnect without re-entering credentials.
+
+`clearSession()` is `async` because `getIt.popScope()` returns `Future<void>`. Always `await` it.
 
 ---
 
@@ -239,7 +256,7 @@ Only ephemeral UI flags (last selected tab, last viewed symbol). Never credentia
 
 Interceptors are added in this order (first added = outermost):
 
-1. **`AuthInterceptor`** — appends `Token=<token>` to every request's query parameters. Reads the current token from `connectionProvider` via a closure. If the token is `null`, throws `AppException.unauthorized()` immediately (no request sent).
+1. **`AuthInterceptor`** — appends `Token=<token>` to every request's query parameters. Reads the current token from `ConnectionRepository` via a closure captured at `McwsClient` creation time. If the token is `null`, rejects immediately with `AppException.unauthorized()` (no request sent). Pass `options.extra['skipAuth'] = true` to bypass (used by `authenticate()` which uses HTTP Basic auth instead).
 2. **`LoggingInterceptor`** — wraps `TalkerDioLogger`; redacts the `Token` query param value in all log output (replaces with `***`).
 
 No retry interceptor for v1 — transient failures surface as errors that the user can retry manually.
@@ -275,7 +292,7 @@ Run `dart run build_runner build --delete-conflicting-outputs` after changes to:
 |---|---|---|
 | `McwsXmlParser` | All XML → map parsing, including error/failure responses | `dart:test` |
 | `McwsClient` | Each method: correct endpoint, params, token injection; error mapping | `mocktail` (mock `Dio`) |
-| Repositories | Delegate correctly to `McwsClient`; map domain types | `mocktail` |
+| Repositories | Delegate correctly to `McwsClient`; map domain types | subclass + `buildClient` override; get_it scope in tearDown |
 | Notifiers / Providers | State transitions (loading → data → error), polling start/stop | `ProviderContainer` + `mocktail` |
 | Key widgets | `NowPlayingScreen`, `TransportControls`, `ZoneListScreen` — render, tap, check state | `flutter_test` |
 
@@ -374,3 +391,4 @@ Pre-commit checklist (matches the global Dart rules):
 | Version | Date | Notes |
 |---|---|---|
 | 0.1.0 | 2026-04-14 | Initial Flutter spec — all TODO sections filled in |
+| 0.1.1 | 2026-04-15 | get_it scopes for McwsClient session lifecycle; `skipAuth` in AuthInterceptor; logout is async |
