@@ -5,6 +5,7 @@ import 'package:talker/talker.dart';
 import '../db/app_database.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
+import '../../features/connection/data/repositories/connection_repository_impl.dart';
 
 final getIt = GetIt.instance;
 
@@ -25,7 +26,7 @@ Future<void> configureDependencies() async {
 
   // Connection repository — manages active session and server persistence
   getIt.registerSingleton<ConnectionRepository>(
-    ConnectionRepository(
+    ConnectionRepositoryImpl(
       db: getIt<AppDatabase>(),
       secureStorage: getIt<FlutterSecureStorage>(),
       parser: getIt<McwsXmlParser>(),

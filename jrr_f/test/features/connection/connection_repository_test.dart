@@ -7,7 +7,7 @@ import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
 import 'package:jrr_f/features/connection/data/models/server_info.dart';
-import 'package:jrr_f/features/connection/data/repositories/connection_repository.dart';
+import 'package:jrr_f/features/connection/data/repositories/connection_repository_impl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
@@ -18,7 +18,7 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 /// Test double that injects a mock McwsClient via buildClient override.
-class _TestConnectionRepository extends ConnectionRepository {
+class _TestConnectionRepository extends ConnectionRepositoryImpl {
   final McwsClient _mockClient;
 
   _TestConnectionRepository({
@@ -36,7 +36,7 @@ class _TestConnectionRepository extends ConnectionRepository {
 
 void main() {
   late MockMcwsClient mockClient;
-  late ConnectionRepository repo;
+  late ConnectionRepositoryImpl repo;
 
   const host = 'localhost';
   const port = 52199;
