@@ -108,11 +108,11 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     );
     _hasSessionScope = true;
 
-    unawaited(
-      _persistServer(host, port, username, password, name, _token).catchError(
-        (Object e) => _talker.warning('Failed to persist server: $e'),
-      ),
-    );
+    try {
+      await _persistServer(host, port, username, password, name, _token);
+    } catch (e) {
+      _talker.warning('Failed to persist server: $e');
+    }
 
     return right(serverInfo);
   }

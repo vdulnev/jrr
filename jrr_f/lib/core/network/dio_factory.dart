@@ -13,7 +13,6 @@ Dio createDio({
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
-      headers: {'Accept': 'text/xml'},
     ),
   );
   dio.interceptors.addAll([

@@ -66,6 +66,19 @@ void main() {
       });
     });
 
+    test('handles CDATA values', () {
+      const xml = '''
+<Response Status="OK">
+  <Item Name="Name"><![CDATA[Song with CDATA]]></Item>
+</Response>
+''';
+      final result = parser.parse(xml);
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('expected Right'), (m) {
+        expect(m['Name'], 'Song with CDATA');
+      });
+    });
+
     test('handles multiline item values', () {
       const xml = '''
 <Response Status="OK">
@@ -98,6 +111,31 @@ Line 2</Item>
         expect(m['FriendlyName'], 'My JRiver Server');
         expect(m['ProgramVersion'], '33.0.1');
         expect(m['Platform'], 'Windows');
+      });
+    });
+
+    test('parses Playback/Info XML correctly (user regression)', () {
+      const xml = '''
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<Response Status="OK">
+<Item Name="ZoneID">0</Item>
+<Item Name="State">1</Item>
+<Item Name="FileKey">2302</Item>
+<Item Name="Artist">ABBA</Item>
+<Item Name="Album">Waterloo</Item>
+<Item Name="Name">Waterloo</Item>
+<Item Name="Status">Paused</Item>
+</Response>
+''';
+      final result = parser.parse(xml);
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('expected Right'), (m) {
+        expect(m['ZoneID'], '0');
+        expect(m['State'], '1');
+        expect(m['FileKey'], '2302');
+        expect(m['Artist'], 'ABBA');
+        expect(m['Album'], 'Waterloo');
+        expect(m['Name'], 'Waterloo');
       });
     });
   });

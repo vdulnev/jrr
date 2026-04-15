@@ -180,17 +180,20 @@ class McwsClient {
           int.tryParse(fields['PlayingNowChangeCounter'] ?? '0') ?? 0;
 
       // TrackInfo is only present when something is loaded in the queue.
-      final fileKey = fields['FileKey'];
+      final fileKey = fields['FileKey'] ?? fields['Key'];
       TrackInfo? trackInfo;
       if (fileKey != null && fileKey.isNotEmpty && fileKey != '-1') {
         trackInfo = TrackInfo(
           fileKey: fileKey,
-          name: fields['Name'] ?? '',
-          artist: fields['Artist'] ?? '',
+          name: fields['Name'] ?? fields['Title'] ?? '',
+          artist: fields['Artist'] ??
+              fields['Album Artist'] ??
+              fields['AlbumArtist'] ??
+              '',
           album: fields['Album'] ?? '',
           imageUrl: fields['ImageURL'] ?? '',
           bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
-          bitDepth: int.tryParse(fields['Bitdepth'] ?? '0') ?? 0,
+          bitDepth: int.tryParse(fields['BitDepth'] ?? '0') ?? 0,
           sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
           channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
         );
@@ -308,7 +311,7 @@ class McwsClient {
     // never re-encoded; only the dynamic zoneId goes through queryParameters.
     try {
       final response = await _dio.get<String>(
-        'Playback/Playlist?Action=JSON&ZoneType=ID&Fields=Name;Artist;Album&NoLocalFilenames=1',
+        'Playback/Playlist?Action=JSON&ResponseFormat=JSON&ZoneType=ID',
         queryParameters: {'Zone': zoneId},
         options: Options(responseType: ResponseType.plain),
       );
@@ -318,16 +321,48 @@ class McwsClient {
           const AppException.parseError(details: 'Empty playlist response'),
         );
       }
-      final raw = jsonDecode(body) as List<dynamic>;
+      final decoded = jsonDecode(body);
+      List<dynamic> raw;
+      if (decoded is List) {
+        raw = decoded;
+      } else if (decoded is Map) {
+        final mpl = decoded['MPL'];
+        final resp = decoded['Response'];
+        if (mpl is Map && mpl['Item'] is List) {
+          raw = mpl['Item'] as List<dynamic>;
+        } else if (resp is Map && resp['Item'] is List) {
+          raw = resp['Item'] as List<dynamic>;
+        } else if (decoded['Item'] is List) {
+          raw = decoded['Item'] as List<dynamic>;
+        } else {
+          raw = [];
+        }
+      } else {
+        raw = [];
+      }
+
       final items = raw.indexed.map((entry) {
         final (i, item) = entry;
         final map = item as Map<String, dynamic>;
+
+        // Extract fields from either a flat map or the [{Name, Value}, ...] structure
+        String? getValue(String name) {
+          if (map.containsKey(name)) return map[name]?.toString();
+          final fields = map['Field'] as List<dynamic>?;
+          if (fields != null) {
+            for (final f in fields) {
+              if (f is Map && f['Name'] == name) return f['Value']?.toString();
+            }
+          }
+          return null;
+        }
+
         return PlayingNowItem(
           index: i,
-          fileKey: (map['Key'] ?? 0).toString(),
-          name: (map['Name'] as String?) ?? '',
-          artist: (map['Artist'] as String?) ?? '',
-          album: (map['Album'] as String?) ?? '',
+          fileKey: getValue('Key') ?? getValue('FileKey') ?? '0',
+          name: getValue('Name') ?? '',
+          artist: getValue('Artist') ?? '',
+          album: getValue('Album') ?? '',
         );
       }).toList();
       return right(items);
@@ -340,7 +375,7 @@ class McwsClient {
     } on TypeError catch (e) {
       return left(
         AppException.parseError(
-          details: 'Playlist response is not a JSON array: $e',
+          details: 'Playlist response is not in the expected MPL JSON format: $e',
         ),
       );
     }

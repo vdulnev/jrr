@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'package:fpdart/fpdart.dart';
 import '../error/app_exception.dart';
 
@@ -8,7 +9,7 @@ import '../error/app_exception.dart';
 class McwsXmlParser {
   static final _statusRe = RegExp(r'<Response\s+Status="([^"]*)"');
   static final _itemRe = RegExp(
-    r'<Item\s+Name="([^"]*)"[^>]*>([\s\S]*?)</Item>',
+    r'<Item\s+Name="([^"]*)"[^>]*>(?:<!\[CDATA\[([\s\S]*?)\]\]>|([\s\S]*?))</Item>',
   );
 
   /// Parses a full MCWS XML response string.
@@ -26,9 +27,15 @@ class McwsXmlParser {
       return left(AppException.serverFailure(message: 'MCWS status: $status'));
     }
 
-    final result = <String, String>{};
+    final result = LinkedHashMap<String, String>(
+      equals: (a, b) => a.toLowerCase() == b.toLowerCase(),
+      hashCode: (key) => key.toLowerCase().hashCode,
+    );
     for (final m in _itemRe.allMatches(xml)) {
-      result[m.group(1)!] = m.group(2)!;
+      final name = m.group(1)!;
+      final cdataValue = m.group(2);
+      final normalValue = m.group(3);
+      result[name] = (cdataValue ?? normalValue ?? '').trim();
     }
     return right(result);
   }

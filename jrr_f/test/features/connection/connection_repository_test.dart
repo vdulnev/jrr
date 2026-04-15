@@ -1,3 +1,4 @@
+import 'package:drift/native.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -13,13 +14,7 @@ import 'package:talker/talker.dart';
 
 class MockMcwsClient extends Mock implements McwsClient {}
 
-class MockAppDatabase extends Mock implements AppDatabase {}
-
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
-
-class MockUpdateStatement extends Mock {
-  Future<void> write(SavedServersCompanion data) async {}
-}
 
 /// Test double that injects a mock McwsClient via buildClient override.
 class _TestConnectionRepository extends ConnectionRepositoryImpl {
@@ -41,6 +36,7 @@ class _TestConnectionRepository extends ConnectionRepositoryImpl {
 void main() {
   late MockMcwsClient mockClient;
   late ConnectionRepositoryImpl repo;
+  late AppDatabase db;
 
   const host = 'localhost';
   const port = 52199;
@@ -64,11 +60,17 @@ void main() {
 
   setUp(() {
     mockClient = MockMcwsClient();
-    final mockDb = MockAppDatabase();
+    final mockSecureStorage = MockFlutterSecureStorage();
+    db = AppDatabase(NativeDatabase.memory());
+
+    when(() => mockSecureStorage.write(
+      key: any(named: 'key'),
+      value: any(named: 'value'),
+    )).thenAnswer((_) async {});
 
     repo = _TestConnectionRepository(
-      db: mockDb,
-      secureStorage: MockFlutterSecureStorage(),
+      db: db,
+      secureStorage: mockSecureStorage,
       parser: McwsXmlParser(),
       talker: Talker(),
       mockClient: mockClient,
@@ -76,6 +78,7 @@ void main() {
   });
 
   tearDown(() async {
+    await db.close();
     // Clean up any remaining session scope
     try {
       await repo.clearSession();
