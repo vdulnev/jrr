@@ -40,7 +40,7 @@ final class PollingProvider extends $NotifierProvider<Polling, void> {
   }
 }
 
-String _$pollingHash() => r'36408c07beb98ef9ec6a3f6c5c9fbc785ba2aab0';
+String _$pollingHash() => r'989cdfb6e73a535c22203333b7152b6df8fb09aa';
 
 abstract class _$Polling extends $Notifier<void> {
   void build();

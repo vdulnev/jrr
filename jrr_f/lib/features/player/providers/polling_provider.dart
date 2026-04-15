@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:talker/talker.dart';
 
+import '../../../core/di/injection.dart';
 import '../../connection/providers/session_provider.dart';
 import '../../connection/providers/session_state.dart';
 import '../../zones/providers/zone_provider.dart';
@@ -15,6 +17,8 @@ class Polling extends _$Polling {
   Timer? _playerTimer;
   Timer? _zoneTimer;
 
+  Talker get _talker => getIt<Talker>();
+
   @override
   void build() {
     ref.onDispose(() {
@@ -24,8 +28,10 @@ class Polling extends _$Polling {
 
     final session = ref.watch(sessionProvider);
     if (session is Authenticated) {
+      _talker.debug('[Polling] Session authenticated — starting polling');
       _start();
     } else {
+      _talker.debug('[Polling] Session unauthenticated — stopping polling');
       _stop();
     }
   }
@@ -34,14 +40,12 @@ class Polling extends _$Polling {
     _playerTimer?.cancel();
     _zoneTimer?.cancel();
 
-    // Kick off an immediate player poll via timer so build() can return first.
     _playerTimer = Timer(Duration.zero, _tickPlayer);
 
-    // Zone list refresh every 30 seconds.
-    _zoneTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => ref.read(zoneListProvider.notifier).refresh(),
-    );
+    _zoneTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _talker.debug('[Polling] Refreshing zone list');
+      ref.read(zoneListProvider.notifier).refresh();
+    });
   }
 
   void _stop() {
@@ -52,6 +56,17 @@ class Polling extends _$Polling {
   Future<void> _tickPlayer() async {
     if (ref.read(sessionProvider) is! Authenticated) return;
     await ref.read(playerProvider.notifier).refresh();
+
+    // Log if the last refresh produced an error.
+    final playerState = ref.read(playerProvider);
+    if (playerState is AsyncError) {
+      _talker.warning(
+        '[Polling] Player refresh error',
+        playerState.error,
+        playerState.stackTrace,
+      );
+    }
+
     _scheduleNextPlayerPoll();
   }
 
@@ -65,12 +80,14 @@ class Polling extends _$Polling {
   }
 
   void pause() {
+    _talker.debug('[Polling] Paused');
     _playerTimer?.cancel();
     _zoneTimer?.cancel();
   }
 
   void resume() {
     if (ref.read(sessionProvider) is Authenticated) {
+      _talker.debug('[Polling] Resumed');
       _start();
     }
   }

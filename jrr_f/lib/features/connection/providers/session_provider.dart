@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/error/app_exception.dart';
@@ -10,23 +11,32 @@ part 'session_provider.g.dart';
 
 @riverpod
 class Session extends _$Session {
+  Talker get _talker => getIt<Talker>();
+
   @override
   SessionState build() {
-    // Attempt silent reconnect on initial build
+    // Attempt silent reconnect on initial build.
     _attemptSilentReconnect();
     return const SessionState.unauthenticated();
   }
 
   Future<void> _attemptSilentReconnect() async {
+    _talker.info('[Session] Attempting silent reconnect');
     final repo = getIt<ConnectionRepository>();
     final server = await repo.getLastServerWithToken();
 
-    if (server == null) return;
+    if (server == null) {
+      _talker.debug('[Session] No saved server with token — showing login');
+      return;
+    }
 
     final password = await repo.getPassword(server.passwordKey);
-    if (password == null) return;
+    if (password == null) {
+      _talker.debug('[Session] Saved server has no password — showing login');
+      return;
+    }
 
-    // Try to connect silently
+    _talker.info('[Session] Reconnecting to ${server.host}:${server.port}');
     final result = await repo.connect(
       host: server.host,
       port: server.port,
@@ -35,35 +45,49 @@ class Session extends _$Session {
     );
 
     result.fold(
-      (e) {
-        // Silent fail - keep state as unauthenticated
-      },
+      (e) => _talker.warning('[Session] Silent reconnect failed: $e'),
       (info) {
+        _talker.info(
+          '[Session] Silent reconnect succeeded: ${info.name} '
+          '(${info.version} on ${info.platform})',
+        );
         state = SessionState.authenticated(serverInfo: info);
       },
     );
   }
 
-  /// Returns null on success, AppException on failure.
+  /// Attempts a manual connect. Returns null on success, [AppException] on failure.
   Future<AppException?> connect({
     required String host,
     required int port,
     required String username,
     required String password,
   }) async {
+    _talker.info('[Session] Connecting to $host:$port as $username');
     final result = await getIt<ConnectionRepository>().connect(
       host: host,
       port: port,
       username: username,
       password: password,
     );
-    return result.fold((e) => e, (info) {
-      state = SessionState.authenticated(serverInfo: info);
-      return null;
-    });
+    return result.fold(
+      (e) {
+        _talker.error('[Session] Connect failed', e);
+        return e;
+      },
+      (info) {
+        _talker.info(
+          '[Session] Connected to ${info.name} '
+          '(${info.version} on ${info.platform})',
+        );
+        state = SessionState.authenticated(serverInfo: info);
+        return null;
+      },
+    );
   }
 
   Future<void> logout() async {
+    _talker.info('[Session] Logout');
     await getIt<ConnectionRepository>().clearSession();
     state = const SessionState.unauthenticated();
     ref.read(navigationProvider.notifier).clear();

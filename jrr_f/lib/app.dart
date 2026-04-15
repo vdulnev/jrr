@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 
 class App extends ConsumerStatefulWidget {
@@ -33,7 +35,9 @@ class _AppState extends ConsumerState<App> {
         ),
         useMaterial3: true,
       ),
-      routerConfig: _router.config(),
+      routerConfig: _router.config(
+        navigatorObservers: () => [TalkerRouteObserver(getIt<Talker>())],
+      ),
     );
   }
 }
