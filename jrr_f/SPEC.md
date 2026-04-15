@@ -168,10 +168,13 @@ get_it manages two scope layers:
 All repositories that need to make MCWS requests resolve the client at call-time: `getIt<McwsClient>()`. They must only be called while a session scope is active (i.e. after successful authentication).
 
 ### Riverpod rules
+- **All state lives in Riverpod providers** — no `setState`, no local widget state for business logic.
+- `ConsumerStatefulWidget` is allowed only for widget-lifecycle concerns: `TextEditingController`, `FocusNode`, `AnimationController`, scroll controllers. Never use it to hold loading flags, error state, or domain data.
 - Use `late`, not `late final`, for fields initialized in `build()` — Riverpod can rebuild a notifier and reassign its dependencies.
 - Never mutate state outside a notifier.
 - Prefer `AsyncValue.guard` for repository calls.
 - Compose providers with `ref.watch(otherProvider)`.
+- Form submission state (`AsyncValue<void>?`: null = idle, loading, error) belongs in a dedicated screen-scoped `@riverpod` notifier, auto-disposed when the screen leaves the tree.
 
 ## Routing (auto_route)
 - **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through a Riverpod provider.

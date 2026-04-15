@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/error_view.dart';
-import '../providers/session_provider.dart';
+import '../providers/server_setup_provider.dart';
 
 @RoutePage()
 class ServerSetupScreen extends ConsumerStatefulWidget {
@@ -20,8 +20,6 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  AsyncValue<void>? _connectState;
-
   @override
   void dispose() {
     _hostController.dispose();
@@ -33,33 +31,19 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
 
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _connectState = const AsyncValue.loading());
-
-    final error = await ref
-        .read(sessionProvider.notifier)
-        .connect(
-          host: _hostController.text.trim(),
-          port: int.parse(_portController.text.trim()),
-          username: _usernameController.text.trim(),
-          password: _passwordController.text,
-        );
-
-    if (!mounted) return;
-
-    if (error != null) {
-      setState(
-        () => _connectState = AsyncValue.error(error, StackTrace.current),
-      );
-    } else {
-      setState(() => _connectState = null);
-    }
+    await ref.read(serverSetupFormProvider.notifier).connect(
+      host: _hostController.text.trim(),
+      port: int.parse(_portController.text.trim()),
+      username: _usernameController.text.trim(),
+      password: _passwordController.text,
+    );
   }
-
-  bool get _isLoading => _connectState is AsyncLoading;
 
   @override
   Widget build(BuildContext context) {
+    final connectState = ref.watch(serverSetupFormProvider);
+    final isLoading = connectState is AsyncLoading;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Connect to JRiver')),
       body: Center(
@@ -74,7 +58,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                 children: [
                   TextFormField(
                     controller: _hostController,
-                    enabled: !_isLoading,
+                    enabled: !isLoading,
                     decoration: const InputDecoration(
                       labelText: 'Host',
                       hintText: '192.168.1.100',
@@ -87,7 +71,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _portController,
-                    enabled: !_isLoading,
+                    enabled: !isLoading,
                     decoration: const InputDecoration(labelText: 'Port'),
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.next,
@@ -102,7 +86,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _usernameController,
-                    enabled: !_isLoading,
+                    enabled: !isLoading,
                     decoration: const InputDecoration(labelText: 'Username'),
                     textInputAction: TextInputAction.next,
                     validator: (v) =>
@@ -111,20 +95,20 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    enabled: !_isLoading,
+                    enabled: !isLoading,
                     decoration: const InputDecoration(labelText: 'Password'),
                     obscureText: true,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _connect(),
                   ),
                   const SizedBox(height: 24),
-                  if (_connectState is AsyncError) ...[
-                    ErrorView(error: (_connectState! as AsyncError).error),
+                  if (connectState is AsyncError) ...[
+                    ErrorView(error: connectState.error),
                     const SizedBox(height: 16),
                   ],
                   FilledButton(
-                    onPressed: _isLoading ? null : _connect,
-                    child: _isLoading
+                    onPressed: isLoading ? null : _connect,
+                    child: isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
