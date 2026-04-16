@@ -2,10 +2,10 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/app_exception.dart';
 import '../models/album.dart';
-import '../models/library_item.dart';
+import '../models/track.dart';
 
 abstract interface class LibraryRepository {
-  Future<Either<AppException, List<LibraryItem>>> search(
+  Future<Either<AppException, List<Track>>> search(
     String query, {
     int startIndex,
     int count,
@@ -15,7 +15,7 @@ abstract interface class LibraryRepository {
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist);
 
-  Future<Either<AppException, List<LibraryItem>>> getAlbumTracks(Album album);
+  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album);
 
   /// Replaces the Playing Now queue and starts playback immediately.
   Future<Either<AppException, Unit>> playNow(

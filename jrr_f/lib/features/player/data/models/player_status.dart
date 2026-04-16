@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'playback_state.dart';
 import 'repeat_mode.dart';
 import 'shuffle_mode.dart';
-import 'track_info.dart';
+import '../../../library/data/models/track.dart';
 
 part 'player_status.freezed.dart';
 
@@ -13,7 +13,7 @@ abstract class PlayerStatus with _$PlayerStatus {
     required String zoneId,
     required String zoneName,
     required PlaybackState state,
-    TrackInfo? trackInfo,
+    Track? trackInfo,
     required int positionMs,
     required int durationMs,
     required String positionDisplay,

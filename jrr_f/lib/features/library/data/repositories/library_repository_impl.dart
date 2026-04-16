@@ -4,12 +4,12 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../models/album.dart';
-import '../models/library_item.dart';
+import '../models/track.dart';
 import 'library_repository.dart';
 
 class LibraryRepositoryImpl implements LibraryRepository {
   @override
-  Future<Either<AppException, List<LibraryItem>>> search(
+  Future<Either<AppException, List<Track>>> search(
     String query, {
     int startIndex = 0,
     int count = 100,
@@ -28,7 +28,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().getAlbumsByArtist(artist);
 
   @override
-  Future<Either<AppException, List<LibraryItem>>> getAlbumTracks(Album album) =>
+  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) =>
       getIt<McwsClient>().getAlbumTracks(album);
 
   @override

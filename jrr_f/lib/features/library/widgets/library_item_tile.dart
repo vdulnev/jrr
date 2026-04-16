@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/models/library_item.dart';
+import '../data/models/track.dart';
 import 'library_action_sheet.dart';
 
 class LibraryItemTile extends ConsumerWidget {
-  final LibraryItem item;
+  final Track item;
   final int? trackNumber;
 
   const LibraryItemTile({required this.item, this.trackNumber, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final displayTrackNumber = trackNumber ?? (item.trackNumber > 0 ? item.trackNumber : null);
     return ListTile(
-      leading: trackNumber != null
+      leading: displayTrackNumber != null
           ? SizedBox(
               width: 32,
               child: Text(
-                '$trackNumber',
+                '$displayTrackNumber',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

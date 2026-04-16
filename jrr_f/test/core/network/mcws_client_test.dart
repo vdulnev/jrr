@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
-import 'package:jrr_f/features/queue/data/models/playing_now_item.dart';
+import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
@@ -195,8 +195,7 @@ void main() {
       expect(
         result.getOrElse(
           (_) => [
-            const PlayingNowItem(
-              index: 0,
+            const Track(
               fileKey: '',
               name: 'fail',
               artist: '',

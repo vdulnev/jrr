@@ -2,26 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../player/providers/player_provider.dart';
-import '../data/models/playing_now_item.dart';
+import '../../library/data/models/track.dart';
 import '../providers/queue_provider.dart';
 
 class QueueItemTile extends ConsumerWidget {
-  final PlayingNowItem item;
-  final int currentIndex;
+  final Track item;
+  final int index;
+  final bool isPlaying;
 
   const QueueItemTile({
     required this.item,
-    required this.currentIndex,
+    required this.index,
+    required this.isPlaying,
     super.key,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPlaying = item.index == currentIndex;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
-      key: ValueKey(item.fileKey + item.index.toString()),
+      key: ValueKey(item.fileKey + index.toString()),
       direction: DismissDirection.endToStart,
       background: ColoredBox(
         color: colorScheme.errorContainer,
@@ -37,14 +38,14 @@ class QueueItemTile extends ConsumerWidget {
         ),
       ),
       onDismissed: (_) =>
-          ref.read(queueProvider.notifier).removeItem(item.index),
+          ref.read(queueProvider.notifier).removeItem(index),
       child: ListTile(
         leading: SizedBox(
           width: 32,
           child: isPlaying
               ? Icon(Icons.volume_up, color: colorScheme.primary, size: 20)
               : Text(
-                  '${item.index + 1}',
+                  '${index + 1}',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -67,7 +68,7 @@ class QueueItemTile extends ConsumerWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        onTap: () => ref.read(playerProvider.notifier).playByIndex(item.index),
+        onTap: () => ref.read(playerProvider.notifier).playByIndex(index),
       ),
     );
   }

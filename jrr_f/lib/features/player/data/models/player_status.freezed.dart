@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlayerStatus {
 
- String get zoneId; String get zoneName; PlaybackState get state; TrackInfo? get trackInfo; int get positionMs; int get durationMs; String get positionDisplay; double get volume; String get volumeDisplay; bool get isMuted; ShuffleMode get shuffleMode; RepeatMode get repeatMode; int get playingNowPosition; int get playingNowTracks; String get playingNowPositionDisplay; int get playingNowChangeCounter;
+ String get zoneId; String get zoneName; PlaybackState get state; Track? get trackInfo; int get positionMs; int get durationMs; String get positionDisplay; double get volume; String get volumeDisplay; bool get isMuted; ShuffleMode get shuffleMode; RepeatMode get repeatMode; int get playingNowPosition; int get playingNowTracks; String get playingNowPositionDisplay; int get playingNowChangeCounter;
 /// Create a copy of PlayerStatus
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,11 +45,11 @@ abstract mixin class $PlayerStatusCopyWith<$Res>  {
   factory $PlayerStatusCopyWith(PlayerStatus value, $Res Function(PlayerStatus) _then) = _$PlayerStatusCopyWithImpl;
 @useResult
 $Res call({
- String zoneId, String zoneName, PlaybackState state, TrackInfo? trackInfo, int positionMs, int durationMs, String positionDisplay, double volume, String volumeDisplay, bool isMuted, ShuffleMode shuffleMode, RepeatMode repeatMode, int playingNowPosition, int playingNowTracks, String playingNowPositionDisplay, int playingNowChangeCounter
+ String zoneId, String zoneName, PlaybackState state, Track? trackInfo, int positionMs, int durationMs, String positionDisplay, double volume, String volumeDisplay, bool isMuted, ShuffleMode shuffleMode, RepeatMode repeatMode, int playingNowPosition, int playingNowTracks, String playingNowPositionDisplay, int playingNowChangeCounter
 });
 
 
-$TrackInfoCopyWith<$Res>? get trackInfo;
+$TrackCopyWith<$Res>? get trackInfo;
 
 }
 /// @nodoc
@@ -68,7 +68,7 @@ zoneId: null == zoneId ? _self.zoneId : zoneId // ignore: cast_nullable_to_non_n
 as String,zoneName: null == zoneName ? _self.zoneName : zoneName // ignore: cast_nullable_to_non_nullable
 as String,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as PlaybackState,trackInfo: freezed == trackInfo ? _self.trackInfo : trackInfo // ignore: cast_nullable_to_non_nullable
-as TrackInfo?,positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
+as Track?,positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
 as int,durationMs: null == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int,positionDisplay: null == positionDisplay ? _self.positionDisplay : positionDisplay // ignore: cast_nullable_to_non_nullable
 as String,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
@@ -87,12 +87,12 @@ as int,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$TrackInfoCopyWith<$Res>? get trackInfo {
+$TrackCopyWith<$Res>? get trackInfo {
     if (_self.trackInfo == null) {
     return null;
   }
 
-  return $TrackInfoCopyWith<$Res>(_self.trackInfo!, (value) {
+  return $TrackCopyWith<$Res>(_self.trackInfo!, (value) {
     return _then(_self.copyWith(trackInfo: value));
   });
 }
@@ -177,7 +177,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String zoneId,  String zoneName,  PlaybackState state,  TrackInfo? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String zoneId,  String zoneName,  PlaybackState state,  Track? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlayerStatus() when $default != null:
 return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.positionMs,_that.durationMs,_that.positionDisplay,_that.volume,_that.volumeDisplay,_that.isMuted,_that.shuffleMode,_that.repeatMode,_that.playingNowPosition,_that.playingNowTracks,_that.playingNowPositionDisplay,_that.playingNowChangeCounter);case _:
@@ -198,7 +198,7 @@ return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String zoneId,  String zoneName,  PlaybackState state,  TrackInfo? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String zoneId,  String zoneName,  PlaybackState state,  Track? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)  $default,) {final _that = this;
 switch (_that) {
 case _PlayerStatus():
 return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.positionMs,_that.durationMs,_that.positionDisplay,_that.volume,_that.volumeDisplay,_that.isMuted,_that.shuffleMode,_that.repeatMode,_that.playingNowPosition,_that.playingNowTracks,_that.playingNowPositionDisplay,_that.playingNowChangeCounter);case _:
@@ -218,7 +218,7 @@ return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String zoneId,  String zoneName,  PlaybackState state,  TrackInfo? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String zoneId,  String zoneName,  PlaybackState state,  Track? trackInfo,  int positionMs,  int durationMs,  String positionDisplay,  double volume,  String volumeDisplay,  bool isMuted,  ShuffleMode shuffleMode,  RepeatMode repeatMode,  int playingNowPosition,  int playingNowTracks,  String playingNowPositionDisplay,  int playingNowChangeCounter)?  $default,) {final _that = this;
 switch (_that) {
 case _PlayerStatus() when $default != null:
 return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.positionMs,_that.durationMs,_that.positionDisplay,_that.volume,_that.volumeDisplay,_that.isMuted,_that.shuffleMode,_that.repeatMode,_that.playingNowPosition,_that.playingNowTracks,_that.playingNowPositionDisplay,_that.playingNowChangeCounter);case _:
@@ -239,7 +239,7 @@ class _PlayerStatus implements PlayerStatus {
 @override final  String zoneId;
 @override final  String zoneName;
 @override final  PlaybackState state;
-@override final  TrackInfo? trackInfo;
+@override final  Track? trackInfo;
 @override final  int positionMs;
 @override final  int durationMs;
 @override final  String positionDisplay;
@@ -283,11 +283,11 @@ abstract mixin class _$PlayerStatusCopyWith<$Res> implements $PlayerStatusCopyWi
   factory _$PlayerStatusCopyWith(_PlayerStatus value, $Res Function(_PlayerStatus) _then) = __$PlayerStatusCopyWithImpl;
 @override @useResult
 $Res call({
- String zoneId, String zoneName, PlaybackState state, TrackInfo? trackInfo, int positionMs, int durationMs, String positionDisplay, double volume, String volumeDisplay, bool isMuted, ShuffleMode shuffleMode, RepeatMode repeatMode, int playingNowPosition, int playingNowTracks, String playingNowPositionDisplay, int playingNowChangeCounter
+ String zoneId, String zoneName, PlaybackState state, Track? trackInfo, int positionMs, int durationMs, String positionDisplay, double volume, String volumeDisplay, bool isMuted, ShuffleMode shuffleMode, RepeatMode repeatMode, int playingNowPosition, int playingNowTracks, String playingNowPositionDisplay, int playingNowChangeCounter
 });
 
 
-@override $TrackInfoCopyWith<$Res>? get trackInfo;
+@override $TrackCopyWith<$Res>? get trackInfo;
 
 }
 /// @nodoc
@@ -306,7 +306,7 @@ zoneId: null == zoneId ? _self.zoneId : zoneId // ignore: cast_nullable_to_non_n
 as String,zoneName: null == zoneName ? _self.zoneName : zoneName // ignore: cast_nullable_to_non_nullable
 as String,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as PlaybackState,trackInfo: freezed == trackInfo ? _self.trackInfo : trackInfo // ignore: cast_nullable_to_non_nullable
-as TrackInfo?,positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
+as Track?,positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
 as int,durationMs: null == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int,positionDisplay: null == positionDisplay ? _self.positionDisplay : positionDisplay // ignore: cast_nullable_to_non_nullable
 as String,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
@@ -326,12 +326,12 @@ as int,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$TrackInfoCopyWith<$Res>? get trackInfo {
+$TrackCopyWith<$Res>? get trackInfo {
     if (_self.trackInfo == null) {
     return null;
   }
 
-  return $TrackInfoCopyWith<$Res>(_self.trackInfo!, (value) {
+  return $TrackCopyWith<$Res>(_self.trackInfo!, (value) {
     return _then(_self.copyWith(trackInfo: value));
   });
 }

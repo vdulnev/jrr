@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../zones/providers/active_zone_provider.dart';
-import '../data/models/library_item.dart';
+import '../data/models/track.dart';
 import '../data/repositories/library_repository.dart';
 import '../../../core/di/injection.dart';
 import '../../player/providers/player_provider.dart';
@@ -10,7 +10,7 @@ import '../../player/providers/player_provider.dart';
 Future<void> showLibraryActionSheet(
   BuildContext context,
   WidgetRef ref, {
-  required List<LibraryItem> items,
+  required List<Track> items,
   String? title,
 }) async {
   final zone = ref.read(activeZoneProvider);

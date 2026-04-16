@@ -15,13 +15,11 @@ final librarySearchProvider = LibrarySearchFamily._();
 final class LibrarySearchProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<LibraryItem>>,
-          List<LibraryItem>,
-          FutureOr<List<LibraryItem>>
+          AsyncValue<List<Track>>,
+          List<Track>,
+          FutureOr<List<Track>>
         >
-    with
-        $FutureModifier<List<LibraryItem>>,
-        $FutureProvider<List<LibraryItem>> {
+    with $FutureModifier<List<Track>>, $FutureProvider<List<Track>> {
   LibrarySearchProvider._({
     required LibrarySearchFamily super.from,
     required String super.argument,
@@ -45,12 +43,12 @@ final class LibrarySearchProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<LibraryItem>> $createElement(
+  $FutureProviderElement<List<Track>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<LibraryItem>> create(Ref ref) {
+  FutureOr<List<Track>> create(Ref ref) {
     final argument = this.argument as String;
     return librarySearch(ref, argument);
   }
@@ -66,10 +64,10 @@ final class LibrarySearchProvider
   }
 }
 
-String _$librarySearchHash() => r'4539886b4ba29d999de1096c429891b868122576';
+String _$librarySearchHash() => r'0643ff7519b2befcba8ab8ae790de0501a6e7cc9';
 
 final class LibrarySearchFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<LibraryItem>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<List<Track>>, String> {
   LibrarySearchFamily._()
     : super(
         retry: null,
@@ -206,13 +204,11 @@ final albumTracksProvider = AlbumTracksFamily._();
 final class AlbumTracksProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<LibraryItem>>,
-          List<LibraryItem>,
-          FutureOr<List<LibraryItem>>
+          AsyncValue<List<Track>>,
+          List<Track>,
+          FutureOr<List<Track>>
         >
-    with
-        $FutureModifier<List<LibraryItem>>,
-        $FutureProvider<List<LibraryItem>> {
+    with $FutureModifier<List<Track>>, $FutureProvider<List<Track>> {
   AlbumTracksProvider._({
     required AlbumTracksFamily super.from,
     required Album super.argument,
@@ -236,12 +232,12 @@ final class AlbumTracksProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<LibraryItem>> $createElement(
+  $FutureProviderElement<List<Track>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<LibraryItem>> create(Ref ref) {
+  FutureOr<List<Track>> create(Ref ref) {
     final argument = this.argument as Album;
     return albumTracks(ref, argument);
   }
@@ -257,10 +253,10 @@ final class AlbumTracksProvider
   }
 }
 
-String _$albumTracksHash() => r'7fffb18d0cd8ceadfd1edea39e18e2f598ddcf24';
+String _$albumTracksHash() => r'a104f91ef1452119f1039f0891a624bf153bdd5b';
 
 final class AlbumTracksFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<LibraryItem>>, Album> {
+    with $FunctionalFamilyOverride<FutureOr<List<Track>>, Album> {
   AlbumTracksFamily._()
     : super(
         retry: null,

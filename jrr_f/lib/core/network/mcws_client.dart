@@ -6,13 +6,11 @@ import 'package:talker/talker.dart';
 
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
-import '../../features/library/data/models/library_item.dart';
+import '../../features/library/data/models/track.dart';
 import '../../features/player/data/models/playback_state.dart';
 import '../../features/player/data/models/player_status.dart';
 import '../../features/player/data/models/repeat_mode.dart';
 import '../../features/player/data/models/shuffle_mode.dart';
-import '../../features/player/data/models/track_info.dart';
-import '../../features/queue/data/models/playing_now_item.dart';
 import '../../features/zones/data/models/zone.dart';
 import 'mcws_xml_parser.dart';
 
@@ -188,23 +186,9 @@ class McwsClient {
 
       // TrackInfo is only present when something is loaded in the queue.
       final fileKey = fields['FileKey'] ?? fields['Key'];
-      TrackInfo? trackInfo;
+      Track? trackInfo;
       if (fileKey != null && fileKey.isNotEmpty && fileKey != '-1') {
-        trackInfo = TrackInfo(
-          fileKey: fileKey,
-          name: fields['Name'] ?? fields['Title'] ?? '',
-          artist:
-              fields['Artist'] ??
-              fields['Album Artist'] ??
-              fields['AlbumArtist'] ??
-              '',
-          album: fields['Album'] ?? '',
-          imageUrl: fields['ImageURL'] ?? '',
-          bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
-          bitDepth: int.tryParse(fields['BitDepth'] ?? '0') ?? 0,
-          sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
-          channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
-        );
+        trackInfo = _trackFromMap(fields);
       }
 
       return right(
@@ -310,9 +294,7 @@ class McwsClient {
   // Playing Now queue
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<PlayingNowItem>>> getPlayingNow(
-    String zoneId,
-  ) async {
+  Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
     // The Fields parameter uses semicolons as delimiters. Dio percent-encodes
     // semicolons (%3B) in queryParameters, which MCWS does not recognise.
     // Embed Fields (and other static params) directly in the path so they are
@@ -351,27 +333,9 @@ class McwsClient {
 
       final items = raw.indexed.map((entry) {
         final (i, item) = entry;
-        final map = item as Map<String, dynamic>;
+        final itemMap = item as Map<String, dynamic>;
 
-        // Extract fields from either a flat map or the [{Name, Value}, ...] structure
-        String? getValue(String name) {
-          if (map.containsKey(name)) return map[name]?.toString();
-          final fields = map['Field'] as List<dynamic>?;
-          if (fields != null) {
-            for (final f in fields) {
-              if (f is Map && f['Name'] == name) return f['Value']?.toString();
-            }
-          }
-          return null;
-        }
-
-        return PlayingNowItem(
-          index: i,
-          fileKey: getValue('Key') ?? getValue('FileKey') ?? '0',
-          name: getValue('Name') ?? '',
-          artist: getValue('Artist') ?? '',
-          album: getValue('Album') ?? '',
-        );
+        return _trackFromMap(itemMap);
       }).toList();
       return right(items);
     } on DioException catch (e) {
@@ -457,17 +421,52 @@ class McwsClient {
     }
   }
 
-  LibraryItem _libraryItemFromMap(Map<String, dynamic> map) => LibraryItem(
-    fileKey: (map['Key'] ?? '').toString(),
-    name: (map['Name'] as String?) ?? '',
-    artist: (map['Artist'] as String?) ?? '',
-    album: (map['Album'] as String?) ?? '',
-  );
+  Track _trackFromMap(Map<String, dynamic> itemMap) {
+    // Extract fields from either a flat map or the [{Name, Value}, ...] structure
+    String? getValue(String name) {
+      if (itemMap.containsKey(name)) return itemMap[name]?.toString();
+      final fields = itemMap['Field'] as List<dynamic>?;
+      if (fields != null) {
+        for (final f in fields) {
+          if (f is Map && f['Name'] == name) return f['Value']?.toString();
+        }
+      }
+      return null;
+    }
+
+    final fileKey = getValue('Key') ?? getValue('FileKey') ?? '0';
+
+    return Track(
+      fileKey: fileKey,
+      name: getValue('Name') ?? getValue('Title') ?? '',
+      artist:
+          getValue('Artist') ??
+          getValue('Album Artist') ??
+          getValue('AlbumArtist') ??
+          '',
+      album: getValue('Album') ?? '',
+      genre: getValue('Genre') ?? '',
+      duration: double.tryParse(getValue('Duration') ?? '0') ?? 0.0,
+      trackNumber: int.tryParse(getValue('Track #') ?? '0') ?? 0,
+      discNumber: int.tryParse(getValue('Disc #') ?? '0') ?? 0,
+      imageUrl: getValue('ImageURL') ?? '',
+      bitrate: int.tryParse(getValue('Bitrate') ?? '0') ?? 0,
+      bitDepth:
+          int.tryParse(getValue('Bit Depth') ?? getValue('BitDepth') ?? '0') ??
+          0,
+      sampleRate:
+          int.tryParse(
+            getValue('Sample Rate') ?? getValue('SampleRate') ?? '0',
+          ) ??
+          0,
+      channels: int.tryParse(getValue('Channels') ?? '0') ?? 0,
+    );
+  }
 
   /// URL-encodes a value for embedding inside an MCWS query expression.
   String _qv(String value) => Uri.encodeComponent(value);
 
-  Future<Either<AppException, List<LibraryItem>>> searchFiles(
+  Future<Either<AppException, List<Track>>> searchFiles(
     String query, {
     int startIndex = 0,
     int count = 100,
@@ -481,7 +480,7 @@ class McwsClient {
     );
     return result.map(
       (items) =>
-          items.map(_libraryItemFromMap).toList()
+          items.map(_trackFromMap).toList()
             ..sort((a, b) => a.name.compareTo(b.name)),
     );
   }
@@ -511,9 +510,7 @@ class McwsClient {
           .map((item) {
             final albumName = (item['Album'] as String?) ?? '';
             if (albumName.isEmpty) return null;
-            final filePath =
-                (item['Filename'] as String?) ??
-                '';
+            final filePath = (item['Filename'] as String?) ?? '';
             return Album(
               name: albumName,
               artist: artist,
@@ -522,37 +519,17 @@ class McwsClient {
           })
           .whereType<Album>()
           .toList();
-      // final seen = <String>{};
-      // final albums = <Album>[];
-      // for (final map in items) {
-      //   final albumName = (map['Album'] as String?) ?? '';
-      //   if (albumName.isEmpty) continue;
-      //   final filePath =
-      //       (map['Filename (path)'] as String?) ??
-      //       (map['Filename'] as String?) ??
-      //       '';
-        
-      //   final key = '$albumName\x00$folderPath';
-      //   if (seen.add(key)) {
-      //     albums.add(
-      //       ,
-      //     );
-      //   }
-      // }
-      // return albums..sort((a, b) => a.name.compareTo(b.name));
     });
   }
 
-  Future<Either<AppException, List<LibraryItem>>> getAlbumTracks(
-    Album album,
-  ) async {
+  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) async {
     final baseQuery =
         '[Media Type]=Audio [Album]=${_qv(album.name)} [Artist]=${_qv(album.artist)}';
     final query = album.folderPath.isNotEmpty
         ? '$baseQuery [Filename (path)]=${_qv(album.folderPath)}'
         : baseQuery;
     final result = await _filesJson('Files/Search?Action=JSON&Query=$query');
-    return result.map((items) => items.map(_libraryItemFromMap).toList());
+    return result.map((items) => items.map(_trackFromMap).toList());
   }
 
   /// Extracts the directory portion of a file path (includes trailing separator).

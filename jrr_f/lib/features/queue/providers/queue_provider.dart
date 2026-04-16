@@ -6,7 +6,7 @@ import '../../../core/error/app_exception.dart';
 import '../../player/data/models/player_status.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
-import '../data/models/playing_now_item.dart';
+import '../../library/data/models/track.dart';
 import '../data/repositories/queue_repository.dart';
 
 part 'queue_provider.g.dart';
@@ -16,7 +16,7 @@ class Queue extends _$Queue {
   int? _lastChangeCounter;
 
   @override
-  Future<List<PlayingNowItem>> build() async {
+  Future<List<Track>> build() async {
     final zone = ref.watch(activeZoneProvider);
     if (zone == null) return [];
 
