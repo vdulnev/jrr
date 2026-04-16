@@ -449,6 +449,7 @@ class McwsClient {
       duration: double.tryParse(getValue('Duration') ?? '0') ?? 0.0,
       trackNumber: int.tryParse(getValue('Track #') ?? '0') ?? 0,
       discNumber: int.tryParse(getValue('Disc #') ?? '0') ?? 0,
+      totalDiscs: int.tryParse(getValue('Total Discs') ?? '0') ?? 0,
       imageUrl: getValue('ImageURL') ?? '',
       bitrate: int.tryParse(getValue('Bitrate') ?? '0') ?? 0,
       bitDepth:

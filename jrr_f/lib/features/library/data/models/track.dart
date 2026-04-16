@@ -1,22 +1,27 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'track.freezed.dart';
+part 'track.g.dart';
 
 @freezed
 abstract class Track with _$Track {
+  @JsonSerializable()
   const factory Track({
-    required String fileKey,
-    required String name,
-    required String artist,
-    required String album,
-    @Default('') String genre,
-    @Default(0) double duration,
-    @Default(0) int trackNumber,
-    @Default(0) int discNumber,
-    @Default('') String imageUrl,
-    @Default(0) int bitrate,
-    @Default(0) int bitDepth,
-    @Default(0) int sampleRate,
-    @Default(0) int channels,
+    @JsonKey(name: 'Key') required String fileKey,
+    @JsonKey(name: 'Name') required String name,
+    @JsonKey(name: 'Artist') required String artist,
+    @JsonKey(name: 'Album') required String album,
+    @JsonKey(name: 'Genre') @Default('') String genre,
+    @JsonKey(name: 'Duration') @Default(0) double duration,
+    @JsonKey(name: 'Track #') @Default(0) int trackNumber,
+    @JsonKey(name: 'Disc #') @Default(0) int discNumber,
+    @JsonKey(name: 'Total Discs') @Default(0) int totalDiscs,
+    @JsonKey(name: 'Image File') @Default('') String imageUrl,
+    @JsonKey(name: 'Bitrate') @Default(0) int bitrate,
+    @JsonKey(name: 'Bit Depth') @Default(0) int bitDepth,
+    @JsonKey(name: 'Sample Rate') @Default(0) int sampleRate,
+    @JsonKey(name: 'Channels') @Default(0) int channels,
   }) = _Track;
+
+  factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 }

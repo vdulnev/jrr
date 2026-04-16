@@ -11,30 +11,33 @@ part of 'track.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$Track {
 
- String get fileKey; String get name; String get artist; String get album; String get genre; double get duration; int get trackNumber; int get discNumber; String get imageUrl; int get bitrate; int get bitDepth; int get sampleRate; int get channels;
+@JsonKey(name: 'Key') String get fileKey;@JsonKey(name: 'Name') String get name;@JsonKey(name: 'Artist') String get artist;@JsonKey(name: 'Album') String get album;@JsonKey(name: 'Genre') String get genre;@JsonKey(name: 'Duration') double get duration;@JsonKey(name: 'Track #') int get trackNumber;@JsonKey(name: 'Disc #') int get discNumber;@JsonKey(name: 'Total Discs') int get totalDiscs;@JsonKey(name: 'Image File') String get imageUrl;@JsonKey(name: 'Bitrate') int get bitrate;@JsonKey(name: 'Bit Depth') int get bitDepth;@JsonKey(name: 'Sample Rate') int get sampleRate;@JsonKey(name: 'Channels') int get channels;
 /// Create a copy of Track
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TrackCopyWith<Track> get copyWith => _$TrackCopyWithImpl<Track>(this as Track, _$identity);
 
+  /// Serializes this Track to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.channels, channels) || other.channels == channels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.channels, channels) || other.channels == channels));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,fileKey,name,artist,album,genre,duration,trackNumber,discNumber,imageUrl,bitrate,bitDepth,sampleRate,channels);
+int get hashCode => Object.hash(runtimeType,fileKey,name,artist,album,genre,duration,trackNumber,discNumber,totalDiscs,imageUrl,bitrate,bitDepth,sampleRate,channels);
 
 @override
 String toString() {
-  return 'Track(fileKey: $fileKey, name: $name, artist: $artist, album: $album, genre: $genre, duration: $duration, trackNumber: $trackNumber, discNumber: $discNumber, imageUrl: $imageUrl, bitrate: $bitrate, bitDepth: $bitDepth, sampleRate: $sampleRate, channels: $channels)';
+  return 'Track(fileKey: $fileKey, name: $name, artist: $artist, album: $album, genre: $genre, duration: $duration, trackNumber: $trackNumber, discNumber: $discNumber, totalDiscs: $totalDiscs, imageUrl: $imageUrl, bitrate: $bitrate, bitDepth: $bitDepth, sampleRate: $sampleRate, channels: $channels)';
 }
 
 
@@ -45,7 +48,7 @@ abstract mixin class $TrackCopyWith<$Res>  {
   factory $TrackCopyWith(Track value, $Res Function(Track) _then) = _$TrackCopyWithImpl;
 @useResult
 $Res call({
- String fileKey, String name, String artist, String album, String genre, double duration, int trackNumber, int discNumber, String imageUrl, int bitrate, int bitDepth, int sampleRate, int channels
+@JsonKey(name: 'Key') String fileKey,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Artist') String artist,@JsonKey(name: 'Album') String album,@JsonKey(name: 'Genre') String genre,@JsonKey(name: 'Duration') double duration,@JsonKey(name: 'Track #') int trackNumber,@JsonKey(name: 'Disc #') int discNumber,@JsonKey(name: 'Total Discs') int totalDiscs,@JsonKey(name: 'Image File') String imageUrl,@JsonKey(name: 'Bitrate') int bitrate,@JsonKey(name: 'Bit Depth') int bitDepth,@JsonKey(name: 'Sample Rate') int sampleRate,@JsonKey(name: 'Channels') int channels
 });
 
 
@@ -62,7 +65,7 @@ class _$TrackCopyWithImpl<$Res>
 
 /// Create a copy of Track
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? fileKey = null,Object? name = null,Object? artist = null,Object? album = null,Object? genre = null,Object? duration = null,Object? trackNumber = null,Object? discNumber = null,Object? imageUrl = null,Object? bitrate = null,Object? bitDepth = null,Object? sampleRate = null,Object? channels = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? fileKey = null,Object? name = null,Object? artist = null,Object? album = null,Object? genre = null,Object? duration = null,Object? trackNumber = null,Object? discNumber = null,Object? totalDiscs = null,Object? imageUrl = null,Object? bitrate = null,Object? bitDepth = null,Object? sampleRate = null,Object? channels = null,}) {
   return _then(_self.copyWith(
 fileKey: null == fileKey ? _self.fileKey : fileKey // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -72,6 +75,7 @@ as String,genre: null == genre ? _self.genre : genre // ignore: cast_nullable_to
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as double,trackNumber: null == trackNumber ? _self.trackNumber : trackNumber // ignore: cast_nullable_to_non_nullable
 as int,discNumber: null == discNumber ? _self.discNumber : discNumber // ignore: cast_nullable_to_non_nullable
+as int,totalDiscs: null == totalDiscs ? _self.totalDiscs : totalDiscs // ignore: cast_nullable_to_non_nullable
 as int,imageUrl: null == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
 as String,bitrate: null == bitrate ? _self.bitrate : bitrate // ignore: cast_nullable_to_non_nullable
 as int,bitDepth: null == bitDepth ? _self.bitDepth : bitDepth // ignore: cast_nullable_to_non_nullable
@@ -162,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String fileKey,  String name,  String artist,  String album,  String genre,  double duration,  int trackNumber,  int discNumber,  String imageUrl,  int bitrate,  int bitDepth,  int sampleRate,  int channels)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Key')  String fileKey, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Artist')  String artist, @JsonKey(name: 'Album')  String album, @JsonKey(name: 'Genre')  String genre, @JsonKey(name: 'Duration')  double duration, @JsonKey(name: 'Track #')  int trackNumber, @JsonKey(name: 'Disc #')  int discNumber, @JsonKey(name: 'Total Discs')  int totalDiscs, @JsonKey(name: 'Image File')  String imageUrl, @JsonKey(name: 'Bitrate')  int bitrate, @JsonKey(name: 'Bit Depth')  int bitDepth, @JsonKey(name: 'Sample Rate')  int sampleRate, @JsonKey(name: 'Channels')  int channels)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Track() when $default != null:
-return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
+return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.totalDiscs,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
   return orElse();
 
 }
@@ -183,10 +187,10 @@ return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String fileKey,  String name,  String artist,  String album,  String genre,  double duration,  int trackNumber,  int discNumber,  String imageUrl,  int bitrate,  int bitDepth,  int sampleRate,  int channels)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Key')  String fileKey, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Artist')  String artist, @JsonKey(name: 'Album')  String album, @JsonKey(name: 'Genre')  String genre, @JsonKey(name: 'Duration')  double duration, @JsonKey(name: 'Track #')  int trackNumber, @JsonKey(name: 'Disc #')  int discNumber, @JsonKey(name: 'Total Discs')  int totalDiscs, @JsonKey(name: 'Image File')  String imageUrl, @JsonKey(name: 'Bitrate')  int bitrate, @JsonKey(name: 'Bit Depth')  int bitDepth, @JsonKey(name: 'Sample Rate')  int sampleRate, @JsonKey(name: 'Channels')  int channels)  $default,) {final _that = this;
 switch (_that) {
 case _Track():
-return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
+return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.totalDiscs,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +207,10 @@ return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String fileKey,  String name,  String artist,  String album,  String genre,  double duration,  int trackNumber,  int discNumber,  String imageUrl,  int bitrate,  int bitDepth,  int sampleRate,  int channels)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Key')  String fileKey, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Artist')  String artist, @JsonKey(name: 'Album')  String album, @JsonKey(name: 'Genre')  String genre, @JsonKey(name: 'Duration')  double duration, @JsonKey(name: 'Track #')  int trackNumber, @JsonKey(name: 'Disc #')  int discNumber, @JsonKey(name: 'Total Discs')  int totalDiscs, @JsonKey(name: 'Image File')  String imageUrl, @JsonKey(name: 'Bitrate')  int bitrate, @JsonKey(name: 'Bit Depth')  int bitDepth, @JsonKey(name: 'Sample Rate')  int sampleRate, @JsonKey(name: 'Channels')  int channels)?  $default,) {final _that = this;
 switch (_that) {
 case _Track() when $default != null:
-return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
+return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_that.duration,_that.trackNumber,_that.discNumber,_that.totalDiscs,_that.imageUrl,_that.bitrate,_that.bitDepth,_that.sampleRate,_that.channels);case _:
   return null;
 
 }
@@ -216,24 +220,25 @@ return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_t
 
 /// @nodoc
 
-
+@JsonSerializable()
 class _Track implements Track {
-  const _Track({required this.fileKey, required this.name, required this.artist, required this.album, this.genre = '', this.duration = 0, this.trackNumber = 0, this.discNumber = 0, this.imageUrl = '', this.bitrate = 0, this.bitDepth = 0, this.sampleRate = 0, this.channels = 0});
-  
+  const _Track({@JsonKey(name: 'Key') required this.fileKey, @JsonKey(name: 'Name') required this.name, @JsonKey(name: 'Artist') required this.artist, @JsonKey(name: 'Album') required this.album, @JsonKey(name: 'Genre') this.genre = '', @JsonKey(name: 'Duration') this.duration = 0, @JsonKey(name: 'Track #') this.trackNumber = 0, @JsonKey(name: 'Disc #') this.discNumber = 0, @JsonKey(name: 'Total Discs') this.totalDiscs = 0, @JsonKey(name: 'Image File') this.imageUrl = '', @JsonKey(name: 'Bitrate') this.bitrate = 0, @JsonKey(name: 'Bit Depth') this.bitDepth = 0, @JsonKey(name: 'Sample Rate') this.sampleRate = 0, @JsonKey(name: 'Channels') this.channels = 0});
+  factory _Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
-@override final  String fileKey;
-@override final  String name;
-@override final  String artist;
-@override final  String album;
-@override@JsonKey() final  String genre;
-@override@JsonKey() final  double duration;
-@override@JsonKey() final  int trackNumber;
-@override@JsonKey() final  int discNumber;
-@override@JsonKey() final  String imageUrl;
-@override@JsonKey() final  int bitrate;
-@override@JsonKey() final  int bitDepth;
-@override@JsonKey() final  int sampleRate;
-@override@JsonKey() final  int channels;
+@override@JsonKey(name: 'Key') final  String fileKey;
+@override@JsonKey(name: 'Name') final  String name;
+@override@JsonKey(name: 'Artist') final  String artist;
+@override@JsonKey(name: 'Album') final  String album;
+@override@JsonKey(name: 'Genre') final  String genre;
+@override@JsonKey(name: 'Duration') final  double duration;
+@override@JsonKey(name: 'Track #') final  int trackNumber;
+@override@JsonKey(name: 'Disc #') final  int discNumber;
+@override@JsonKey(name: 'Total Discs') final  int totalDiscs;
+@override@JsonKey(name: 'Image File') final  String imageUrl;
+@override@JsonKey(name: 'Bitrate') final  int bitrate;
+@override@JsonKey(name: 'Bit Depth') final  int bitDepth;
+@override@JsonKey(name: 'Sample Rate') final  int sampleRate;
+@override@JsonKey(name: 'Channels') final  int channels;
 
 /// Create a copy of Track
 /// with the given fields replaced by the non-null parameter values.
@@ -241,20 +246,23 @@ class _Track implements Track {
 @pragma('vm:prefer-inline')
 _$TrackCopyWith<_Track> get copyWith => __$TrackCopyWithImpl<_Track>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$TrackToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.channels, channels) || other.channels == channels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.channels, channels) || other.channels == channels));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,fileKey,name,artist,album,genre,duration,trackNumber,discNumber,imageUrl,bitrate,bitDepth,sampleRate,channels);
+int get hashCode => Object.hash(runtimeType,fileKey,name,artist,album,genre,duration,trackNumber,discNumber,totalDiscs,imageUrl,bitrate,bitDepth,sampleRate,channels);
 
 @override
 String toString() {
-  return 'Track(fileKey: $fileKey, name: $name, artist: $artist, album: $album, genre: $genre, duration: $duration, trackNumber: $trackNumber, discNumber: $discNumber, imageUrl: $imageUrl, bitrate: $bitrate, bitDepth: $bitDepth, sampleRate: $sampleRate, channels: $channels)';
+  return 'Track(fileKey: $fileKey, name: $name, artist: $artist, album: $album, genre: $genre, duration: $duration, trackNumber: $trackNumber, discNumber: $discNumber, totalDiscs: $totalDiscs, imageUrl: $imageUrl, bitrate: $bitrate, bitDepth: $bitDepth, sampleRate: $sampleRate, channels: $channels)';
 }
 
 
@@ -265,7 +273,7 @@ abstract mixin class _$TrackCopyWith<$Res> implements $TrackCopyWith<$Res> {
   factory _$TrackCopyWith(_Track value, $Res Function(_Track) _then) = __$TrackCopyWithImpl;
 @override @useResult
 $Res call({
- String fileKey, String name, String artist, String album, String genre, double duration, int trackNumber, int discNumber, String imageUrl, int bitrate, int bitDepth, int sampleRate, int channels
+@JsonKey(name: 'Key') String fileKey,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Artist') String artist,@JsonKey(name: 'Album') String album,@JsonKey(name: 'Genre') String genre,@JsonKey(name: 'Duration') double duration,@JsonKey(name: 'Track #') int trackNumber,@JsonKey(name: 'Disc #') int discNumber,@JsonKey(name: 'Total Discs') int totalDiscs,@JsonKey(name: 'Image File') String imageUrl,@JsonKey(name: 'Bitrate') int bitrate,@JsonKey(name: 'Bit Depth') int bitDepth,@JsonKey(name: 'Sample Rate') int sampleRate,@JsonKey(name: 'Channels') int channels
 });
 
 
@@ -282,7 +290,7 @@ class __$TrackCopyWithImpl<$Res>
 
 /// Create a copy of Track
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? fileKey = null,Object? name = null,Object? artist = null,Object? album = null,Object? genre = null,Object? duration = null,Object? trackNumber = null,Object? discNumber = null,Object? imageUrl = null,Object? bitrate = null,Object? bitDepth = null,Object? sampleRate = null,Object? channels = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? fileKey = null,Object? name = null,Object? artist = null,Object? album = null,Object? genre = null,Object? duration = null,Object? trackNumber = null,Object? discNumber = null,Object? totalDiscs = null,Object? imageUrl = null,Object? bitrate = null,Object? bitDepth = null,Object? sampleRate = null,Object? channels = null,}) {
   return _then(_Track(
 fileKey: null == fileKey ? _self.fileKey : fileKey // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -292,6 +300,7 @@ as String,genre: null == genre ? _self.genre : genre // ignore: cast_nullable_to
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as double,trackNumber: null == trackNumber ? _self.trackNumber : trackNumber // ignore: cast_nullable_to_non_nullable
 as int,discNumber: null == discNumber ? _self.discNumber : discNumber // ignore: cast_nullable_to_non_nullable
+as int,totalDiscs: null == totalDiscs ? _self.totalDiscs : totalDiscs // ignore: cast_nullable_to_non_nullable
 as int,imageUrl: null == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
 as String,bitrate: null == bitrate ? _self.bitrate : bitrate // ignore: cast_nullable_to_non_nullable
 as int,bitDepth: null == bitDepth ? _self.bitDepth : bitDepth // ignore: cast_nullable_to_non_nullable
