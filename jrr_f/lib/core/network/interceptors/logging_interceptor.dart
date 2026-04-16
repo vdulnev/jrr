@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:talker/talker.dart';
 
@@ -5,6 +7,16 @@ class LoggingInterceptor extends Interceptor {
   final Talker _talker;
 
   LoggingInterceptor(this._talker);
+
+  static String _prettyBody(dynamic body) {
+    if (body == null) return '';
+    try {
+      final decoded = body is String ? jsonDecode(body) : body;
+      return '\n${const JsonEncoder.withIndent('  ').convert(decoded)}';
+    } catch (_) {
+      return '\n$body';
+    }
+  }
 
   static String _redact(Uri uri) {
     final params = Map<String, dynamic>.from(uri.queryParameters)
@@ -15,7 +27,9 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    _talker.debug('→ ${options.method} ${_redact(options.uri)}');
+    final body = options.data;
+    final bodyStr = _prettyBody(body);
+    _talker.debug('→ ${options.method} ${_redact(options.uri)}$bodyStr');
     handler.next(options);
   }
 
@@ -24,13 +38,23 @@ class LoggingInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    _talker.debug('← ${response.statusCode} ${_redact(response.realUri)}');
+    final body = response.data;
+    final bodyStr = _prettyBody(body);
+    _talker.debug(
+      '← ${response.statusCode} ${_redact(response.realUri)}$bodyStr',
+    );
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    _talker.error('✕ ${_redact(err.requestOptions.uri)}', err, err.stackTrace);
+    final body = err.response?.data;
+    final bodyStr = _prettyBody(body);
+    _talker.error(
+      '✕ ${_redact(err.requestOptions.uri)}$bodyStr',
+      err,
+      err.stackTrace,
+    );
     handler.next(err);
   }
 }
