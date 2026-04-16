@@ -42,6 +42,13 @@ class NowPlayingScreen extends ConsumerWidget {
         title: Text(activeZone.name),
         actions: [
           IconButton(
+            icon: const Icon(Icons.library_music_outlined),
+            tooltip: 'Library',
+            onPressed: () => ref
+                .read(navigationProvider.notifier)
+                .push(const LibraryRoute()),
+          ),
+          IconButton(
             icon: const Icon(Icons.queue_music_outlined),
             tooltip: 'Queue',
             onPressed: () =>

@@ -2,7 +2,11 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/connection/widgets/connecting_screen.dart';
+import '../../features/library/data/models/album.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
+import '../../features/library/widgets/album_detail_screen.dart';
+import '../../features/library/widgets/album_list_screen.dart';
+import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/queue/widgets/queue_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
@@ -25,6 +29,9 @@ class AppRouter extends RootStackRouter {
         AutoRoute(page: NowPlayingRoute.page),
         AutoRoute(page: ZoneListRoute.page),
         AutoRoute(page: QueueRoute.page),
+        AutoRoute(page: LibraryRoute.page),
+        AutoRoute(page: AlbumListRoute.page),
+        AutoRoute(page: AlbumDetailRoute.page),
         AutoRoute(page: ConnectingRoute.page),
       ],
     ),

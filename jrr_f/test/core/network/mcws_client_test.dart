@@ -5,6 +5,7 @@ import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
 import 'package:jrr_f/features/queue/data/models/playing_now_item.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:talker/talker.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -14,7 +15,12 @@ void main() {
 
   setUp(() {
     mockDio = MockDio();
-    client = McwsClient(dio: mockDio, parser: McwsXmlParser());
+    client = McwsClient(
+      dio: mockDio,
+      parser: McwsXmlParser(),
+      tokenGetter: () => 'test-token',
+      talker: Talker(),
+    );
   });
 
   group('getPlayingNow', () {
@@ -31,18 +37,22 @@ void main() {
           'Name': 'Song 2',
           'Artist': 'Artist 2',
           'Album': 'Album 2',
-        }
+        },
       ];
 
-      when(() => mockDio.get<String>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: jsonEncode(jsonResponse),
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonEncode(jsonResponse),
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlayingNow('zone-1');
 
@@ -63,20 +73,24 @@ void main() {
               'Name': 'Song 1',
               'Artist': 'Artist 1',
               'Album': 'Album 1',
-            }
-          ]
-        }
+            },
+          ],
+        },
       };
 
-      when(() => mockDio.get<String>(
-            any(that: contains('ResponseFormat=JSON')),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: jsonEncode(jsonResponse),
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(that: contains('ResponseFormat=JSON')),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonEncode(jsonResponse),
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlayingNow('zone-1');
 
@@ -95,27 +109,31 @@ void main() {
                 {'Name': 'Key', 'Value': '1'},
                 {'Name': 'Name', 'Value': 'Song 1'},
                 {'Name': 'Artist', 'Value': 'Artist 1'},
-              ]
+              ],
             },
             {
               'Field': [
                 {'Name': 'Key', 'Value': '2'},
                 {'Name': 'Name', 'Value': 'Song 2'},
-              ]
-            }
-          ]
-        }
+              ],
+            },
+          ],
+        },
       };
 
-      when(() => mockDio.get<String>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: jsonEncode(jsonResponse),
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonEncode(jsonResponse),
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlayingNow('zone-1');
 
@@ -131,23 +149,24 @@ void main() {
       final jsonResponse = {
         'MPL': {
           'Item': [
-            {
-              'Key': '1',
-              'Name': 'Song 1',
-            }
-          ]
-        }
+            {'Key': '1', 'Name': 'Song 1'},
+          ],
+        },
       };
 
-      when(() => mockDio.get<String>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: jsonEncode(jsonResponse),
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonEncode(jsonResponse),
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlayingNow('zone-1');
 
@@ -157,19 +176,36 @@ void main() {
     });
 
     test('returns empty list if response is invalid type', () async {
-      when(() => mockDio.get<String>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: '123',
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: '123',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlayingNow('zone-1');
       expect(result.isRight(), true);
-      expect(result.getOrElse((_) => [const PlayingNowItem(index: 0, fileKey: '', name: 'fail', artist: '', album: '')]), isEmpty);
+      expect(
+        result.getOrElse(
+          (_) => [
+            const PlayingNowItem(
+              index: 0,
+              fileKey: '',
+              name: 'fail',
+              artist: '',
+              album: '',
+            ),
+          ],
+        ),
+        isEmpty,
+      );
     });
   });
 
@@ -201,15 +237,19 @@ void main() {
 </Response>
 ''';
 
-      when(() => mockDio.get<String>(
-            any(that: contains('Playback/Info')),
-            queryParameters: any(named: 'queryParameters'),
-            options: any(named: 'options'),
-          )).thenAnswer((_) async => Response(
-            data: xml,
-            statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
-          ));
+      when(
+        () => mockDio.get<String>(
+          any(that: contains('Playback/Info')),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: xml,
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       final result = await client.getPlaybackInfo('0');
 

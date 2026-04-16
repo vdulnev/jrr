@@ -33,7 +33,7 @@ final class QueueProvider
   Queue create() => Queue();
 }
 
-String _$queueHash() => r'6281c38bf5659acb36570444998c24a92b445ac8';
+String _$queueHash() => r'2afb04f0d805035c3f53186933fa595fa42d45b6';
 
 abstract class _$Queue extends $AsyncNotifier<List<PlayingNowItem>> {
   FutureOr<List<PlayingNowItem>> build();

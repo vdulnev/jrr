@@ -12,10 +12,17 @@ class LoggingInterceptor extends Interceptor {
     if (body == null) return '';
     try {
       final decoded = body is String ? jsonDecode(body) : body;
-      return '\n${const JsonEncoder.withIndent('  ').convert(decoded)}';
+      final pretty = const JsonEncoder.withIndent('  ').convert(decoded);
+      return '\n${_limitLines(pretty)}';
     } catch (_) {
-      return '\n$body';
+      return '\n${_limitLines(body.toString())}';
     }
+  }
+
+  static String _limitLines(String input, [int maxLines = 80]) {
+    final lines = input.split('\n');
+    if (lines.length <= maxLines) return input;
+    return '${lines.take(maxLines).join('\n')}\n... (${lines.length - maxLines} more lines)';
   }
 
   static String _redact(Uri uri) {

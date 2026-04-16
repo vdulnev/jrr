@@ -52,6 +52,8 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
           talker: _talker,
         ),
         parser: _parser,
+        tokenGetter: tokenGetter,
+        talker: _talker,
       );
 
   @override

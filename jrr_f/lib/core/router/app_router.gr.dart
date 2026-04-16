@@ -11,6 +11,100 @@
 part of 'app_router.dart';
 
 /// generated route for
+/// [AlbumDetailScreen]
+class AlbumDetailRoute extends PageRouteInfo<AlbumDetailRouteArgs> {
+  AlbumDetailRoute({
+    required Album album,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+         AlbumDetailRoute.name,
+         args: AlbumDetailRouteArgs(album: album, key: key),
+         initialChildren: children,
+       );
+
+  static const String name = 'AlbumDetailRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<AlbumDetailRouteArgs>();
+      return AlbumDetailScreen(album: args.album, key: args.key);
+    },
+  );
+}
+
+class AlbumDetailRouteArgs {
+  const AlbumDetailRouteArgs({required this.album, this.key});
+
+  final Album album;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'AlbumDetailRouteArgs{album: $album, key: $key}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AlbumDetailRouteArgs) return false;
+    return album == other.album && key == other.key;
+  }
+
+  @override
+  int get hashCode => album.hashCode ^ key.hashCode;
+}
+
+/// generated route for
+/// [AlbumListScreen]
+class AlbumListRoute extends PageRouteInfo<AlbumListRouteArgs> {
+  AlbumListRoute({
+    required String artist,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+         AlbumListRoute.name,
+         args: AlbumListRouteArgs(artist: artist, key: key),
+         initialChildren: children,
+       );
+
+  static const String name = 'AlbumListRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<AlbumListRouteArgs>();
+      return AlbumListScreen(artist: args.artist, key: args.key);
+    },
+  );
+}
+
+class AlbumListRouteArgs {
+  const AlbumListRouteArgs({required this.artist, this.key});
+
+  final String artist;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'AlbumListRouteArgs{artist: $artist, key: $key}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AlbumListRouteArgs) return false;
+    return artist == other.artist && key == other.key;
+  }
+
+  @override
+  int get hashCode => artist.hashCode ^ key.hashCode;
+}
+
+/// generated route for
 /// [ConnectingScreen]
 class ConnectingRoute extends PageRouteInfo<ConnectingRouteArgs> {
   ConnectingRoute({Key? key, String? address, List<PageRouteInfo>? children})
@@ -54,6 +148,22 @@ class ConnectingRouteArgs {
 
   @override
   int get hashCode => key.hashCode ^ address.hashCode;
+}
+
+/// generated route for
+/// [LibraryScreen]
+class LibraryRoute extends PageRouteInfo<void> {
+  const LibraryRoute({List<PageRouteInfo>? children})
+    : super(LibraryRoute.name, initialChildren: children);
+
+  static const String name = 'LibraryRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const LibraryScreen();
+    },
+  );
 }
 
 /// generated route for

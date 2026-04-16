@@ -6,6 +6,8 @@ import '../db/app_database.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/connection/data/repositories/connection_repository_impl.dart';
+import '../../features/library/data/repositories/library_repository.dart';
+import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
@@ -40,8 +42,9 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Player, zone, and queue repositories — resolve McwsClient at call-time (session scope)
+  // Player, zone, queue, and library repositories — resolve McwsClient at call-time
   getIt.registerSingleton<PlayerRepository>(PlayerRepositoryImpl());
   getIt.registerSingleton<ZoneRepository>(ZoneRepositoryImpl());
   getIt.registerSingleton<QueueRepository>(QueueRepositoryImpl());
+  getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
 }

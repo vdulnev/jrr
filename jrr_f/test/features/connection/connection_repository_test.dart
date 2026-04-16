@@ -63,10 +63,12 @@ void main() {
     final mockSecureStorage = MockFlutterSecureStorage();
     db = AppDatabase(NativeDatabase.memory());
 
-    when(() => mockSecureStorage.write(
-      key: any(named: 'key'),
-      value: any(named: 'value'),
-    )).thenAnswer((_) async {});
+    when(
+      () => mockSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
 
     repo = _TestConnectionRepository(
       db: db,

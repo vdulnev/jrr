@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:talker/talker.dart';
 
 import '../error/app_exception.dart';
+import '../../features/library/data/models/album.dart';
+import '../../features/library/data/models/library_item.dart';
 import '../../features/player/data/models/playback_state.dart';
 import '../../features/player/data/models/player_status.dart';
 import '../../features/player/data/models/repeat_mode.dart';
@@ -17,9 +20,13 @@ class McwsClient {
   final Dio _dio;
   final McwsXmlParser _parser;
 
-  McwsClient({required Dio dio, required McwsXmlParser parser})
-    : _dio = dio,
-      _parser = parser;
+  McwsClient({
+    required Dio dio,
+    required McwsXmlParser parser,
+    required String? Function() tokenGetter,
+    required Talker talker,
+  }) : _dio = dio,
+       _parser = parser;
 
   String get baseUrl => _dio.options.baseUrl;
 
@@ -186,7 +193,8 @@ class McwsClient {
         trackInfo = TrackInfo(
           fileKey: fileKey,
           name: fields['Name'] ?? fields['Title'] ?? '',
-          artist: fields['Artist'] ??
+          artist:
+              fields['Artist'] ??
               fields['Album Artist'] ??
               fields['AlbumArtist'] ??
               '',
@@ -375,7 +383,8 @@ class McwsClient {
     } on TypeError catch (e) {
       return left(
         AppException.parseError(
-          details: 'Playlist response is not in the expected MPL JSON format: $e',
+          details:
+              'Playlist response is not in the expected MPL JSON format: $e',
         ),
       );
     }
@@ -413,6 +422,161 @@ class McwsClient {
     'Playback/ClearPlaylist',
     params: {'Zone': zoneId, 'ZoneType': 'ID'},
   );
+
+  // -------------------------------------------------------------------------
+  // Library browse & search
+  // -------------------------------------------------------------------------
+
+  /// Fetches a Files/Search JSON array response via Dio.
+  Future<Either<AppException, List<Map<String, dynamic>>>> _filesJson(
+    String path,
+  ) async {
+    try {
+      final response = await _dio.get<String>(
+        path,
+        options: Options(responseType: ResponseType.plain),
+      );
+      final body = response.data;
+      if (body == null) {
+        return left(
+          const AppException.parseError(details: 'Empty file response'),
+        );
+      }
+      final decoded = jsonDecode(body) as List<dynamic>;
+      return right(decoded.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } on FormatException catch (e) {
+      return left(AppException.parseError(details: 'Invalid file JSON: $e'));
+    } on TypeError catch (e) {
+      return left(
+        AppException.parseError(
+          details: 'File response is not a JSON array: $e',
+        ),
+      );
+    }
+  }
+
+  LibraryItem _libraryItemFromMap(Map<String, dynamic> map) => LibraryItem(
+    fileKey: (map['Key'] ?? '').toString(),
+    name: (map['Name'] as String?) ?? '',
+    artist: (map['Artist'] as String?) ?? '',
+    album: (map['Album'] as String?) ?? '',
+  );
+
+  /// URL-encodes a value for embedding inside an MCWS query expression.
+  String _qv(String value) => Uri.encodeComponent(value);
+
+  Future<Either<AppException, List<LibraryItem>>> searchFiles(
+    String query, {
+    int startIndex = 0,
+    int count = 100,
+  }) async {
+    final q = _qv(query);
+    final result = await _filesJson(
+      'Files/Search?Action=JSON'
+      '&Query=[Media Type]=Audio ([Name] contains $q OR [Artist] contains $q OR [Album] contains $q)'
+      '&StartIndex=$startIndex'
+      '&Limit=$count',
+    );
+    return result.map(
+      (items) =>
+          items.map(_libraryItemFromMap).toList()
+            ..sort((a, b) => a.name.compareTo(b.name)),
+    );
+  }
+
+  Future<Either<AppException, List<String>>> getArtists() async {
+    final result = await _filesJson(
+      'Files/Search?Action=JSON'
+      '&Query=[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
+    );
+    return result.map((items) {
+      return items
+          .map((track) => track['Artist'] as String? ?? '')
+          .where((artist) => artist.isNotEmpty)
+          .toList();
+    });
+  }
+
+  Future<Either<AppException, List<Album>>> getAlbumsByArtist(
+    String artist,
+  ) async {
+    final result = await _filesJson(
+      'Files/Search?Action=JSON'
+      '&Query=[Media Type]=Audio [Artist]=${_qv(artist)} ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
+    );
+    return result.map((items) {
+      return items
+          .map((item) {
+            final albumName = (item['Album'] as String?) ?? '';
+            if (albumName.isEmpty) return null;
+            final filePath =
+                (item['Filename'] as String?) ??
+                '';
+            return Album(
+              name: albumName,
+              artist: artist,
+              folderPath: _folderPath(filePath),
+            );
+          })
+          .whereType<Album>()
+          .toList();
+      // final seen = <String>{};
+      // final albums = <Album>[];
+      // for (final map in items) {
+      //   final albumName = (map['Album'] as String?) ?? '';
+      //   if (albumName.isEmpty) continue;
+      //   final filePath =
+      //       (map['Filename (path)'] as String?) ??
+      //       (map['Filename'] as String?) ??
+      //       '';
+        
+      //   final key = '$albumName\x00$folderPath';
+      //   if (seen.add(key)) {
+      //     albums.add(
+      //       ,
+      //     );
+      //   }
+      // }
+      // return albums..sort((a, b) => a.name.compareTo(b.name));
+    });
+  }
+
+  Future<Either<AppException, List<LibraryItem>>> getAlbumTracks(
+    Album album,
+  ) async {
+    final baseQuery =
+        '[Media Type]=Audio [Album]=${_qv(album.name)} [Artist]=${_qv(album.artist)}';
+    final query = album.folderPath.isNotEmpty
+        ? '$baseQuery [Filename (path)]=${_qv(album.folderPath)}'
+        : baseQuery;
+    final result = await _filesJson('Files/Search?Action=JSON&Query=$query');
+    return result.map((items) => items.map(_libraryItemFromMap).toList());
+  }
+
+  /// Extracts the directory portion of a file path (includes trailing separator).
+  String _folderPath(String filePath) {
+    if (filePath.isEmpty) return '';
+    final lastBackslash = filePath.lastIndexOf('\\');
+    final lastSlash = filePath.lastIndexOf('/');
+    final sep = lastBackslash > lastSlash ? lastBackslash : lastSlash;
+    return sep >= 0 ? filePath.substring(0, sep + 1) : '';
+  }
+
+  Future<Either<AppException, Unit>> playByKey(
+    String zoneId,
+    List<String> fileKeys, {
+    String? location,
+  }) {
+    final params = <String, String>{
+      'Zone': zoneId,
+      'ZoneType': 'ID',
+      'Key': fileKeys.join(','),
+    };
+    if (location != null) params['Location'] = location;
+    return command('Playback/PlayByKey', params: params);
+  }
 
   // -------------------------------------------------------------------------
   // Error mapping
