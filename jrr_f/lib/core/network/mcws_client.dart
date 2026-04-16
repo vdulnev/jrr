@@ -311,31 +311,9 @@ class McwsClient {
           const AppException.parseError(details: 'Empty playlist response'),
         );
       }
-      final decoded = jsonDecode(body);
-      List<dynamic> raw;
-      if (decoded is List) {
-        raw = decoded;
-      } else if (decoded is Map) {
-        final mpl = decoded['MPL'];
-        final resp = decoded['Response'];
-        if (mpl is Map && mpl['Item'] is List) {
-          raw = mpl['Item'] as List<dynamic>;
-        } else if (resp is Map && resp['Item'] is List) {
-          raw = resp['Item'] as List<dynamic>;
-        } else if (decoded['Item'] is List) {
-          raw = decoded['Item'] as List<dynamic>;
-        } else {
-          raw = [];
-        }
-      } else {
-        raw = [];
-      }
-
-      final items = raw.indexed.map((entry) {
-        final (i, item) = entry;
-        final itemMap = item as Map<String, dynamic>;
-
-        return _trackFromMap(itemMap);
+      final decoded = jsonDecode(body) as List<Map<String, dynamic>>;
+      final items = decoded.map((entry) {
+        return _trackFromMap(entry);
       }).toList();
       return right(items);
     } on DioException catch (e) {
