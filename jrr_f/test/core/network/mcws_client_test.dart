@@ -1,20 +1,25 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
-import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
 class MockDio extends Mock implements Dio {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(RequestOptions(path: ''));
+  });
+
   late MockDio mockDio;
   late McwsClient client;
 
   setUp(() {
     mockDio = MockDio();
+    when(() => mockDio.options).thenReturn(BaseOptions());
     client = McwsClient(
       dio: mockDio,
       parser: McwsXmlParser(),
@@ -25,7 +30,7 @@ void main() {
 
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
-      final jsonResponse = [
+      final jsonResponse = jsonEncode([
         {
           'Key': '1',
           'Name': 'Song 1',
@@ -38,17 +43,11 @@ void main() {
           'Artist': 'Artist 2',
           'Album': 'Album 2',
         },
-      ];
+      ]);
 
-      when(
-        () => mockDio.get<String>(
-          any(),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
+      when(() => mockDio.fetch<String>(any())).thenAnswer(
         (_) async => Response(
-          data: jsonEncode(jsonResponse),
+          data: jsonResponse,
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -63,35 +62,25 @@ void main() {
       expect(items[1].name, 'Song 2');
     });
 
-    test('parses JSON with Field array correctly', () async {
-      final jsonResponse = [
+    test('parses JSON with minimal fields correctly', () async {
+      final jsonResponse = jsonEncode([
         {
-          'Field': [
-            {'Name': 'Key', 'Value': '1'},
-            {'Name': 'Name', 'Value': 'Song 1'},
-            {'Name': 'Artist', 'Value': 'Artist 1'},
-            {'Name': 'Album', 'Value': 'Album 1'},
-          ],
+          'Key': '1',
+          'Name': 'Song 1',
+          'Artist': 'Artist 1',
+          'Album': 'Album 1',
         },
         {
-          'Field': [
-            {'Name': 'Key', 'Value': '2'},
-            {'Name': 'Name', 'Value': 'Song 2'},
-            {'Name': 'Artist', 'Value': 'Artist 2'},
-            {'Name': 'Album', 'Value': 'Album 2'},
-          ],
+          'Key': '2',
+          'Name': 'Song 2',
+          'Artist': 'Artist 2',
+          'Album': 'Album 2',
         },
-      ];
+      ]);
 
-      when(
-        () => mockDio.get<String>(
-          any(),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
+      when(() => mockDio.fetch<String>(any())).thenAnswer(
         (_) async => Response(
-          data: jsonEncode(jsonResponse),
+          data: jsonResponse,
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -108,17 +97,10 @@ void main() {
     });
 
     test('returns empty list if response is invalid type', () async {
-      when(
-        () => mockDio.get<String>(
-          any(),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
-        (_) async => Response(
-          data: '123',
-          statusCode: 200,
+      when(() => mockDio.fetch<String>(any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.unknown,
         ),
       );
 

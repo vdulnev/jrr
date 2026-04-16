@@ -12,11 +12,13 @@ import '../../features/player/data/models/player_status.dart';
 import '../../features/player/data/models/repeat_mode.dart';
 import '../../features/player/data/models/shuffle_mode.dart';
 import '../../features/zones/data/models/zone.dart';
+import 'mcws_api.dart';
 import 'mcws_xml_parser.dart';
 
 class McwsClient {
   final Dio _dio;
   final McwsXmlParser _parser;
+  final McwsApi _api;
 
   McwsClient({
     required Dio dio,
@@ -24,7 +26,8 @@ class McwsClient {
     required String? Function() tokenGetter,
     required Talker talker,
   }) : _dio = dio,
-       _parser = parser;
+       _parser = parser,
+       _api = McwsApi(dio);
 
   String get baseUrl => _dio.options.baseUrl;
 
@@ -296,34 +299,13 @@ class McwsClient {
 
   Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
     try {
-      final response = await _dio.get<String>(
-        'Playback/Playlist?Action=JSON&ResponseFormat=JSON&ZoneType=ID',
-        queryParameters: {'Zone': zoneId},
-        options: Options(responseType: ResponseType.plain),
-      );
-      final body = response.data;
-      if (body == null) {
-        return left(
-          const AppException.parseError(details: 'Empty playlist response'),
-        );
-      }
-      final decoded = jsonDecode(body) as List<dynamic>;
-      final items = decoded.map((item) {
-        return _trackFromMap(item as Map<String, dynamic>);
-      }).toList();
+      final items = await _api.getPlayingNow('JSON', 'ID', zoneId);
       return right(items);
     } on DioException catch (e) {
       return left(_mapDioException(e));
-    } on FormatException catch (e) {
-      return left(
-        AppException.parseError(details: 'Invalid playlist JSON: $e'),
-      );
     } on TypeError catch (e) {
       return left(
-        AppException.parseError(
-          details:
-              'Playlist response is not in the expected MPL JSON format: $e',
-        ),
+        AppException.parseError(details: 'Playlist response parsing error: $e'),
       );
     }
   }
