@@ -376,7 +376,32 @@ Pre-commit checklist (matches the global Dart rules):
 - `QueueProvider` (refreshes when `playingNowChangeCounter` increments)
 - `QueueScreen` + `QueueItemTile`
 
-### Phase 5 — Polish & Multi-platform
+### Phase 5 — Library Browse & Search
+Aligned with parent spec v2.0 scope.
+
+- **Browse**
+  - `McwsClient.getFiles()` — `File/Search` with browse filters (artist, album, genre)
+  - `McwsClient.getAlbums()`, `getArtists()`, `getGenres()` — field-distinct queries
+  - `LibraryRepository` interface + impl
+  - `LibraryProvider` (`AsyncNotifier<List<LibraryItem>>`) — paginated, keepAlive: false
+  - `BrowseScreen` — top-level entry: Artists / Albums / Genres tabs
+  - `ArtistScreen`, `AlbumScreen` — drill-down lists
+  - `LibraryItemTile` — shared tile for any browse result
+
+- **Search**
+  - `McwsClient.search(query)` — `File/Search` with `Query` parameter
+  - `SearchProvider` — debounced, auto-dispose
+  - `SearchScreen` with `SearchBar`, results list
+
+- **Queue integration**
+  - Play album / artist / track via `Playback/PlayByKey` with `Location=End` or `Next`
+  - "Play now", "Play next", "Add to queue" actions on all browse results
+
+- **Data model**
+  - `LibraryItem` (Freezed): fileKey, name, artist, album, imageUrl
+  - Drift table `library_cache` for offline browsing (optional, defer if time-constrained)
+
+### Phase 6 — Polish & Multi-platform
 - Adaptive layouts (compact mobile vs expanded desktop)
 - App lifecycle handling — pause/resume polling (§5.3 of parent spec)
 - Error recovery UX (retry flows, reconnect)
@@ -404,3 +429,4 @@ Pre-commit checklist (matches the global Dart rules):
 |---|---|---|
 | 0.1.0 | 2026-04-14 | Initial Flutter spec — all TODO sections filled in |
 | 0.1.1 | 2026-04-15 | get_it scopes for McwsClient session lifecycle; `skipAuth` in AuthInterceptor; logout is async |
+| 0.1.2 | 2026-04-16 | Added Phase 5 — Library Browse & Search (parent spec v2.0); Polish renamed to Phase 6 |

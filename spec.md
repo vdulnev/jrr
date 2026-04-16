@@ -28,7 +28,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Now Playing info & artwork  | v1       |
 | Zone management             | v1       |
 | Playing Now queue           | v1       |
-| Library browse & search     | Later    |
+| Library browse & search     | v2       |
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
