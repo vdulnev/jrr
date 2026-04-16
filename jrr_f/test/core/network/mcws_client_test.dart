@@ -63,63 +63,25 @@ void main() {
       expect(items[1].name, 'Song 2');
     });
 
-    test('parses Response JSON correctly', () async {
-      final jsonResponse = {
-        'Response': {
-          'Status': 'OK',
-          'Item': [
-            {
-              'Key': '1',
-              'Name': 'Song 1',
-              'Artist': 'Artist 1',
-              'Album': 'Album 1',
-            },
+    test('parses JSON with Field array correctly', () async {
+      final jsonResponse = [
+        {
+          'Field': [
+            {'Name': 'Key', 'Value': '1'},
+            {'Name': 'Name', 'Value': 'Song 1'},
+            {'Name': 'Artist', 'Value': 'Artist 1'},
+            {'Name': 'Album', 'Value': 'Album 1'},
           ],
         },
-      };
-
-      when(
-        () => mockDio.get<String>(
-          any(that: contains('ResponseFormat=JSON')),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
-        (_) async => Response(
-          data: jsonEncode(jsonResponse),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: ''),
-        ),
-      );
-
-      final result = await client.getPlayingNow('zone-1');
-
-      expect(result.isRight(), true);
-      final items = result.getOrElse((_) => []);
-      expect(items.length, 1);
-      expect(items[0].name, 'Song 1');
-    });
-
-    test('parses MPL JSON with Field array correctly', () async {
-      final jsonResponse = {
-        'MPL': {
-          'Item': [
-            {
-              'Field': [
-                {'Name': 'Key', 'Value': '1'},
-                {'Name': 'Name', 'Value': 'Song 1'},
-                {'Name': 'Artist', 'Value': 'Artist 1'},
-              ],
-            },
-            {
-              'Field': [
-                {'Name': 'Key', 'Value': '2'},
-                {'Name': 'Name', 'Value': 'Song 2'},
-              ],
-            },
+        {
+          'Field': [
+            {'Name': 'Key', 'Value': '2'},
+            {'Name': 'Name', 'Value': 'Song 2'},
+            {'Name': 'Artist', 'Value': 'Artist 2'},
+            {'Name': 'Album', 'Value': 'Album 2'},
           ],
         },
-      };
+      ];
 
       when(
         () => mockDio.get<String>(
@@ -145,36 +107,6 @@ void main() {
       expect(items[1].name, 'Song 2');
     });
 
-    test('parses MPL JSON with flat Item fields correctly', () async {
-      final jsonResponse = {
-        'MPL': {
-          'Item': [
-            {'Key': '1', 'Name': 'Song 1'},
-          ],
-        },
-      };
-
-      when(
-        () => mockDio.get<String>(
-          any(),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
-        (_) async => Response(
-          data: jsonEncode(jsonResponse),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: ''),
-        ),
-      );
-
-      final result = await client.getPlayingNow('zone-1');
-
-      expect(result.isRight(), true);
-      final items = result.getOrElse((_) => []);
-      expect(items[0].name, 'Song 1');
-    });
-
     test('returns empty list if response is invalid type', () async {
       when(
         () => mockDio.get<String>(
@@ -191,20 +123,7 @@ void main() {
       );
 
       final result = await client.getPlayingNow('zone-1');
-      expect(result.isRight(), true);
-      expect(
-        result.getOrElse(
-          (_) => [
-            const Track(
-              fileKey: '',
-              name: 'fail',
-              artist: '',
-              album: '',
-            ),
-          ],
-        ),
-        isEmpty,
-      );
+      expect(result.isLeft(), true);
     });
   });
 

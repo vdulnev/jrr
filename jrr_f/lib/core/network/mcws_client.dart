@@ -295,10 +295,6 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
-    // The Fields parameter uses semicolons as delimiters. Dio percent-encodes
-    // semicolons (%3B) in queryParameters, which MCWS does not recognise.
-    // Embed Fields (and other static params) directly in the path so they are
-    // never re-encoded; only the dynamic zoneId goes through queryParameters.
     try {
       final response = await _dio.get<String>(
         'Playback/Playlist?Action=JSON&ResponseFormat=JSON&ZoneType=ID',
@@ -311,9 +307,9 @@ class McwsClient {
           const AppException.parseError(details: 'Empty playlist response'),
         );
       }
-      final decoded = jsonDecode(body) as List<Map<String, dynamic>>;
-      final items = decoded.map((entry) {
-        return _trackFromMap(entry);
+      final decoded = jsonDecode(body) as List<dynamic>;
+      final items = decoded.map((item) {
+        return _trackFromMap(item as Map<String, dynamic>);
       }).toList();
       return right(items);
     } on DioException catch (e) {
