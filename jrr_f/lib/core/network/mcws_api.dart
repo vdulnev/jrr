@@ -153,7 +153,5 @@ abstract class McwsApi {
   });
 
   @GET('Files/Search?Action=JSON')
-  Future<List<Track>> getAlbumTracks({
-    @Query('Query') required String query,
-  });
+  Future<List<Track>> getAlbumTracks({@Query('Query') required String query});
 }

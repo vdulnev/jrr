@@ -18,10 +18,7 @@ abstract interface class LibraryRepository {
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album);
 
   /// Replaces the Playing Now queue and starts playback immediately.
-  Future<Either<AppException, Unit>> playNow(
-    String zoneId,
-    List<int> fileKeys,
-  );
+  Future<Either<AppException, Unit>> playNow(String zoneId, List<int> fileKeys);
 
   /// Inserts [fileKeys] immediately after the current track.
   Future<Either<AppException, Unit>> playNext(

@@ -167,12 +167,7 @@ void main() {
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [
-        {
-          'Key': 1,
-          'Name': 'Song 1',
-          'Artist': 'Artist 1',
-          'Album': 'Album 1',
-        },
+        {'Key': 1, 'Name': 'Song 1', 'Artist': 'Artist 1', 'Album': 'Album 1'},
       ];
 
       when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
