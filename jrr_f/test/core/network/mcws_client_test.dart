@@ -168,7 +168,7 @@ void main() {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [
         {
-          'Key': '1',
+          'Key': 1,
           'Name': 'Song 1',
           'Artist': 'Artist 1',
           'Album': 'Album 1',

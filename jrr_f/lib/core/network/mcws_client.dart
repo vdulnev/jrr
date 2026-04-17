@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:talker/talker.dart';
 
-import '../di/injection.dart';
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
 import '../../features/library/data/models/track.dart';
@@ -20,8 +18,6 @@ class McwsClient {
   final Dio _dio;
   final McwsXmlParser _parser;
   final McwsApi _api;
-
-  Talker get _talker => getIt<Talker>();
 
   McwsClient({required Dio dio, required McwsXmlParser parser})
     : _dio = dio,
@@ -80,36 +76,35 @@ class McwsClient {
   // Zones
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<Zone>>> getZones() =>
-      _request(
-        _api.getZones,
-        (responseStr) => _parser.parse(responseStr).map((fields) {
-          final count = int.tryParse(fields['NumberZones'] ?? '');
-          if (count == null) return []; // Or throw if strictly required
+  Future<Either<AppException, List<Zone>>> getZones() => _request(
+    _api.getZones,
+    (responseStr) => _parser.parse(responseStr).map((fields) {
+      final count = int.tryParse(fields['NumberZones'] ?? '');
+      if (count == null) return []; // Or throw if strictly required
 
-          final zones = <Zone>[];
-          for (
-            var i = 0;
-            i < (int.tryParse(fields['NumberZones'] ?? '0') ?? 0);
-            i++
-          ) {
-            final id = fields['ZoneID$i'];
-            final name = fields['ZoneName$i'];
-            final guid = fields['ZoneGUID$i'];
-            if (id != null && name != null && guid != null) {
-              zones.add(
-                Zone(
-                  id: id,
-                  name: name,
-                  guid: guid,
-                  isDLNA: fields['ZoneDLNA$i'] == '1',
-                ),
-              );
-            }
-          }
-          return zones;
-        }),
-      );
+      final zones = <Zone>[];
+      for (
+        var i = 0;
+        i < (int.tryParse(fields['NumberZones'] ?? '0') ?? 0);
+        i++
+      ) {
+        final id = fields['ZoneID$i'];
+        final name = fields['ZoneName$i'];
+        final guid = fields['ZoneGUID$i'];
+        if (id != null && name != null && guid != null) {
+          zones.add(
+            Zone(
+              id: id,
+              name: name,
+              guid: guid,
+              isDLNA: fields['ZoneDLNA$i'] == '1',
+            ),
+          );
+        }
+      }
+      return zones;
+    }),
+  );
 
   Future<Either<AppException, Unit>> setActiveZone(String zoneId) =>
       _command(() => _api.setActiveZone(zoneId: zoneId));
@@ -292,7 +287,8 @@ class McwsClient {
       return null;
     }
 
-    final fileKey = int.tryParse(getValue('Key') ?? getValue('FileKey') ?? '0') ?? 0;
+    final fileKey =
+        int.tryParse(getValue('Key') ?? getValue('FileKey') ?? '0') ?? 0;
 
     return Track(
       fileKey: fileKey,
@@ -323,12 +319,6 @@ class McwsClient {
     );
   }
 
-  /// URL-encodes a value for embedding inside an MCWS query expression.
-  String _qv(String value) {
-    _talker.debug('[McwsClient] Query value: "$value"');
-    return Uri.encodeComponent(value);
-  }
-
   Future<Either<AppException, List<Track>>> searchFiles(
     String query, {
     int startIndex = 0,
@@ -337,11 +327,8 @@ class McwsClient {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return right([]);
 
-    final q = _qv(trimmed);
-    // Note: MCWS requires these literal brackets. Retrofit/Dio might encode them,
-    // which usually works for search queries but if it fails we may need a custom interceptor.
     final mcwsQuery =
-        '[Media Type]=Audio ([Name] contains $q OR [Artist] contains $q OR [Album] contains $q)';
+        '[Media Type]=Audio ([Name] contains $trimmed OR [Artist] contains $trimmed OR [Album] contains $trimmed)';
 
     return _request(
       () => _api.searchFiles(
@@ -353,22 +340,19 @@ class McwsClient {
     );
   }
 
-  Future<Either<AppException, List<String>>> getArtists() =>
-      _request(
-        () => _api.getArtists(),
-        (items) => right(
-          items
-              .map((track) => track.artist)
-              .where((artist) => artist.isNotEmpty)
-              .toList(),
-        ),
-      );
+  Future<Either<AppException, List<String>>> getArtists() => _request(
+    () => _api.getArtists(),
+    (items) => right(
+      items
+          .map((track) => track.artist)
+          .where((artist) => artist.isNotEmpty)
+          .toList(),
+    ),
+  );
 
-  Future<Either<AppException, List<Album>>> getAlbumsByArtist(
-    String artist,
-  ) {
+  Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist) {
     final query =
-        '[Media Type]=Audio [Artist]=${_qv(artist)} ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]';
+        '[Media Type]=Audio [Artist]=$artist ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]';
 
     return _request(
       () => _api.getAlbumsByArtist(query: query),
@@ -392,13 +376,13 @@ class McwsClient {
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
     final baseQuery =
-        '[Media Type]=Audio [Album]=${_qv(album.name)} [Artist]=${_qv(album.artist)}';
-    final query = album.folderPath.isNotEmpty
-        ? '$baseQuery [Filename (path)]=${_qv(album.folderPath)}'
+        '[Media Type]=Audio [Album]=${album.name} [Artist]=${album.artist}';
+    final queryExpression = album.folderPath.isNotEmpty
+        ? '$baseQuery [Filename (path)]=${album.folderPath}'
         : baseQuery;
 
     return _request(
-      () => _api.getAlbumTracks(query: query),
+      () => _api.getAlbumTracks(query: queryExpression),
       (tracks) => right(tracks),
     );
   }
