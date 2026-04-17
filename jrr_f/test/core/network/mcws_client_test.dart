@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
@@ -30,7 +28,7 @@ void main() {
 
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
-      final jsonResponse = jsonEncode([
+      final jsonResponse = [
         {
           'Key': '1',
           'Name': 'Song 1',
@@ -43,9 +41,9 @@ void main() {
           'Artist': 'Artist 2',
           'Album': 'Album 2',
         },
-      ]);
+      ];
 
-      when(() => mockDio.fetch<String>(any())).thenAnswer(
+      when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
         (_) async => Response(
           data: jsonResponse,
           statusCode: 200,
@@ -63,7 +61,7 @@ void main() {
     });
 
     test('parses JSON with minimal fields correctly', () async {
-      final jsonResponse = jsonEncode([
+      final jsonResponse = [
         {
           'Key': '1',
           'Name': 'Song 1',
@@ -76,9 +74,9 @@ void main() {
           'Artist': 'Artist 2',
           'Album': 'Album 2',
         },
-      ]);
+      ];
 
-      when(() => mockDio.fetch<String>(any())).thenAnswer(
+      when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
         (_) async => Response(
           data: jsonResponse,
           statusCode: 200,
@@ -97,7 +95,7 @@ void main() {
     });
 
     test('returns empty list if response is invalid type', () async {
-      when(() => mockDio.fetch<String>(any())).thenThrow(
+      when(() => mockDio.fetch<List<dynamic>>(any())).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: ''),
           type: DioExceptionType.unknown,

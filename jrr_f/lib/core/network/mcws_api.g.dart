@@ -46,10 +46,9 @@ class _McwsApi implements McwsApi {
     final _result = await _dio.fetch<List<dynamic>>(_options);
     late List<Track> _value;
     try {
-      _value = await compute(
-        deserializeTrackList,
-        _result.data!.cast<Map<String, dynamic>>(),
-      );
+      _value = _result.data!
+          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
+          .toList();
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
