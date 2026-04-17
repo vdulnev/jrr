@@ -12,7 +12,8 @@ class LibraryItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final displayTrackNumber = trackNumber ?? (item.trackNumber > 0 ? item.trackNumber : null);
+    final displayTrackNumber =
+        trackNumber ?? (item.trackNumber > 0 ? item.trackNumber : null);
     return ListTile(
       leading: displayTrackNumber != null
           ? SizedBox(

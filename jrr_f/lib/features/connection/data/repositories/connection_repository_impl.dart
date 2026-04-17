@@ -52,8 +52,6 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
           talker: _talker,
         ),
         parser: _parser,
-        tokenGetter: tokenGetter,
-        talker: _talker,
       );
 
   @override
@@ -72,10 +70,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       username: username,
       password: password,
     );
-    final token = authResult.match(
-      (e) => null,
-      (r) => r.token,
-    );
+    final token = authResult.match((e) => null, (r) => r.token);
 
     if (token == null) {
       return left(

@@ -3,10 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
-import 'package:jrr_f/core/network/models/auth_result.dart';
-import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:talker/talker.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -24,22 +21,23 @@ void main() {
     client = McwsClient(
       dio: mockDio,
       parser: McwsXmlParser(),
-      tokenGetter: () => 'test-token',
-      talker: Talker(),
     );
   });
 
   group('authenticate', () {
     test('returns AuthResult with token on success', () async {
-      final jsonResponse = {
-        'Token': 'new-token-123',
-      };
+      const xmlResponse = '''
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<Response Status="OK">
+<Item Name="Token">new-token-123</Item>
+</Response>
+''';
 
       when(
-        () => mockDio.fetch<Map<String, dynamic>>(any()),
+        () => mockDio.fetch<String>(any()),
       ).thenAnswer(
         (_) async => Response(
-          data: jsonResponse,
+          data: xmlResponse,
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),

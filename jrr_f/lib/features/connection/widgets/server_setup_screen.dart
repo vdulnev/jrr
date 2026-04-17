@@ -46,7 +46,8 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     _hostController.text = data.host;
     _portController.text = data.port.toString();
     _usernameController.text = data.username;
-    if (data.password != null) _passwordController.text = data.password!;
+    final password = data.password;
+    if (password != null) _passwordController.text = password;
   }
 
   Future<void> _connect() async {

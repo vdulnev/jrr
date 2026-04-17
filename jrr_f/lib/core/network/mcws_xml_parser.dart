@@ -32,7 +32,9 @@ class McwsXmlParser {
       hashCode: (key) => key.toLowerCase().hashCode,
     );
     for (final m in _itemRe.allMatches(xml)) {
-      final name = m.group(1)!;
+      final name = m.group(1);
+      if (name == null) continue;
+
       final cdataValue = m.group(2);
       final normalValue = m.group(3);
       result[name] = (cdataValue ?? normalValue ?? '').trim();

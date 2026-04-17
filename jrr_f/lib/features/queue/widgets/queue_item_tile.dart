@@ -37,8 +37,7 @@ class QueueItemTile extends ConsumerWidget {
           ),
         ),
       ),
-      onDismissed: (_) =>
-          ref.read(queueProvider.notifier).removeItem(index),
+      onDismissed: (_) => ref.read(queueProvider.notifier).removeItem(index),
       child: ListTile(
         leading: SizedBox(
           width: 32,

@@ -43,23 +43,23 @@ class _LibraryActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo = getIt<LibraryRepository>();
+    final currentTitle = title;
 
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (title != null) ...[
+          if (currentTitle != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.all(16),
               child: Text(
-                title!,
-                style: Theme.of(context).textTheme.titleSmall,
+                currentTitle,
+                style: Theme.of(context).textTheme.titleMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Divider(height: 1),
-          ],
+          const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.play_circle_outline),
             title: const Text('Play now'),

@@ -51,8 +51,11 @@ class QueueScreen extends ConsumerWidget {
           }
           return ListView.builder(
             itemCount: items.length,
-            itemBuilder: (context, i) =>
-                QueueItemTile(item: items[i], index: i, isPlaying: i == currentIndex),
+            itemBuilder: (context, i) => QueueItemTile(
+              item: items[i],
+              index: i,
+              isPlaying: i == currentIndex,
+            ),
           );
         },
       ),

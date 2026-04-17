@@ -98,7 +98,7 @@ class NowPlayingScreen extends ConsumerWidget {
                         if (status.trackInfo != null) ...[
                           const SizedBox(height: 4),
                           Text(
-                            status.trackInfo!.artist,
+                            status.trackInfo?.artist ?? '',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(
@@ -110,7 +110,7 @@ class NowPlayingScreen extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            status.trackInfo!.album,
+                            status.trackInfo?.album ?? '',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
