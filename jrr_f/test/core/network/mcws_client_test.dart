@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:talker/talker.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -20,10 +22,17 @@ void main() {
   late MockDio mockDio;
   late McwsClient client;
 
-  setUp(() {
+  setUp(() async {
+    await getIt.reset();
+    getIt.registerSingleton<Talker>(Talker());
+
     mockDio = MockDio();
     when(() => mockDio.options).thenReturn(BaseOptions());
     client = McwsClient(dio: mockDio, parser: McwsXmlParser());
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   group('authenticate', () {

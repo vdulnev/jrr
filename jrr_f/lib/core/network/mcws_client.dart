@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:talker/talker.dart';
 
+import '../di/injection.dart';
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
 import '../../features/library/data/models/track.dart';
@@ -18,6 +20,8 @@ class McwsClient {
   final Dio _dio;
   final McwsXmlParser _parser;
   final McwsApi _api;
+
+  Talker get _talker => getIt<Talker>();
 
   McwsClient({required Dio dio, required McwsXmlParser parser})
     : _dio = dio,
@@ -320,7 +324,10 @@ class McwsClient {
   }
 
   /// URL-encodes a value for embedding inside an MCWS query expression.
-  String _qv(String value) => Uri.encodeComponent(value);
+  String _qv(String value) {
+    _talker.debug('[McwsClient] Query value: "$value"');
+    return Uri.encodeComponent(value);
+  }
 
   Future<Either<AppException, List<Track>>> searchFiles(
     String query, {
