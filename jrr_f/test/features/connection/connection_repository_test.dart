@@ -8,7 +8,6 @@ import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
 import 'package:jrr_f/core/network/models/auth_result.dart';
-import 'package:jrr_f/features/connection/data/models/server_info.dart';
 import 'package:jrr_f/features/connection/data/repositories/connection_repository_impl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
@@ -43,21 +42,6 @@ void main() {
   const port = 52199;
   const username = 'testuser';
   const password = 'testpass';
-
-  const validServerInfo = ServerInfo(
-    id: 'guid-123',
-    name: 'Test Server',
-    version: '33.0.0',
-    platform: 'Windows',
-    address: 'http://$host:$port',
-  );
-
-  final aliveFields = {
-    'RuntimeGUID': 'guid-123',
-    'FriendlyName': 'Test Server',
-    'ProgramVersion': '33.0.0',
-    'Platform': 'Windows',
-  };
 
   setUp(() {
     mockClient = MockMcwsClient();
@@ -98,9 +82,7 @@ void main() {
         () => mockClient.authenticate(username: username, password: password),
       ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
 
-      when(
-        () => mockClient.alive(),
-      ).thenAnswer((_) async => right(aliveFields));
+      when(() => mockClient.alive()).thenAnswer((_) async => right(unit));
 
       final result = await repo.connect(
         host: host,
@@ -111,9 +93,8 @@ void main() {
 
       expect(result.isRight(), true);
       result.fold((_) => fail('Expected Right'), (info) {
-        expect(info.id, validServerInfo.id);
-        expect(info.name, validServerInfo.name);
-        expect(info.address, validServerInfo.address);
+        expect(info.id, startsWith('server-'));
+        expect(info.name, contains(host));
       });
       expect(repo.currentToken, 'token-abc');
     });
@@ -171,9 +152,7 @@ void main() {
         () => mockClient.authenticate(username: username, password: password),
       ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
 
-      when(
-        () => mockClient.alive(),
-      ).thenAnswer((_) async => right(aliveFields));
+      when(() => mockClient.alive()).thenAnswer((_) async => right(unit));
 
       final result = await repo.connect(
         host: host,

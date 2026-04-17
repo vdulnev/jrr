@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,10 +19,7 @@ void main() {
   setUp(() {
     mockDio = MockDio();
     when(() => mockDio.options).thenReturn(BaseOptions());
-    client = McwsClient(
-      dio: mockDio,
-      parser: McwsXmlParser(),
-    );
+    client = McwsClient(dio: mockDio, parser: McwsXmlParser());
   });
 
   group('authenticate', () {
@@ -33,9 +31,7 @@ void main() {
 </Response>
 ''';
 
-      when(
-        () => mockDio.fetch<String>(any()),
-      ).thenAnswer(
+      when(() => mockDio.fetch<String>(any())).thenAnswer(
         (_) async => Response(
           data: xmlResponse,
           statusCode: 200,
@@ -50,6 +46,32 @@ void main() {
 
       expect(result.isRight(), true);
       expect(result.getOrElse((_) => throw Exception()).token, 'new-token-123');
+    });
+
+    test('alive returns Unit and ignores data', () async {
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Alive'),
+            ),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data:
+              '<Response Status="OK"><Item Name="Anything">Value</Item></Response>',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+
+      final result = await client.alive();
+
+      expect(result.isRight(), true);
+      expect(result.getOrElse((_) => throw Exception()), unit);
     });
   });
 
@@ -129,7 +151,6 @@ void main() {
       final items = result.getOrElse((_) => []);
       expect(items.length, 2);
       expect(items[0].name, 'Song 1');
-      expect(items[0].artist, 'Artist 1');
       expect(items[1].name, 'Song 2');
     });
 

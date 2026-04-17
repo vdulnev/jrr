@@ -9,7 +9,9 @@ abstract class McwsApi {
 
   @GET('Authenticate')
   @Extra({'skipAuth': true})
-  Future<String> authenticate(
-    @Header('Authorization') String basicAuth,
-  );
+  Future<String> authenticate(@Header('Authorization') String basicAuth);
+
+  @GET('Alive')
+  @Extra({'skipAuth': true})
+  Future<String> alive();
 }

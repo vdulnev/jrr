@@ -20,12 +20,10 @@ class McwsClient {
   final McwsXmlParser _parser;
   final McwsApi _api;
 
-  McwsClient({
-    required Dio dio,
-    required McwsXmlParser parser,
-  }) : _dio = dio,
-       _parser = parser,
-       _api = McwsApi(dio);
+  McwsClient({required Dio dio, required McwsXmlParser parser})
+    : _dio = dio,
+      _parser = parser,
+      _api = McwsApi(dio);
 
   String get baseUrl => _dio.options.baseUrl;
 
@@ -92,9 +90,16 @@ class McwsClient {
     }
   }
 
-  /// Calls Alive and returns server metadata as a field map.
-  Future<Either<AppException, Map<String, String>>> alive() async {
-    return get('Alive');
+  /// Calls Alive to verify server connectivity. Returns [Unit] on success.
+  Future<Either<AppException, Unit>> alive() async {
+    try {
+      await _api.alive();
+      return right(unit);
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
+    }
   }
 
   // -------------------------------------------------------------------------

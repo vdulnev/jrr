@@ -80,35 +80,15 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     _token = token;
 
     final aliveResult = await client.alive();
-    final fields = aliveResult.match((e) => null, (r) => r);
-
-    if (fields == null) {
-      return left(
-        aliveResult.match(
-          (e) => e,
-          (_) => const AppException.parseError(details: 'Alive failed'),
-        ),
-      );
-    }
-
-    final id = fields['RuntimeGUID'];
-    final name = fields['FriendlyName'];
-    final version = fields['ProgramVersion'];
-    final platform = fields['Platform'];
-
-    if (id == null || name == null || version == null || platform == null) {
-      return left(
-        const AppException.parseError(
-          details: 'Missing fields in Alive response',
-        ),
-      );
+    if (aliveResult.isLeft()) {
+      return left(aliveResult.match((e) => e, (_) => throw Exception()));
     }
 
     final serverInfo = ServerInfo(
-      id: id,
-      name: name,
-      version: version,
-      platform: platform,
+      id: 'server-${host.replaceAll('.', '-')}',
+      name: 'JRiver ($host)',
+      version: 'unknown',
+      platform: 'unknown',
       address: 'http://$host:$port',
     );
 
@@ -119,7 +99,14 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     _hasSessionScope = true;
 
     try {
-      await _persistServer(host, port, username, password, name, _token);
+      await _persistServer(
+        host,
+        port,
+        username,
+        password,
+        serverInfo.name,
+        _token,
+      );
     } catch (e) {
       _talker.warning('Failed to persist server: $e');
     }
