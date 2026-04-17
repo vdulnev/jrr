@@ -219,6 +219,7 @@ void main() {
       final items = result.getOrElse((_) => []);
       expect(items.length, 2);
       expect(items[0].name, 'Song 1');
+      expect(items[0].artist, 'Artist 1');
       expect(items[1].name, 'Song 2');
     });
 
@@ -270,10 +271,14 @@ void main() {
 ''';
 
       when(
-        () => mockDio.get<String>(
-          any(that: contains('Playback/Info')),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Info'),
+            ),
+          ),
         ),
       ).thenAnswer(
         (_) async => Response(

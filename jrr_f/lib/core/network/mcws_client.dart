@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -166,10 +167,19 @@ class McwsClient {
   Future<Either<AppException, PlayerStatus>> getPlaybackInfo(
     String zoneId,
   ) async {
-    return (await get(
-      'Playback/Info',
-      params: {'Zone': zoneId, 'ZoneType': 'ID'},
-    )).flatMap((fields) {
+    try {
+      final responseStr = await _api.getPlaybackInfo(zoneId: zoneId);
+      final fields = LinkedHashMap<String, String>(
+        equals: (a, b) => a.toLowerCase() == b.toLowerCase(),
+        hashCode: (key) => key.toLowerCase().hashCode,
+      );
+
+      final parseResult = _parser.parse(responseStr);
+      if (parseResult.isLeft()) {
+        return left(parseResult.match((e) => e, (_) => throw Exception()));
+      }
+      fields.addAll(parseResult.getOrElse((_) => {}));
+
       final zId = fields['ZoneID'] ?? zoneId;
       final zName = fields['ZoneName'] ?? '';
       final state = PlaybackState.fromMcws(fields['State'] ?? '0');
@@ -222,7 +232,11 @@ class McwsClient {
           playingNowChangeCounter: pnCounter,
         ),
       );
-    });
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
+    }
   }
 
   // -------------------------------------------------------------------------
