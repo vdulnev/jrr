@@ -32,7 +32,7 @@ Future<void> showLibraryActionSheet(
 class _LibraryActionSheet extends StatelessWidget {
   final String? title;
   final String zoneId;
-  final List<String> fileKeys;
+  final List<int> fileKeys;
 
   const _LibraryActionSheet({
     this.title,

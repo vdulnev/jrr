@@ -20,18 +20,18 @@ abstract interface class LibraryRepository {
   /// Replaces the Playing Now queue and starts playback immediately.
   Future<Either<AppException, Unit>> playNow(
     String zoneId,
-    List<String> fileKeys,
+    List<int> fileKeys,
   );
 
   /// Inserts [fileKeys] immediately after the current track.
   Future<Either<AppException, Unit>> playNext(
     String zoneId,
-    List<String> fileKeys,
+    List<int> fileKeys,
   );
 
   /// Appends [fileKeys] to the end of the Playing Now queue.
   Future<Either<AppException, Unit>> addToQueue(
     String zoneId,
-    List<String> fileKeys,
+    List<int> fileKeys,
   );
 }

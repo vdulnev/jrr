@@ -146,4 +146,14 @@ abstract class McwsApi {
     @Query('Query')
     String query = '[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
   });
+
+  @GET('Files/Search?Action=JSON')
+  Future<List<Track>> getAlbumsByArtist({
+    @Query('Query') required String query,
+  });
+
+  @GET('Files/Search?Action=JSON')
+  Future<List<Track>> getAlbumTracks({
+    @Query('Query') required String query,
+  });
 }

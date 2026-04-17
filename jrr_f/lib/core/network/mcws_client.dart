@@ -1,6 +1,4 @@
-import 'dart:collection';
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -55,7 +53,7 @@ class McwsClient {
     required String password,
   }) async {
     final credentials = base64Encode(utf8.encode('$username:$password'));
-    return _request<AuthResult, String>(
+    return _request(
       () => _api.authenticate('Basic $credentials'),
       (resp) => _parser.parse(resp).flatMap((fields) {
         final token = fields['Token'];
@@ -79,7 +77,7 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, List<Zone>>> getZones() =>
-      _request<List<Zone>, String>(
+      _request(
         _api.getZones,
         (responseStr) => _parser.parse(responseStr).map((fields) {
           final count = int.tryParse(fields['NumberZones'] ?? '');
@@ -118,20 +116,9 @@ class McwsClient {
 
   Future<Either<AppException, PlayerStatus>> getPlaybackInfo(
     String zoneId,
-  ) async {
-    try {
-      final responseStr = await _api.getPlaybackInfo(zoneId: zoneId);
-      final fields = LinkedHashMap<String, String>(
-        equals: (a, b) => a.toLowerCase() == b.toLowerCase(),
-        hashCode: (key) => key.toLowerCase().hashCode,
-      );
-
-      final parseResult = _parser.parse(responseStr);
-      if (parseResult.isLeft()) {
-        return left(parseResult.match((e) => e, (_) => throw Exception()));
-      }
-      fields.addAll(parseResult.getOrElse((_) => {}));
-
+  ) => _request(
+    () => _api.getPlaybackInfo(zoneId: zoneId),
+    (responseStr) => _parser.parse(responseStr).flatMap((fields) {
       final zId = fields['ZoneID'] ?? zoneId;
       final zName = fields['ZoneName'] ?? '';
       final state = PlaybackState.fromMcws(fields['State'] ?? '0');
@@ -184,12 +171,8 @@ class McwsClient {
           playingNowChangeCounter: pnCounter,
         ),
       );
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } catch (e) {
-      return left(AppException.unknown(error: e));
-    }
-  }
+    }),
+  );
 
   // -------------------------------------------------------------------------
   // Transport
@@ -292,36 +275,6 @@ class McwsClient {
   // Library browse & search
   // -------------------------------------------------------------------------
 
-  /// Fetches a Files/Search JSON array response via Dio.
-  Future<Either<AppException, List<Map<String, dynamic>>>> _filesJson(
-    String path,
-  ) async {
-    try {
-      final response = await _dio.get<String>(
-        path,
-        options: Options(responseType: ResponseType.plain),
-      );
-      final body = response.data;
-      if (body == null) {
-        return left(
-          const AppException.parseError(details: 'Empty file response'),
-        );
-      }
-      final decoded = jsonDecode(body) as List<dynamic>;
-      return right(decoded.cast<Map<String, dynamic>>());
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } on FormatException catch (e) {
-      return left(AppException.parseError(details: 'Invalid file JSON: $e'));
-    } on TypeError catch (e) {
-      return left(
-        AppException.parseError(
-          details: 'File response is not a JSON array: $e',
-        ),
-      );
-    }
-  }
-
   Track _trackFromMap(Map<String, dynamic> itemMap) {
     // Extract fields from either a flat map or the [{Name, Value}, ...] structure
     String? getValue(String name) {
@@ -335,7 +288,7 @@ class McwsClient {
       return null;
     }
 
-    final fileKey = getValue('Key') ?? getValue('FileKey') ?? '0';
+    final fileKey = int.tryParse(getValue('Key') ?? getValue('FileKey') ?? '0') ?? 0;
 
     return Track(
       fileKey: fileKey,
@@ -362,6 +315,7 @@ class McwsClient {
           ) ??
           0,
       channels: int.tryParse(getValue('Channels') ?? '0') ?? 0,
+      filePath: getValue('Filename') ?? getValue('Filename (path)') ?? '',
     );
   }
 
@@ -382,7 +336,7 @@ class McwsClient {
     final mcwsQuery =
         '[Media Type]=Audio ([Name] contains $q OR [Artist] contains $q OR [Album] contains $q)';
 
-    return _request<List<Track>, List<Track>>(
+    return _request(
       () => _api.searchFiles(
         query: mcwsQuery,
         startIndex: startIndex,
@@ -393,7 +347,7 @@ class McwsClient {
   }
 
   Future<Either<AppException, List<String>>> getArtists() =>
-      _request<List<String>, List<Track>>(
+      _request(
         () => _api.getArtists(),
         (items) => right(
           items
@@ -405,50 +359,46 @@ class McwsClient {
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(
     String artist,
-  ) async {
-    final result = await _filesJson(
-      'Files/Search?Action=JSON'
-      '&Query=[Media Type]=Audio [Artist]=${_qv(artist)} ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
+  ) {
+    final query =
+        '[Media Type]=Audio [Artist]=${_qv(artist)} ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]';
+
+    return _request(
+      () => _api.getAlbumsByArtist(query: query),
+      (tracks) => right(
+        tracks
+            .map((track) {
+              final albumName = track.album;
+              if (albumName.isEmpty) return null;
+
+              return Album(
+                name: albumName,
+                artist: track.artist,
+                folderPath: track.folderPath,
+              );
+            })
+            .whereType<Album>()
+            .toList(),
+      ),
     );
-    return result.map((items) {
-      return items
-          .map((item) {
-            final albumName = (item['Album'] as String?) ?? '';
-            if (albumName.isEmpty) return null;
-            final filePath = (item['Filename'] as String?) ?? '';
-            return Album(
-              name: albumName,
-              artist: artist,
-              folderPath: _folderPath(filePath),
-            );
-          })
-          .whereType<Album>()
-          .toList();
-    });
   }
 
-  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) async {
+  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
     final baseQuery =
         '[Media Type]=Audio [Album]=${_qv(album.name)} [Artist]=${_qv(album.artist)}';
     final query = album.folderPath.isNotEmpty
         ? '$baseQuery [Filename (path)]=${_qv(album.folderPath)}'
         : baseQuery;
-    final result = await _filesJson('Files/Search?Action=JSON&Query=$query');
-    return result.map((items) => items.map(_trackFromMap).toList());
-  }
 
-  /// Extracts the directory portion of a file path (includes trailing separator).
-  String _folderPath(String filePath) {
-    if (filePath.isEmpty) return '';
-    final lastBackslash = filePath.lastIndexOf('\\');
-    final lastSlash = filePath.lastIndexOf('/');
-    final sep = lastBackslash > lastSlash ? lastBackslash : lastSlash;
-    return sep >= 0 ? filePath.substring(0, sep + 1) : '';
+    return _request(
+      () => _api.getAlbumTracks(query: query),
+      (tracks) => right(tracks),
+    );
   }
 
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,
-    List<String> fileKeys, {
+    List<int> fileKeys, {
     String? location,
   }) => _command(
     () => _api.playByKey(

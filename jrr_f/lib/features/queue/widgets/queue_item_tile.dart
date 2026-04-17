@@ -22,7 +22,7 @@ class QueueItemTile extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
-      key: ValueKey(item.fileKey + index.toString()),
+      key: ValueKey('${item.fileKey}_$index'),
       direction: DismissDirection.endToStart,
       background: ColoredBox(
         color: colorScheme.errorContainer,

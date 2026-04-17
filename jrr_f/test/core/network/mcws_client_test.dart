@@ -225,7 +225,7 @@ void main() {
     test('trims query and returns tracks', () async {
       final jsonResponse = [
         {
-          'Key': '123',
+          'Key': 123,
           'Name': 'Matched Song',
           'Artist': 'Artist',
           'Album': 'Album',
@@ -245,6 +245,7 @@ void main() {
       expect(result.isRight(), true);
       final tracks = result.getOrElse((_) => []);
       expect(tracks.length, 1);
+      expect(tracks[0].fileKey, 123);
       expect(tracks[0].name, 'Matched Song');
     });
   });
@@ -252,8 +253,8 @@ void main() {
   group('getArtists', () {
     test('extracts names from track list', () async {
       final jsonResponse = [
-        {'Key': '1', 'Artist': 'ABBA'},
-        {'Key': '2', 'Artist': 'Queen'},
+        {'Key': 1, 'Artist': 'ABBA'},
+        {'Key': 2, 'Artist': 'Queen'},
       ];
 
       when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
