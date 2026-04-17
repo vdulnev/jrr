@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
+import 'package:jrr_f/core/network/models/auth_result.dart';
+import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
@@ -26,6 +29,32 @@ void main() {
     );
   });
 
+  group('authenticate', () {
+    test('returns AuthResult with token on success', () async {
+      final jsonResponse = {
+        'Token': 'new-token-123',
+      };
+
+      when(
+        () => mockDio.fetch<Map<String, dynamic>>(any()),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonResponse,
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+
+      final result = await client.authenticate(
+        username: 'user',
+        password: 'pass',
+      );
+
+      expect(result.isRight(), true);
+      expect(result.getOrElse((_) => throw Exception()).token, 'new-token-123');
+    });
+  });
+
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [
@@ -43,9 +72,15 @@ void main() {
         },
       ];
 
-      when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
+      when(
+        () => mockDio.get<String>(
+          any(that: contains('Playback/Playlist')),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => Response(
-          data: jsonResponse,
+          data: jsonEncode(jsonResponse),
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -76,9 +111,15 @@ void main() {
         },
       ];
 
-      when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(
+      when(
+        () => mockDio.get<String>(
+          any(that: contains('Playback/Playlist')),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => Response(
-          data: jsonResponse,
+          data: jsonEncode(jsonResponse),
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -95,7 +136,13 @@ void main() {
     });
 
     test('returns empty list if response is invalid type', () async {
-      when(() => mockDio.fetch<List<dynamic>>(any())).thenThrow(
+      when(
+        () => mockDio.get<String>(
+          any(that: contains('Playback/Playlist')),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: ''),
           type: DioExceptionType.unknown,

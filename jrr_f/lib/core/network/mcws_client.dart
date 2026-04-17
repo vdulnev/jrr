@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:talker/talker.dart';
 
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
@@ -14,6 +13,7 @@ import '../../features/player/data/models/shuffle_mode.dart';
 import '../../features/zones/data/models/zone.dart';
 import 'mcws_api.dart';
 import 'mcws_xml_parser.dart';
+import 'models/auth_result.dart';
 
 class McwsClient {
   final Dio _dio;
@@ -23,8 +23,6 @@ class McwsClient {
   McwsClient({
     required Dio dio,
     required McwsXmlParser parser,
-    required String? Function() tokenGetter,
-    required Talker talker,
   }) : _dio = dio,
        _parser = parser,
        _api = McwsApi(dio);
@@ -66,28 +64,16 @@ class McwsClient {
   // Connection
   // -------------------------------------------------------------------------
 
-  /// Authenticates via HTTP Basic auth. Returns the session token.
-  Future<Either<AppException, String>> authenticate({
+  /// Authenticates via HTTP Basic auth. Returns the [AuthResult].
+  Future<Either<AppException, AuthResult>> authenticate({
     required String username,
     required String password,
   }) async {
     try {
       final credentials = base64Encode(utf8.encode('$username:$password'));
-      final response = await _dio.get<String>(
-        'Authenticate',
-        options: Options(
-          responseType: ResponseType.plain,
-          extra: {'skipAuth': true},
-          headers: {'Authorization': 'Basic $credentials'},
-        ),
-      );
-      final body = response.data;
-      if (body == null) {
-        return left(
-          const AppException.parseError(details: 'Empty response body'),
-        );
-      }
-      final parseResult = _parser.parse(body);
+      final responseStr = await _api.authenticate('Basic $credentials');
+
+      final parseResult = _parser.parse(responseStr);
       return parseResult.flatMap((fields) {
         final token = fields['Token'];
         if (token == null) {
@@ -97,10 +83,12 @@ class McwsClient {
             ),
           );
         }
-        return right(token);
+        return right(AuthResult(token: token));
       });
     } on DioException catch (e) {
       return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
     }
   }
 
@@ -298,14 +286,59 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
+    // The Fields parameter uses semicolons as delimiters. Dio percent-encodes
+    // semicolons (%3B) in queryParameters, which MCWS does not recognise.
+    // Embed Fields (and other static params) directly in the path so they are
+    // never re-encoded; only the dynamic zoneId goes through queryParameters.
     try {
-      final items = await _api.getPlayingNow('JSON', 'ID', zoneId);
+      final response = await _dio.get<String>(
+        'Playback/Playlist?Action=JSON&ResponseFormat=JSON&ZoneType=ID',
+        queryParameters: {'Zone': zoneId},
+        options: Options(responseType: ResponseType.plain),
+      );
+      final body = response.data;
+      if (body == null) {
+        return left(
+          const AppException.parseError(details: 'Empty playlist response'),
+        );
+      }
+      final decoded = jsonDecode(body);
+      List<dynamic> raw;
+      if (decoded is List) {
+        raw = decoded;
+      } else if (decoded is Map) {
+        final mpl = decoded['MPL'];
+        final resp = decoded['Response'];
+        if (mpl is Map && mpl['Item'] is List) {
+          raw = mpl['Item'] as List<dynamic>;
+        } else if (resp is Map && resp['Item'] is List) {
+          raw = resp['Item'] as List<dynamic>;
+        } else if (decoded['Item'] is List) {
+          raw = decoded['Item'] as List<dynamic>;
+        } else {
+          raw = [];
+        }
+      } else {
+        raw = [];
+      }
+
+      final items = raw.map((itemMap) {
+        final map = itemMap as Map<String, dynamic>;
+        return _trackFromMap(map);
+      }).toList();
       return right(items);
     } on DioException catch (e) {
       return left(_mapDioException(e));
+    } on FormatException catch (e) {
+      return left(
+        AppException.parseError(details: 'Invalid playlist JSON: $e'),
+      );
     } on TypeError catch (e) {
       return left(
-        AppException.parseError(details: 'Playlist response parsing error: $e'),
+        AppException.parseError(
+          details:
+              'Playlist response is not in the expected MPL JSON format: $e',
+        ),
       );
     }
   }
@@ -517,7 +550,8 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   AppException _mapDioException(DioException e) {
-    if (e.error is AppException) return e.error! as AppException;
+    final error = e.error;
+    if (error is AppException) return error;
     return switch (e.type) {
       DioExceptionType.connectionError || DioExceptionType.connectionTimeout =>
         AppException.connectionRefused(address: e.requestOptions.baseUrl),

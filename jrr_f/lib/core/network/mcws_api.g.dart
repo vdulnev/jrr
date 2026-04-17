@@ -20,35 +20,26 @@ class _McwsApi implements McwsApi {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<List<Track>> getPlayingNow(
-    String action,
-    String zoneType,
-    String zoneId,
-  ) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{
-      r'Action': action,
-      r'ZoneType': zoneType,
-      r'Zone': zoneId,
-    };
-    final _headers = <String, dynamic>{};
+  Future<String> authenticate(String basicAuth) async {
+    final _extra = <String, dynamic>{'skipAuth': true};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{r'Authorization': basicAuth};
+    _headers.removeWhere((k, v) => v == null);
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Track>>(
+    final _options = _setStreamType<String>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'Playback/Playlist',
+            'Authenticate',
             queryParameters: queryParameters,
             data: _data,
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Track> _value;
+    final _result = await _dio.fetch<String>(_options);
+    late String _value;
     try {
-      _value = _result.data!
-          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
-          .toList();
+      _value = _result.data!;
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

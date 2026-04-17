@@ -7,6 +7,7 @@ import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
+import 'package:jrr_f/core/network/models/auth_result.dart';
 import 'package:jrr_f/features/connection/data/models/server_info.dart';
 import 'package:jrr_f/features/connection/data/repositories/connection_repository_impl.dart';
 import 'package:mocktail/mocktail.dart';
@@ -95,7 +96,7 @@ void main() {
     test('success: returns Right<ServerInfo> and sets token', () async {
       when(
         () => mockClient.authenticate(username: username, password: password),
-      ).thenAnswer((_) async => right('token-abc'));
+      ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
 
       when(
         () => mockClient.alive(),
@@ -168,7 +169,7 @@ void main() {
     test('sets token to null', () async {
       when(
         () => mockClient.authenticate(username: username, password: password),
-      ).thenAnswer((_) async => right('token-abc'));
+      ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
 
       when(
         () => mockClient.alive(),

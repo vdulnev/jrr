@@ -72,16 +72,29 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       username: username,
       password: password,
     );
-    if (authResult.isLeft()) {
-      return left(authResult.getLeft().toNullable()!);
+    final token = authResult.match(
+      (e) => null,
+      (r) => r.token,
+    );
+
+    if (token == null) {
+      return left(
+        authResult.match((e) => e, (_) => const AppException.unauthorized()),
+      );
     }
-    _token = authResult.getRight().toNullable()!;
+    _token = token;
 
     final aliveResult = await client.alive();
-    if (aliveResult.isLeft()) {
-      return left(aliveResult.getLeft().toNullable()!);
+    final fields = aliveResult.match((e) => null, (r) => r);
+
+    if (fields == null) {
+      return left(
+        aliveResult.match(
+          (e) => e,
+          (_) => const AppException.parseError(details: 'Alive failed'),
+        ),
+      );
     }
-    final fields = aliveResult.getRight().toNullable()!;
 
     final id = fields['RuntimeGUID'];
     final name = fields['FriendlyName'];
@@ -157,7 +170,8 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
 
     final server = servers.first;
     // Only return if it has a non-null, non-empty token
-    if (server.authToken == null || server.authToken!.isEmpty) {
+    final token = server.authToken;
+    if (token == null || token.isEmpty) {
       return null;
     }
 
