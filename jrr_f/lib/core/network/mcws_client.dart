@@ -28,36 +28,22 @@ class McwsClient {
 
   String get baseUrl => _dio.options.baseUrl;
 
-  /// Makes a GET request and parses the XML response into a field map.
-  Future<Either<AppException, Map<String, String>>> get(
-    String endpoint, {
-    Map<String, String> params = const {},
-  }) async {
+  Future<Either<AppException, T>> _request<T>(
+    Future<String> Function() call,
+    Either<AppException, T> Function(String) parser,
+  ) async {
     try {
-      final response = await _dio.get<String>(
-        endpoint,
-        queryParameters: params,
-        options: Options(responseType: ResponseType.plain),
-      );
-      final body = response.data;
-      if (body == null) {
-        return left(
-          const AppException.parseError(details: 'Empty response body'),
-        );
-      }
-      return _parser.parse(body);
+      final response = await call();
+      return parser(response);
     } on DioException catch (e) {
       return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
     }
   }
 
-  /// Sends a command and returns Unit (discards the response fields).
-  Future<Either<AppException, Unit>> command(
-    String endpoint, {
-    Map<String, String> params = const {},
-  }) async {
-    return (await get(endpoint, params: params)).map((_) => unit);
-  }
+  Future<Either<AppException, Unit>> _command(Future<String> Function() call) =>
+      _request(call, _parser.parseStatus);
 
   // -------------------------------------------------------------------------
   // Connection
@@ -68,12 +54,10 @@ class McwsClient {
     required String username,
     required String password,
   }) async {
-    try {
-      final credentials = base64Encode(utf8.encode('$username:$password'));
-      final responseStr = await _api.authenticate('Basic $credentials');
-
-      final parseResult = _parser.parse(responseStr);
-      return parseResult.flatMap((fields) {
+    final credentials = base64Encode(utf8.encode('$username:$password'));
+    return _request(
+      () => _api.authenticate('Basic $credentials'),
+      (resp) => _parser.parse(resp).flatMap((fields) {
         final token = fields['Token'];
         if (token == null) {
           return left(
@@ -83,54 +67,33 @@ class McwsClient {
           );
         }
         return right(AuthResult(token: token));
-      });
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } catch (e) {
-      return left(AppException.unknown(error: e));
-    }
+      }),
+    );
   }
 
   /// Calls Alive to verify server connectivity. Returns [Unit] on success.
-  Future<Either<AppException, Unit>> alive() async {
-    try {
-      await _api.alive();
-      return right(unit);
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } catch (e) {
-      return left(AppException.unknown(error: e));
-    }
-  }
+  Future<Either<AppException, Unit>> alive() => _command(_api.alive);
 
   // -------------------------------------------------------------------------
   // Zones
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<Zone>>> getZones() async {
-    try {
-      final responseStr = await _api.getZones();
+  Future<Either<AppException, List<Zone>>> getZones() => _request(
+    _api.getZones,
+    (responseStr) => _parser.parse(responseStr).map((fields) {
+      final count = int.tryParse(fields['NumberZones'] ?? '');
+      if (count == null) return []; // Or throw if strictly required
 
-      final parseResult = _parser.parse(responseStr);
-      return parseResult.flatMap((fields) {
-        final count = int.tryParse(fields['NumberZones'] ?? '');
-        if (count == null) {
-          return left(
-            const AppException.parseError(details: 'Missing NumberZones'),
-          );
-        }
-        final zones = <Zone>[];
-        for (var i = 0; i < count; i++) {
-          final id = fields['ZoneID$i'];
-          final name = fields['ZoneName$i'];
-          final guid = fields['ZoneGUID$i'];
-          if (id == null || name == null || guid == null) {
-            return left(
-              AppException.parseError(
-                details: 'Missing zone fields at index $i',
-              ),
-            );
-          }
+      final zones = <Zone>[];
+      for (
+        var i = 0;
+        i < (int.tryParse(fields['NumberZones'] ?? '0') ?? 0);
+        i++
+      ) {
+        final id = fields['ZoneID$i'];
+        final name = fields['ZoneName$i'];
+        final guid = fields['ZoneGUID$i'];
+        if (id != null && name != null && guid != null) {
           zones.add(
             Zone(
               id: id,
@@ -140,25 +103,13 @@ class McwsClient {
             ),
           );
         }
-        return right(zones);
-      });
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } catch (e) {
-      return left(AppException.unknown(error: e));
-    }
-  }
+      }
+      return zones;
+    }),
+  );
 
-  Future<Either<AppException, Unit>> setActiveZone(String zoneId) async {
-    try {
-      final responseStr = await _api.setActiveZone(zoneId: zoneId);
-      return _parser.parseStatus(responseStr);
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } catch (e) {
-      return left(AppException.unknown(error: e));
-    }
-  }
+  Future<Either<AppException, Unit>> setActiveZone(String zoneId) =>
+      _command(() => _api.setActiveZone(zoneId: zoneId));
 
   // -------------------------------------------------------------------------
   // Player info
@@ -244,21 +195,21 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, Unit>> play(String zoneId) =>
-      command('Playback/Play', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+      _command(() => _api.play(zoneId: zoneId));
 
   Future<Either<AppException, Unit>> playPause(String zoneId) =>
-      command('Playback/PlayPause', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+      _command(() => _api.playPause(zoneId: zoneId));
 
   Future<Either<AppException, Unit>> stop(String zoneId) =>
-      command('Playback/Stop', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+      _command(() => _api.stop(zoneId: zoneId));
 
-  Future<Either<AppException, Unit>> stopAll() => command('Playback/StopAll');
+  Future<Either<AppException, Unit>> stopAll() => _command(_api.stopAll);
 
   Future<Either<AppException, Unit>> next(String zoneId) =>
-      command('Playback/Next', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+      _command(() => _api.next(zoneId: zoneId));
 
   Future<Either<AppException, Unit>> previous(String zoneId) =>
-      command('Playback/Previous', params: {'Zone': zoneId, 'ZoneType': 'ID'});
+      _command(() => _api.previous(zoneId: zoneId));
 
   // -------------------------------------------------------------------------
   // Seek, volume, mute
@@ -267,33 +218,19 @@ class McwsClient {
   Future<Either<AppException, Unit>> setPosition(
     String zoneId,
     int positionMs,
-  ) => command(
-    'Playback/Position',
-    params: {
-      'Zone': zoneId,
-      'ZoneType': 'ID',
-      'Position': positionMs.toString(),
-      'Mode': 'ms',
-    },
+  ) => _command(
+    () => _api.setPosition(zoneId: zoneId, position: positionMs.toString()),
   );
 
   Future<Either<AppException, Unit>> setVolume(String zoneId, double level) =>
-      command(
-        'Playback/Volume',
-        params: {
-          'Zone': zoneId,
-          'ZoneType': 'ID',
-          'Level': level.toStringAsFixed(3),
-        },
+      _command(
+        () => _api.setVolume(zoneId: zoneId, level: level.toStringAsFixed(3)),
       );
 
   Future<Either<AppException, Unit>> setMute(
     String zoneId, {
     required bool mute,
-  }) => command(
-    'Playback/Mute',
-    params: {'Zone': zoneId, 'ZoneType': 'ID', 'Set': mute ? '1' : '0'},
-  );
+  }) => _command(() => _api.setMute(zoneId: zoneId, set: mute ? '1' : '0'));
 
   // -------------------------------------------------------------------------
   // Shuffle & repeat
@@ -302,18 +239,12 @@ class McwsClient {
   Future<Either<AppException, Unit>> setShuffle(
     String zoneId,
     ShuffleMode mode,
-  ) => command(
-    'Playback/Shuffle',
-    params: {'Zone': zoneId, 'Mode': mode.toMcws()},
-  );
+  ) => _command(() => _api.setShuffle(zoneId: zoneId, mode: mode.toMcws()));
 
   Future<Either<AppException, Unit>> setRepeat(
     String zoneId,
     RepeatMode mode,
-  ) => command(
-    'Playback/Repeat',
-    params: {'Zone': zoneId, 'Mode': mode.toMcws()},
-  );
+  ) => _command(() => _api.setRepeat(zoneId: zoneId, mode: mode.toMcws()));
 
   // -------------------------------------------------------------------------
   // Playing Now queue
@@ -378,37 +309,34 @@ class McwsClient {
   }
 
   Future<Either<AppException, Unit>> playByIndex(String zoneId, int index) =>
-      command(
-        'Playback/PlayByIndex',
-        params: {'Zone': zoneId, 'Index': index.toString()},
-      );
+      _command(() => _api.playByIndex(zoneId: zoneId, index: index.toString()));
 
   Future<Either<AppException, Unit>> removeFromQueue(
     String zoneId,
     int index,
-  ) => command(
-    'Playback/EditPlaylist',
-    params: {'Zone': zoneId, 'Action': 'Remove', 'Source': index.toString()},
+  ) => _command(
+    () => _api.editPlaylist(
+      zoneId: zoneId,
+      action: 'Remove',
+      source: index.toString(),
+    ),
   );
 
   Future<Either<AppException, Unit>> moveInQueue(
     String zoneId,
     int source,
     int target,
-  ) => command(
-    'Playback/EditPlaylist',
-    params: {
-      'Zone': zoneId,
-      'Action': 'Move',
-      'Source': source.toString(),
-      'Target': target.toString(),
-    },
+  ) => _command(
+    () => _api.editPlaylist(
+      zoneId: zoneId,
+      action: 'Move',
+      source: source.toString(),
+      target: target.toString(),
+    ),
   );
 
-  Future<Either<AppException, Unit>> clearQueue(String zoneId) => command(
-    'Playback/ClearPlaylist',
-    params: {'Zone': zoneId, 'ZoneType': 'ID'},
-  );
+  Future<Either<AppException, Unit>> clearQueue(String zoneId) =>
+      _command(() => _api.clearQueue(zoneId: zoneId));
 
   // -------------------------------------------------------------------------
   // Library browse & search
@@ -569,15 +497,13 @@ class McwsClient {
     String zoneId,
     List<String> fileKeys, {
     String? location,
-  }) {
-    final params = <String, String>{
-      'Zone': zoneId,
-      'ZoneType': 'ID',
-      'Key': fileKeys.join(','),
-    };
-    if (location != null) params['Location'] = location;
-    return command('Playback/PlayByKey', params: params);
-  }
+  }) => _command(
+    () => _api.playByKey(
+      zoneId: zoneId,
+      key: fileKeys.join(','),
+      location: location,
+    ),
+  );
 
   // -------------------------------------------------------------------------
   // Error mapping

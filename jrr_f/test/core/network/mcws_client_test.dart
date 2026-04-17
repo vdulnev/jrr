@@ -143,6 +143,70 @@ void main() {
     });
   });
 
+  group('transport & controls', () {
+    test('play returns Unit', () async {
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Play'),
+            ),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: '<Response Status="OK"/>',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+      final result = await client.play('0');
+      expect(result.isRight(), true);
+    });
+
+    test('setPosition sends correct params', () async {
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>()
+                .having((r) => r.path, 'path', contains('Playback/Position'))
+                .having((r) => r.queryParameters['Position'], 'pos', '5000'),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: '<Response Status="OK"/>',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+      final result = await client.setPosition('0', 5000);
+      expect(result.isRight(), true);
+    });
+
+    test('setVolume sends correct level', () async {
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>()
+                .having((r) => r.path, 'path', contains('Playback/Volume'))
+                .having((r) => r.queryParameters['Level'], 'level', '0.500'),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: '<Response Status="OK"/>',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+      final result = await client.setVolume('0', 0.5);
+      expect(result.isRight(), true);
+    });
+  });
+
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [
