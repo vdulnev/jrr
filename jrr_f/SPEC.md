@@ -6,6 +6,10 @@ If anything here conflicts with the parent spec, the parent spec wins for behavi
 
 ---
 
+## 0. Dart rules
+
+Never use null assertion operator.
+
 ## 1. Tech Stack
 
 | Concern | Choice | Notes |
