@@ -40,33 +40,72 @@ class NowPlayingScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(activeZone.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.library_music_outlined),
-            tooltip: 'Library',
-            onPressed: () => ref
-                .read(navigationProvider.notifier)
-                .push(const LibraryRoute()),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
-          IconButton(
-            icon: const Icon(Icons.queue_music_outlined),
-            tooltip: 'Queue',
-            onPressed: () =>
-                ref.read(navigationProvider.notifier).push(const QueueRoute()),
+        ),
+      ),
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                ),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Text(
+                    'JRiver Remote',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.library_music_outlined),
+                title: const Text('Library'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(navigationProvider.notifier)
+                      .push(const LibraryRoute());
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.queue_music_outlined),
+                title: const Text('Queue'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(navigationProvider.notifier)
+                      .push(const QueueRoute());
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.speaker_group_outlined),
+                title: const Text('Zones'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(navigationProvider.notifier)
+                      .push(const ZoneListRoute());
+                },
+              ),
+              const Spacer(),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Disconnect'),
+                onTap: () => ref.read(sessionProvider.notifier).logout(),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.speaker_group_outlined),
-            tooltip: 'Zones',
-            onPressed: () => ref
-                .read(navigationProvider.notifier)
-                .push(const ZoneListRoute()),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Disconnect',
-            onPressed: () => ref.read(sessionProvider.notifier).logout(),
-          ),
-        ],
+        ),
       ),
       body: playerState.when(
         loading: () => const LoadingView(),
