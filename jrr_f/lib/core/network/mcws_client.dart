@@ -28,9 +28,9 @@ class McwsClient {
 
   String get baseUrl => _dio.options.baseUrl;
 
-  Future<Either<AppException, T>> _request<T>(
-    Future<String> Function() call,
-    Either<AppException, T> Function(String) parser,
+  Future<Either<AppException, T>> _request<T, R>(
+    Future<R> Function() call,
+    Either<AppException, T> Function(R) parser,
   ) async {
     try {
       final response = await call();
@@ -55,7 +55,7 @@ class McwsClient {
     required String password,
   }) async {
     final credentials = base64Encode(utf8.encode('$username:$password'));
-    return _request(
+    return _request<AuthResult, String>(
       () => _api.authenticate('Basic $credentials'),
       (resp) => _parser.parse(resp).flatMap((fields) {
         final token = fields['Token'];
@@ -78,35 +78,36 @@ class McwsClient {
   // Zones
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<Zone>>> getZones() => _request(
-    _api.getZones,
-    (responseStr) => _parser.parse(responseStr).map((fields) {
-      final count = int.tryParse(fields['NumberZones'] ?? '');
-      if (count == null) return []; // Or throw if strictly required
+  Future<Either<AppException, List<Zone>>> getZones() =>
+      _request<List<Zone>, String>(
+        _api.getZones,
+        (responseStr) => _parser.parse(responseStr).map((fields) {
+          final count = int.tryParse(fields['NumberZones'] ?? '');
+          if (count == null) return []; // Or throw if strictly required
 
-      final zones = <Zone>[];
-      for (
-        var i = 0;
-        i < (int.tryParse(fields['NumberZones'] ?? '0') ?? 0);
-        i++
-      ) {
-        final id = fields['ZoneID$i'];
-        final name = fields['ZoneName$i'];
-        final guid = fields['ZoneGUID$i'];
-        if (id != null && name != null && guid != null) {
-          zones.add(
-            Zone(
-              id: id,
-              name: name,
-              guid: guid,
-              isDLNA: fields['ZoneDLNA$i'] == '1',
-            ),
-          );
-        }
-      }
-      return zones;
-    }),
-  );
+          final zones = <Zone>[];
+          for (
+            var i = 0;
+            i < (int.tryParse(fields['NumberZones'] ?? '0') ?? 0);
+            i++
+          ) {
+            final id = fields['ZoneID$i'];
+            final name = fields['ZoneName$i'];
+            final guid = fields['ZoneGUID$i'];
+            if (id != null && name != null && guid != null) {
+              zones.add(
+                Zone(
+                  id: id,
+                  name: name,
+                  guid: guid,
+                  isDLNA: fields['ZoneDLNA$i'] == '1',
+                ),
+              );
+            }
+          }
+          return zones;
+        }),
+      );
 
   Future<Either<AppException, Unit>> setActiveZone(String zoneId) =>
       _command(() => _api.setActiveZone(zoneId: zoneId));
@@ -251,61 +252,10 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
-    // The Fields parameter uses semicolons as delimiters. Dio percent-encodes
-    // semicolons (%3B) in queryParameters, which MCWS does not recognise.
-    // Embed Fields (and other static params) directly in the path so they are
-    // never re-encoded; only the dynamic zoneId goes through queryParameters.
-    try {
-      final response = await _dio.get<String>(
-        'Playback/Playlist?Action=JSON&ResponseFormat=JSON&ZoneType=ID',
-        queryParameters: {'Zone': zoneId},
-        options: Options(responseType: ResponseType.plain),
-      );
-      final body = response.data;
-      if (body == null) {
-        return left(
-          const AppException.parseError(details: 'Empty playlist response'),
-        );
-      }
-      final decoded = jsonDecode(body);
-      List<dynamic> raw;
-      if (decoded is List) {
-        raw = decoded;
-      } else if (decoded is Map) {
-        final mpl = decoded['MPL'];
-        final resp = decoded['Response'];
-        if (mpl is Map && mpl['Item'] is List) {
-          raw = mpl['Item'] as List<dynamic>;
-        } else if (resp is Map && resp['Item'] is List) {
-          raw = resp['Item'] as List<dynamic>;
-        } else if (decoded['Item'] is List) {
-          raw = decoded['Item'] as List<dynamic>;
-        } else {
-          raw = [];
-        }
-      } else {
-        raw = [];
-      }
-
-      final items = raw.map((itemMap) {
-        final map = itemMap as Map<String, dynamic>;
-        return _trackFromMap(map);
-      }).toList();
-      return right(items);
-    } on DioException catch (e) {
-      return left(_mapDioException(e));
-    } on FormatException catch (e) {
-      return left(
-        AppException.parseError(details: 'Invalid playlist JSON: $e'),
-      );
-    } on TypeError catch (e) {
-      return left(
-        AppException.parseError(
-          details:
-              'Playlist response is not in the expected MPL JSON format: $e',
-        ),
-      );
-    }
+    return _request(
+      () => _api.getPlayingNow(zoneId: zoneId),
+      (List<Track> items) => right(items),
+    );
   }
 
   Future<Either<AppException, Unit>> playByIndex(String zoneId, int index) =>
@@ -423,17 +373,22 @@ class McwsClient {
     int startIndex = 0,
     int count = 100,
   }) async {
-    final q = _qv(query);
-    final result = await _filesJson(
-      'Files/Search?Action=JSON'
-      '&Query=[Media Type]=Audio ([Name] contains $q OR [Artist] contains $q OR [Album] contains $q)'
-      '&StartIndex=$startIndex'
-      '&Limit=$count',
-    );
-    return result.map(
-      (items) =>
-          items.map(_trackFromMap).toList()
-            ..sort((a, b) => a.name.compareTo(b.name)),
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return right([]);
+
+    final q = _qv(trimmed);
+    // Note: MCWS requires these literal brackets. Retrofit/Dio might encode them,
+    // which usually works for search queries but if it fails we may need a custom interceptor.
+    final mcwsQuery =
+        '[Media Type]=Audio ([Name] contains $q OR [Artist] contains $q OR [Album] contains $q)';
+
+    return _request<List<Track>, List<Track>>(
+      () => _api.searchFiles(
+        query: mcwsQuery,
+        startIndex: startIndex,
+        count: count,
+      ),
+      (items) => right(items..sort((a, b) => a.name.compareTo(b.name))),
     );
   }
 

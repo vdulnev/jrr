@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -225,14 +224,18 @@ void main() {
       ];
 
       when(
-        () => mockDio.get<String>(
-          any(that: contains('Playback/Playlist')),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
+        () => mockDio.fetch<List<dynamic>>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Playlist'),
+            ),
+          ),
         ),
       ).thenAnswer(
         (_) async => Response(
-          data: jsonEncode(jsonResponse),
+          data: jsonResponse,
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -264,14 +267,18 @@ void main() {
       ];
 
       when(
-        () => mockDio.get<String>(
-          any(that: contains('Playback/Playlist')),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
+        () => mockDio.fetch<List<dynamic>>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Playlist'),
+            ),
+          ),
         ),
       ).thenAnswer(
         (_) async => Response(
-          data: jsonEncode(jsonResponse),
+          data: jsonResponse,
           statusCode: 200,
           requestOptions: RequestOptions(path: ''),
         ),
@@ -287,12 +294,16 @@ void main() {
       expect(items[1].name, 'Song 2');
     });
 
-    test('returns empty list if response is invalid type', () async {
+    test('returns error on invalid type', () async {
       when(
-        () => mockDio.get<String>(
-          any(that: contains('Playback/Playlist')),
-          queryParameters: any(named: 'queryParameters'),
-          options: any(named: 'options'),
+        () => mockDio.fetch<List<dynamic>>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Playlist'),
+            ),
+          ),
         ),
       ).thenThrow(
         DioException(
@@ -362,6 +373,50 @@ void main() {
       expect(status.trackInfo?.fileKey, '2302');
       expect(status.playingNowTracks, 11);
       expect(status.playingNowPositionDisplay, '1 of 11');
+    });
+  });
+
+  group('searchFiles', () {
+    test('returns empty list for empty query', () async {
+      final result = await client.searchFiles('');
+      expect(result.isRight(), true);
+      expect(result.getOrElse((_) => throw Exception()), isEmpty);
+    });
+
+    test('trims query and returns tracks', () async {
+      final jsonResponse = [
+        {
+          'Key': '123',
+          'Name': 'Matched Song',
+          'Artist': 'Artist',
+          'Album': 'Album',
+        },
+      ];
+
+      when(
+        () => mockDio.fetch<List<dynamic>>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Files/Search'),
+            ),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: jsonResponse,
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+
+      final result = await client.searchFiles('  query  ');
+
+      expect(result.isRight(), true);
+      final tracks = result.getOrElse((_) => []);
+      expect(tracks.length, 1);
+      expect(tracks[0].name, 'Matched Song');
     });
   });
 }

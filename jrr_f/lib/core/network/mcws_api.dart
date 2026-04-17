@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
+import '../../features/library/data/models/track.dart';
 
 part 'mcws_api.g.dart';
 
@@ -97,6 +98,13 @@ abstract class McwsApi {
     @Query('Mode') required String mode,
   });
 
+  @GET('Playback/Playlist?Action=JSON')
+  Future<List<Track>> getPlayingNow({
+    @Query('Zone') required String zoneId,
+    @Query('ZoneType') String zoneType = 'ID',
+    @Query('NoLocalFilenames') int noLocalFilenames = 1,
+  });
+
   @GET('Playback/PlayByIndex')
   Future<String> playByIndex({
     @Query('Zone') required String zoneId,
@@ -124,5 +132,12 @@ abstract class McwsApi {
     @Query('Key') required String key,
     @Query('Location') String? location,
     @Query('ZoneType') String zoneType = 'ID',
+  });
+
+  @GET('Files/Search?Action=JSON')
+  Future<List<Track>> searchFiles({
+    @Query('Query') required String query,
+    @Query('StartIndex') int startIndex = 0,
+    @Query('Limit') int count = 100,
   });
 }
