@@ -116,6 +116,33 @@ void main() {
     });
   });
 
+  group('setActiveZone', () {
+    test('returns Unit on success', () async {
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/SetZone'),
+            ),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: '<Response Status="OK"></Response>',
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+
+      final result = await client.setActiveZone('0');
+
+      expect(result.isRight(), true);
+      expect(result.getOrElse((_) => throw Exception()), unit);
+    });
+  });
+
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [

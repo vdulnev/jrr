@@ -148,11 +148,15 @@ class McwsClient {
     }
   }
 
-  Future<Either<AppException, Unit>> setActiveZone(String zoneId) {
-    return command(
-      'Playback/SetZone',
-      params: {'Zone': zoneId, 'ZoneType': 'ID'},
-    );
+  Future<Either<AppException, Unit>> setActiveZone(String zoneId) async {
+    try {
+      final responseStr = await _api.setActiveZone(zoneId: zoneId);
+      return _parser.parseStatus(responseStr);
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
+    }
   }
 
   // -------------------------------------------------------------------------

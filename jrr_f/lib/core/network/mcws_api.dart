@@ -17,4 +17,10 @@ abstract class McwsApi {
 
   @GET('Playback/Zones')
   Future<String> getZones();
+
+  @GET('Playback/SetZone')
+  Future<String> setActiveZone({
+    @Query('Zone') required String zoneId,
+    @Query('ZoneType') String zoneType = 'ID',
+  });
 }
