@@ -35,6 +35,26 @@ abstract class Track with _$Track {
     final sep = lastBackslash > lastSlash ? lastBackslash : lastSlash;
     return sep >= 0 ? filePath.substring(0, sep + 1) : '';
   }
+
+  /// Returns the parent directory of [folderPath].
+  /// Example: "C:\Music\Album\" -> "C:\Music\"
+  String get parentFolderPath {
+    final path = folderPath;
+    if (path.isEmpty) return '';
+
+    // Strip trailing separator
+    final withoutTrailing = path.substring(0, path.length - 1);
+
+    // If it was just "/" or "C:\", withoutTrailing might be empty or just "C:"
+    if (withoutTrailing.isEmpty) return path;
+    if (withoutTrailing.endsWith(':')) return path;
+
+    final lastBackslash = withoutTrailing.lastIndexOf('\\');
+    final lastSlash = withoutTrailing.lastIndexOf('/');
+    final sep = lastBackslash > lastSlash ? lastBackslash : lastSlash;
+
+    return sep >= 0 ? withoutTrailing.substring(0, sep + 1) : '';
+  }
 }
 
 class ForceStringConverter implements JsonConverter<String, dynamic> {

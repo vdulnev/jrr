@@ -352,7 +352,7 @@ class McwsClient {
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist) {
     final query =
-        '[Media Type]=Audio [Artist]=$artist ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]';
+        '[Media Type]=Audio [Artist]=$artist ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]';
 
     return _request(
       () => _api.getAlbumsByArtist(query: query),
@@ -361,11 +361,17 @@ class McwsClient {
             .map((track) {
               final albumName = track.album;
               if (albumName.isEmpty) return null;
-
+              final String folderPath;
+              if (track.totalDiscs > 1 || track.discNumber > 0) {
+                // For multi-disc albums use common parent folder
+                folderPath = track.parentFolderPath;
+              } else {
+                folderPath = track.folderPath;
+              }
               return Album(
                 name: albumName,
                 artist: track.artist,
-                folderPath: track.folderPath,
+                folderPath: folderPath,
               );
             })
             .whereType<Album>()
