@@ -14,4 +14,7 @@ abstract class McwsApi {
   @GET('Alive')
   @Extra({'skipAuth': true})
   Future<String> alive();
+
+  @GET('Playback/Zones')
+  Future<String> getZones();
 }

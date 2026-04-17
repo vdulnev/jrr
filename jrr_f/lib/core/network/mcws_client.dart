@@ -107,34 +107,45 @@ class McwsClient {
   // -------------------------------------------------------------------------
 
   Future<Either<AppException, List<Zone>>> getZones() async {
-    return (await get('Playback/Zones')).flatMap((fields) {
-      final count = int.tryParse(fields['NumberZones'] ?? '');
-      if (count == null) {
-        return left(
-          const AppException.parseError(details: 'Missing NumberZones'),
-        );
-      }
-      final zones = <Zone>[];
-      for (var i = 0; i < count; i++) {
-        final id = fields['ZoneID$i'];
-        final name = fields['ZoneName$i'];
-        final guid = fields['ZoneGUID$i'];
-        if (id == null || name == null || guid == null) {
+    try {
+      final responseStr = await _api.getZones();
+
+      final parseResult = _parser.parse(responseStr);
+      return parseResult.flatMap((fields) {
+        final count = int.tryParse(fields['NumberZones'] ?? '');
+        if (count == null) {
           return left(
-            AppException.parseError(details: 'Missing zone fields at index $i'),
+            const AppException.parseError(details: 'Missing NumberZones'),
           );
         }
-        zones.add(
-          Zone(
-            id: id,
-            name: name,
-            guid: guid,
-            isDLNA: fields['ZoneDLNA$i'] == '1',
-          ),
-        );
-      }
-      return right(zones);
-    });
+        final zones = <Zone>[];
+        for (var i = 0; i < count; i++) {
+          final id = fields['ZoneID$i'];
+          final name = fields['ZoneName$i'];
+          final guid = fields['ZoneGUID$i'];
+          if (id == null || name == null || guid == null) {
+            return left(
+              AppException.parseError(
+                details: 'Missing zone fields at index $i',
+              ),
+            );
+          }
+          zones.add(
+            Zone(
+              id: id,
+              name: name,
+              guid: guid,
+              isDLNA: fields['ZoneDLNA$i'] == '1',
+            ),
+          );
+        }
+        return right(zones);
+      });
+    } on DioException catch (e) {
+      return left(_mapDioException(e));
+    } catch (e) {
+      return left(AppException.unknown(error: e));
+    }
   }
 
   Future<Either<AppException, Unit>> setActiveZone(String zoneId) {

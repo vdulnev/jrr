@@ -75,6 +75,47 @@ void main() {
     });
   });
 
+  group('getZones', () {
+    test('parses XML zones correctly', () async {
+      const xmlResponse = '''
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<Response Status="OK">
+<Item Name="NumberZones">1</Item>
+<Item Name="ZoneName0">Player</Item>
+<Item Name="ZoneID0">0</Item>
+<Item Name="ZoneGUID0">{GUID-0}</Item>
+<Item Name="ZoneDLNA0">1</Item>
+</Response>
+''';
+
+      when(
+        () => mockDio.fetch<String>(
+          any(
+            that: isA<RequestOptions>().having(
+              (r) => r.path,
+              'path',
+              contains('Playback/Zones'),
+            ),
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: xmlResponse,
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
+
+      final result = await client.getZones();
+
+      expect(result.isRight(), true);
+      final zones = result.getOrElse((_) => []);
+      expect(zones.length, 1);
+      expect(zones[0].name, 'Player');
+      expect(zones[0].id, '0');
+    });
+  });
+
   group('getPlayingNow', () {
     test('parses raw JSON array correctly', () async {
       final jsonResponse = [
