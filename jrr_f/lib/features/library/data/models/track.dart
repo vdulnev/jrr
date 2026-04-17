@@ -8,9 +8,9 @@ abstract class Track with _$Track {
   @JsonSerializable()
   const factory Track({
     @JsonKey(name: 'Key') required String fileKey,
-    @JsonKey(name: 'Name') required String name,
-    @JsonKey(name: 'Artist') required String artist,
-    @JsonKey(name: 'Album') required String album,
+    @JsonKey(name: 'Name') @Default('') String name,
+    @JsonKey(name: 'Artist') @Default('') String artist,
+    @JsonKey(name: 'Album') @Default('') String album,
     @JsonKey(name: 'Genre') @Default('') String genre,
     @JsonKey(name: 'Duration') @Default(0) double duration,
     @JsonKey(name: 'Track #') @Default(0) int trackNumber,

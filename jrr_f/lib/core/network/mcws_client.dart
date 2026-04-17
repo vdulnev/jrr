@@ -392,18 +392,16 @@ class McwsClient {
     );
   }
 
-  Future<Either<AppException, List<String>>> getArtists() async {
-    final result = await _filesJson(
-      'Files/Search?Action=JSON'
-      '&Query=[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
-    );
-    return result.map((items) {
-      return items
-          .map((track) => track['Artist'] as String? ?? '')
-          .where((artist) => artist.isNotEmpty)
-          .toList();
-    });
-  }
+  Future<Either<AppException, List<String>>> getArtists() =>
+      _request<List<String>, List<Track>>(
+        () => _api.getArtists(),
+        (items) => right(
+          items
+              .map((track) => track.artist)
+              .where((artist) => artist.isNotEmpty)
+              .toList(),
+        ),
+      );
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(
     String artist,

@@ -140,4 +140,10 @@ abstract class McwsApi {
     @Query('StartIndex') int startIndex = 0,
     @Query('Limit') int count = 100,
   });
+
+  @GET('Files/Search?Action=JSON')
+  Future<List<Track>> getArtists({
+    @Query('Query')
+    String query = '[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
+  });
 }

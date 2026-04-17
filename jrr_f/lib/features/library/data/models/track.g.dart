@@ -8,9 +8,9 @@ part of 'track.dart';
 
 _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   fileKey: json['Key'] as String,
-  name: json['Name'] as String,
-  artist: json['Artist'] as String,
-  album: json['Album'] as String,
+  name: json['Name'] as String? ?? '',
+  artist: json['Artist'] as String? ?? '',
+  album: json['Album'] as String? ?? '',
   genre: json['Genre'] as String? ?? '',
   duration: (json['Duration'] as num?)?.toDouble() ?? 0,
   trackNumber: (json['Track #'] as num?)?.toInt() ?? 0,

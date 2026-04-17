@@ -222,7 +222,7 @@ return $default(_that.fileKey,_that.name,_that.artist,_that.album,_that.genre,_t
 
 @JsonSerializable()
 class _Track implements Track {
-  const _Track({@JsonKey(name: 'Key') required this.fileKey, @JsonKey(name: 'Name') required this.name, @JsonKey(name: 'Artist') required this.artist, @JsonKey(name: 'Album') required this.album, @JsonKey(name: 'Genre') this.genre = '', @JsonKey(name: 'Duration') this.duration = 0, @JsonKey(name: 'Track #') this.trackNumber = 0, @JsonKey(name: 'Disc #') this.discNumber = 0, @JsonKey(name: 'Total Discs') this.totalDiscs = 0, @JsonKey(name: 'Image File') this.imageUrl = '', @JsonKey(name: 'Bitrate') this.bitrate = 0, @JsonKey(name: 'Bit Depth') this.bitDepth = 0, @JsonKey(name: 'Sample Rate') this.sampleRate = 0, @JsonKey(name: 'Channels') this.channels = 0});
+  const _Track({@JsonKey(name: 'Key') required this.fileKey, @JsonKey(name: 'Name') this.name = '', @JsonKey(name: 'Artist') this.artist = '', @JsonKey(name: 'Album') this.album = '', @JsonKey(name: 'Genre') this.genre = '', @JsonKey(name: 'Duration') this.duration = 0, @JsonKey(name: 'Track #') this.trackNumber = 0, @JsonKey(name: 'Disc #') this.discNumber = 0, @JsonKey(name: 'Total Discs') this.totalDiscs = 0, @JsonKey(name: 'Image File') this.imageUrl = '', @JsonKey(name: 'Bitrate') this.bitrate = 0, @JsonKey(name: 'Bit Depth') this.bitDepth = 0, @JsonKey(name: 'Sample Rate') this.sampleRate = 0, @JsonKey(name: 'Channels') this.channels = 0});
   factory _Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
 @override@JsonKey(name: 'Key') final  String fileKey;
