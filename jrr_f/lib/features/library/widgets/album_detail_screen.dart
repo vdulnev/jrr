@@ -79,8 +79,9 @@ class AlbumDetailScreen extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content:
-                                    Text('Added "${album.name}" to playing now'),
+                                content: Text(
+                                  'Added "${album.name}" to playing now',
+                                ),
                                 duration: const Duration(seconds: 1),
                               ),
                             );

@@ -113,65 +113,52 @@ class McwsClient {
   // Player info
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, PlayerStatus>> getPlaybackInfo(
-    String zoneId,
-  ) => _request(
-    () => _api.getPlaybackInfo(zoneId: zoneId),
-    (responseStr) => _parser.parse(responseStr).flatMap((fields) {
-      final zId = fields['ZoneID'] ?? zoneId;
-      final zName = fields['ZoneName'] ?? '';
-      final state = PlaybackState.fromMcws(fields['State'] ?? '0');
+  Future<Either<AppException, PlayerStatus>> getPlaybackInfo(String zoneId) =>
+      _request(
+        () => _api.getPlaybackInfo(zoneId: zoneId),
+        (responseStr) => _parser.parse(responseStr).flatMap((fields) {
+          final volDisplay = fields['VolumeDisplay'] ?? '';
 
-      final posMs = int.tryParse(fields['PositionMS'] ?? '0') ?? 0;
-      final durMs = int.tryParse(fields['DurationMS'] ?? '0') ?? 0;
-      final posDisplay = fields['PositionDisplay'] ?? '';
+          final fileKey = int.tryParse(fields['FileKey'] ?? '-1') ?? -1;
+          Track? trackInfo;
+          if (fileKey >= 0) {
+            trackInfo = Track(
+              fileKey: fileKey,
+              name: fields['Name'] ?? '',
+              artist: fields['Artist'] ?? '',
+              album: fields['Album'] ?? '',
+              imageUrl: fields['ImageURL'] ?? '',
+              bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
+              bitDepth: int.tryParse(fields['Bitdepth'] ?? '0') ?? 0,
+              sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
+              channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
+            );
+          }
 
-      // Volume: MCWS returns 0–100; normalise to 0.0–1.0.
-      final rawVol = double.tryParse(fields['Volume'] ?? '0') ?? 0.0;
-      final volume = (rawVol > 1.0 ? rawVol / 100.0 : rawVol).clamp(0.0, 1.0);
-      final volDisplay = fields['VolumeDisplay'] ?? '';
-
-      final isMuted =
-          fields['Muted'] == '1' || volDisplay.toLowerCase().contains('muted');
-
-      final shuffleMode = ShuffleMode.fromMcws(fields['Shuffle'] ?? '');
-      final repeatMode = RepeatMode.fromMcws(fields['Repeat'] ?? '');
-
-      final pnPos = int.tryParse(fields['PlayingNowPosition'] ?? '-1') ?? -1;
-      final pnTracks = int.tryParse(fields['PlayingNowTracks'] ?? '0') ?? 0;
-      final pnPosDisplay = fields['PlayingNowPositionDisplay'] ?? '';
-      final pnCounter =
-          int.tryParse(fields['PlayingNowChangeCounter'] ?? '0') ?? 0;
-
-      // TrackInfo is only present when something is loaded in the queue.
-      final fileKey = fields['FileKey'] ?? fields['Key'];
-      Track? trackInfo;
-      if (fileKey != null && fileKey.isNotEmpty && fileKey != '-1') {
-        trackInfo = _trackFromMap(fields);
-      }
-
-      return right(
-        PlayerStatus(
-          zoneId: zId,
-          zoneName: zName,
-          state: state,
-          trackInfo: trackInfo,
-          positionMs: posMs,
-          durationMs: durMs,
-          positionDisplay: posDisplay,
-          volume: volume,
-          volumeDisplay: volDisplay,
-          isMuted: isMuted,
-          shuffleMode: shuffleMode,
-          repeatMode: repeatMode,
-          playingNowPosition: pnPos,
-          playingNowTracks: pnTracks,
-          playingNowPositionDisplay: pnPosDisplay,
-          playingNowChangeCounter: pnCounter,
-        ),
+          return right(
+            PlayerStatus(
+              zoneId: fields['ZoneID'] ?? zoneId,
+              zoneName: fields['ZoneName'] ?? '',
+              state: PlaybackState.fromMcws(fields['State'] ?? '0'),
+              trackInfo: trackInfo,
+              positionMs: int.tryParse(fields['PositionMS'] ?? '0') ?? 0,
+              durationMs: int.tryParse(fields['DurationMS'] ?? '0') ?? 0,
+              positionDisplay: fields['PositionDisplay'] ?? '',
+              volume: double.tryParse(fields['Volume'] ?? '0') ?? 0.0,
+              volumeDisplay: volDisplay,
+              isMuted: volDisplay.toLowerCase().contains('muted'),
+              playingNowPosition:
+                  int.tryParse(fields['PlayingNowPosition'] ?? '-1') ?? -1,
+              playingNowTracks:
+                  int.tryParse(fields['PlayingNowTracks'] ?? '0') ?? 0,
+              playingNowPositionDisplay:
+                  fields['PlayingNowPositionDisplay'] ?? '',
+              playingNowChangeCounter:
+                  int.tryParse(fields['PlayingNowChangeCounter'] ?? '0') ?? 0,
+            ),
+          );
+        }),
       );
-    }),
-  );
 
   // -------------------------------------------------------------------------
   // Transport
@@ -285,51 +272,6 @@ class McwsClient {
   // -------------------------------------------------------------------------
   // Library browse & search
   // -------------------------------------------------------------------------
-
-  Track _trackFromMap(Map<String, dynamic> itemMap) {
-    // Extract fields from either a flat map or the [{Name, Value}, ...] structure
-    String? getValue(String name) {
-      if (itemMap.containsKey(name)) return itemMap[name]?.toString();
-      final fields = itemMap['Field'] as List<dynamic>?;
-      if (fields != null) {
-        for (final f in fields) {
-          if (f is Map && f['Name'] == name) return f['Value']?.toString();
-        }
-      }
-      return null;
-    }
-
-    final fileKey =
-        int.tryParse(getValue('Key') ?? getValue('FileKey') ?? '0') ?? 0;
-
-    return Track(
-      fileKey: fileKey,
-      name: getValue('Name') ?? getValue('Title') ?? '',
-      artist:
-          getValue('Artist') ??
-          getValue('Album Artist') ??
-          getValue('AlbumArtist') ??
-          '',
-      album: getValue('Album') ?? '',
-      genre: getValue('Genre') ?? '',
-      duration: double.tryParse(getValue('Duration') ?? '0') ?? 0.0,
-      trackNumber: int.tryParse(getValue('Track #') ?? '0') ?? 0,
-      discNumber: int.tryParse(getValue('Disc #') ?? '0') ?? 0,
-      totalDiscs: int.tryParse(getValue('Total Discs') ?? '0') ?? 0,
-      imageUrl: getValue('ImageURL') ?? '',
-      bitrate: int.tryParse(getValue('Bitrate') ?? '0') ?? 0,
-      bitDepth:
-          int.tryParse(getValue('Bit Depth') ?? getValue('BitDepth') ?? '0') ??
-          0,
-      sampleRate:
-          int.tryParse(
-            getValue('Sample Rate') ?? getValue('SampleRate') ?? '0',
-          ) ??
-          0,
-      channels: int.tryParse(getValue('Channels') ?? '0') ?? 0,
-      filePath: getValue('Filename') ?? getValue('Filename (path)') ?? '',
-    );
-  }
 
   Future<Either<AppException, List<Track>>> searchFiles(
     String query, {

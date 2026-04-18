@@ -233,7 +233,7 @@ return $default(_that.zoneId,_that.zoneName,_that.state,_that.trackInfo,_that.po
 
 
 class _PlayerStatus implements PlayerStatus {
-  const _PlayerStatus({required this.zoneId, required this.zoneName, required this.state, this.trackInfo, required this.positionMs, required this.durationMs, required this.positionDisplay, required this.volume, required this.volumeDisplay, required this.isMuted, required this.shuffleMode, required this.repeatMode, required this.playingNowPosition, required this.playingNowTracks, required this.playingNowPositionDisplay, required this.playingNowChangeCounter});
+  const _PlayerStatus({required this.zoneId, required this.zoneName, required this.state, this.trackInfo, required this.positionMs, required this.durationMs, required this.positionDisplay, required this.volume, required this.volumeDisplay, required this.isMuted, this.shuffleMode = ShuffleMode.off, this.repeatMode = RepeatMode.off, required this.playingNowPosition, required this.playingNowTracks, required this.playingNowPositionDisplay, required this.playingNowChangeCounter});
   
 
 @override final  String zoneId;
@@ -246,8 +246,8 @@ class _PlayerStatus implements PlayerStatus {
 @override final  double volume;
 @override final  String volumeDisplay;
 @override final  bool isMuted;
-@override final  ShuffleMode shuffleMode;
-@override final  RepeatMode repeatMode;
+@override@JsonKey() final  ShuffleMode shuffleMode;
+@override@JsonKey() final  RepeatMode repeatMode;
 @override final  int playingNowPosition;
 @override final  int playingNowTracks;
 @override final  String playingNowPositionDisplay;
