@@ -41,11 +41,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
   Future<Either<AppException, Unit>> playNext(
     String zoneId,
     List<int> fileKeys,
-  ) => getIt<McwsClient>().playByKey(zoneId, fileKeys, location: 'Next');
+  ) => getIt<McwsClient>().playByKey(zoneId, fileKeys, location: -1);
 
   @override
   Future<Either<AppException, Unit>> addToQueue(
     String zoneId,
     List<int> fileKeys,
-  ) => getIt<McwsClient>().playByKey(zoneId, fileKeys, location: 'End');
+  ) => getIt<McwsClient>().addToQueue(zoneId, fileKeys, location: 0);
 }

@@ -267,6 +267,15 @@ class McwsClient {
     ),
   );
 
+  Future<Either<AppException, Unit>> addToQueue(
+    String zoneId,
+    List<int> fileKeys, {
+    int location = 0,
+  }) => _command(
+    () =>
+        _api.playByKey(zoneId: zoneId, key: fileKeys.join(','), location: location),
+  );
+
   Future<Either<AppException, Unit>> clearQueue(String zoneId) =>
       _command(() => _api.clearQueue(zoneId: zoneId));
 
@@ -396,7 +405,7 @@ class McwsClient {
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,
     List<int> fileKeys, {
-    String? location,
+    int? location,
   }) => _command(
     () => _api.playByKey(
       zoneId: zoneId,

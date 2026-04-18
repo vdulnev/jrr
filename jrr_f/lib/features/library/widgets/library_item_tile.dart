@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/injection.dart';
+import '../../player/providers/player_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
+import '../data/repositories/library_repository.dart';
 import 'library_action_sheet.dart';
 
 class LibraryItemTile extends ConsumerWidget {
@@ -37,16 +41,40 @@ class LibraryItemTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.more_vert),
-        onPressed: () => showLibraryActionSheet(
-          context,
-          ref,
-          items: [item],
-          title: item.name,
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.play_arrow_outlined),
+            tooltip: 'Play',
+            onPressed: () async {
+              final zone = ref.read(activeZoneProvider);
+              if (zone == null) return;
+              getIt<LibraryRepository>().playNow(zone.id, [item.fileKey]);
+              ref.read(playerProvider.notifier).refresh();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Add to playing now',
+            onPressed: () async {
+              final zone = ref.read(activeZoneProvider);
+              if (zone == null) return;
+              getIt<LibraryRepository>().addToQueue(zone.id, [item.fileKey]);
+              ref.read(playerProvider.notifier).refresh();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Added to playing now'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
-      onTap: () =>
+      onLongPress: () =>
           showLibraryActionSheet(context, ref, items: [item], title: item.name),
     );
   }

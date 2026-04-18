@@ -2,11 +2,15 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/router/navigation_notifier.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../player/providers/player_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
+import '../data/repositories/library_repository.dart';
 import '../providers/library_providers.dart';
 
 @RoutePage()
@@ -75,7 +79,13 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                             leading: const Icon(Icons.album_outlined),
                             title: Text(album.name),
                             subtitle: Text(widget.artist),
-                            trailing: const Icon(Icons.chevron_right),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _AlbumActionButtons(album: album),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
                             onTap: () => ref
                                 .read(navigationProvider.notifier)
                                 .push(AlbumDetailRoute(album: album)),
@@ -87,6 +97,61 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _AlbumActionButtons extends ConsumerWidget {
+  final Album album;
+
+  const _AlbumActionButtons({required this.album});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      onSelected: (action) async {
+        final tracks = await ref.read(albumTracksProvider(album).future);
+        final zone = ref.read(activeZoneProvider);
+        if (zone == null) return;
+
+        final keys = tracks.map((t) => t.fileKey).toList();
+
+        if (action == 'play') {
+          getIt<LibraryRepository>().playNow(zone.id, keys);
+        } else if (action == 'add') {
+          getIt<LibraryRepository>().addToQueue(zone.id, keys);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Added "${album.name}" to playing now'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
+        }
+        ref.read(playerProvider.notifier).refresh();
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'play',
+          child: ListTile(
+            leading: Icon(Icons.play_arrow_outlined),
+            title: Text('Play'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'add',
+          child: ListTile(
+            leading: Icon(Icons.add_circle_outline),
+            title: Text('Add to playing now'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }

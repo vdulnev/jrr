@@ -130,7 +130,7 @@ abstract class McwsApi {
   Future<String> playByKey({
     @Query('Zone') required String zoneId,
     @Query('Key') required String key,
-    @Query('Location') String? location,
+    @Query('Location') int? location,
     @Query('ZoneType') String zoneType = 'ID',
   });
 
