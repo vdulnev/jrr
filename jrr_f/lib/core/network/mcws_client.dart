@@ -272,8 +272,11 @@ class McwsClient {
     List<int> fileKeys, {
     int location = 0,
   }) => _command(
-    () =>
-        _api.playByKey(zoneId: zoneId, key: fileKeys.join(','), location: location),
+    () => _api.playByKey(
+      zoneId: zoneId,
+      key: fileKeys.join(','),
+      location: location,
+    ),
   );
 
   Future<Either<AppException, Unit>> clearQueue(String zoneId) =>
@@ -367,6 +370,7 @@ class McwsClient {
       () => _api.getAlbumsByArtist(query: query),
       (tracks) => right(
         tracks
+            .where((track) => track.artist == artist)
             .map((track) {
               final albumName = track.album;
               if (albumName.isEmpty) return null;
