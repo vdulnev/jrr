@@ -364,7 +364,7 @@ class McwsClient {
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist) {
     final query =
-        '[Media Type]=Audio [Artist]=$artist ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]';
+        '[Media Type]=Audio [Artist]=[$artist] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]';
 
     return _request(
       () => _api.getAlbumsByArtist(query: query),
@@ -395,9 +395,9 @@ class McwsClient {
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
     final baseQuery =
-        '[Media Type]=Audio [Album]=${album.name} [Artist]=${album.artist}';
+        '[Media Type]=Audio [Album]=[${album.name}] [Artist]=[${album.artist}]';
     final queryExpression = album.folderPath.isNotEmpty
-        ? '$baseQuery [Filename (path)]=${album.folderPath}'
+        ? '$baseQuery [Filename (path)]=[${album.folderPath}]'
         : baseQuery;
 
     return _request(
