@@ -269,6 +269,9 @@ class McwsClient {
   Future<Either<AppException, Unit>> clearQueue(String zoneId) =>
       _command(() => _api.clearQueue(zoneId: zoneId));
 
+  static String _esc(String value) =>
+      value.replaceAllMapped(RegExp(r'[\[\]()\-]'), (m) => '/${m[0]}');
+
   // -------------------------------------------------------------------------
   // Library browse & search
   // -------------------------------------------------------------------------
@@ -281,10 +284,11 @@ class McwsClient {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return right([]);
 
+    final term = _esc(trimmed);
     return _request(
       () => _api.filesSearch(
         query:
-            '[Media Type]=Audio ([Name] contains $trimmed OR [Artist] contains $trimmed OR [Album] contains $trimmed)',
+            '[Media Type]=Audio ([Name] contains $term OR [Artist] contains $term OR [Album] contains $term)',
         startIndex: startIndex,
         count: count,
       ),
@@ -309,7 +313,7 @@ class McwsClient {
   ) => _request(
     () => _api.filesSearch(
       query:
-          '[Media Type]=Audio [Artist]=[$artist] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]',
+          '[Media Type]=Audio [Artist]=[${_esc(artist)}] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]',
     ),
     (tracks) => right(
       tracks
@@ -321,9 +325,9 @@ class McwsClient {
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
     final base =
-        '[Media Type]=Audio [Album]=[${album.name}] [Artist]=[${album.artist}]';
+        '[Media Type]=Audio [Album]=[${_esc(album.name)}] [Artist]=[${_esc(album.artist)}]';
     final query = album.folderPath.isNotEmpty
-        ? '$base [Filename (path)]=[${album.folderPath}]'
+        ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;
     return _request(
       () => _api.filesSearch(query: query),
