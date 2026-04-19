@@ -28,7 +28,11 @@ class ArtistAlbumsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(albumsByArtistProvider(artist)),
         ),
       ),
-      data: (albums) => AlbumListScreen(albums: albums, title: artist),
+      data: (albums) => AlbumListScreen(
+        albums: albums,
+        title: artist,
+        onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
+      ),
     );
   }
 }
