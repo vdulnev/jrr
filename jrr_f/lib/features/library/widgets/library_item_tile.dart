@@ -8,16 +8,24 @@ import '../data/models/track.dart';
 import '../data/repositories/library_repository.dart';
 import 'library_action_sheet.dart';
 
-class LibraryItemTile extends ConsumerWidget {
+class LibraryItemTile extends ConsumerStatefulWidget {
   final Track item;
   final int? trackNumber;
 
   const LibraryItemTile({required this.item, this.trackNumber, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LibraryItemTile> createState() => _LibraryItemTileState();
+}
+
+class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
     final displayTrackNumber =
-        trackNumber ?? (item.trackNumber > 0 ? item.trackNumber : null);
+        widget.trackNumber ?? (item.trackNumber > 0 ? item.trackNumber : null);
     return ListTile(
       leading: displayTrackNumber != null
           ? SizedBox(
@@ -36,11 +44,12 @@ class LibraryItemTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text(
-        [item.artist, item.album].where((s) => s.isNotEmpty).join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      subtitle: item.filePath.isNotEmpty && _expanded
+          ? Text(item.filePath)
+          : null,
+      onTap: item.filePath.isNotEmpty
+          ? () => setState(() => _expanded = !_expanded)
+          : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
