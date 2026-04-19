@@ -281,12 +281,10 @@ class McwsClient {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return right([]);
 
-    final mcwsQuery =
-        '[Media Type]=Audio ([Name] contains $trimmed OR [Artist] contains $trimmed OR [Album] contains $trimmed)';
-
     return _request(
-      () => _api.searchFiles(
-        query: mcwsQuery,
+      () => _api.filesSearch(
+        query:
+            '[Media Type]=Audio ([Name] contains $trimmed OR [Artist] contains $trimmed OR [Album] contains $trimmed)',
         startIndex: startIndex,
         count: count,
       ),
@@ -295,7 +293,9 @@ class McwsClient {
   }
 
   Future<Either<AppException, List<String>>> getArtists() => _request(
-    () => _api.getArtists(),
+    () => _api.filesSearch(
+      query: '[Media Type]=Audio ~limit=-1,1,[Artist] ~sort=[Artist]',
+    ),
     (items) => right(
       items
           .map((track) => track.artist)
@@ -304,39 +304,40 @@ class McwsClient {
     ),
   );
 
-  Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist) {
-    final query =
-        '[Media Type]=Audio [Artist]=[$artist] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]';
-
-    return _request(
-      () => _api.getAlbumsByArtist(query: query),
-      (tracks) => right(
-        tracks
-            .where((t) => t.artist == artist && t.album.isNotEmpty)
-            .map(Album.fromTrack)
-            .toList(),
-      ),
-    );
-  }
+  Future<Either<AppException, List<Album>>> getAlbumsByArtist(
+    String artist,
+  ) => _request(
+    () => _api.filesSearch(
+      query:
+          '[Media Type]=Audio [Artist]=[$artist] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]',
+    ),
+    (tracks) => right(
+      tracks
+          .where((t) => t.artist == artist && t.album.isNotEmpty)
+          .map(Album.fromTrack)
+          .toList(),
+    ),
+  );
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
-    final baseQuery =
+    final base =
         '[Media Type]=Audio [Album]=[${album.name}] [Artist]=[${album.artist}]';
-    final queryExpression = album.folderPath.isNotEmpty
-        ? '$baseQuery [Filename (path)]=[${album.folderPath}]'
-        : baseQuery;
-
+    final query = album.folderPath.isNotEmpty
+        ? '$base [Filename (path)]=[${album.folderPath}]'
+        : base;
     return _request(
-      () => _api.getAlbumTracks(query: queryExpression),
+      () => _api.filesSearch(query: query),
       (tracks) => right(tracks),
     );
   }
 
-  Future<Either<AppException, List<Album>>> getRandomAlbums() =>
-      _request(() => _api.getRandomAlbums(), (tracks) {
-        final albums = tracks.map(Album.fromTrack).toList();
-        return right(albums);
-      });
+  Future<Either<AppException, List<Album>>> getRandomAlbums() => _request(
+    () => _api.filesSearch(
+      query:
+          '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
+    ),
+    (tracks) => right(tracks.map(Album.fromTrack).toList()),
+  );
 
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,

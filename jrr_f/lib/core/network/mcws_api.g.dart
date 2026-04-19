@@ -696,7 +696,7 @@ class _McwsApi implements McwsApi {
   }
 
   @override
-  Future<List<Track>> searchFiles({
+  Future<List<Track>> filesSearch({
     required String query,
     int startIndex = 0,
     int count = 100,
@@ -707,127 +707,6 @@ class _McwsApi implements McwsApi {
       r'StartIndex': startIndex,
       r'Limit': count,
     };
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Track>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            'Files/Search?Action=JSON',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Track> _value;
-    try {
-      _value = _result.data!
-          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
-          .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
-  }
-
-  @override
-  Future<List<Track>> getArtists({
-    String query = '[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
-  }) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'Query': query};
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Track>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            'Files/Search?Action=JSON',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Track> _value;
-    try {
-      _value = _result.data!
-          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
-          .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
-  }
-
-  @override
-  Future<List<Track>> getAlbumsByArtist({required String query}) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'Query': query};
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Track>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            'Files/Search?Action=JSON',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Track> _value;
-    try {
-      _value = _result.data!
-          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
-          .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
-  }
-
-  @override
-  Future<List<Track>> getAlbumTracks({required String query}) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'Query': query};
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Track>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            'Files/Search?Action=JSON',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Track> _value;
-    try {
-      _value = _result.data!
-          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
-          .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
-  }
-
-  @override
-  Future<List<Track>> getRandomAlbums({
-    String query =
-        '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
-  }) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'Query': query};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<Track>>(

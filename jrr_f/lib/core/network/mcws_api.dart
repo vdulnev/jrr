@@ -135,30 +135,9 @@ abstract class McwsApi {
   });
 
   @GET('Files/Search?Action=JSON')
-  Future<List<Track>> searchFiles({
+  Future<List<Track>> filesSearch({
     @Query('Query') required String query,
     @Query('StartIndex') int startIndex = 0,
     @Query('Limit') int count = 100,
-  });
-
-  @GET('Files/Search?Action=JSON')
-  Future<List<Track>> getArtists({
-    @Query('Query')
-    String query = '[Media Type]=Audio  ~limit=-1,1,[Artist] ~sort=[Artist]',
-  });
-
-  @GET('Files/Search?Action=JSON')
-  Future<List<Track>> getAlbumsByArtist({
-    @Query('Query') required String query,
-  });
-
-  @GET('Files/Search?Action=JSON')
-  Future<List<Track>> getAlbumTracks({@Query('Query') required String query});
-
-  @GET('Files/Search?Action=JSON')
-  Future<List<Track>> getRandomAlbums({
-    @Query('Query')
-    String query =
-        '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
   });
 }
