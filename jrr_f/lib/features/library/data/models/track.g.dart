@@ -28,6 +28,9 @@ _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   sampleRate: (json['Sample Rate'] as num?)?.toInt() ?? 0,
   channels: (json['Channels'] as num?)?.toInt() ?? 0,
   filePath: json['Filename'] as String? ?? '',
+  date: json['Date'] == null
+      ? 0
+      : const ForceIntConverter().fromJson(json['Date']),
 );
 
 Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
@@ -46,4 +49,5 @@ Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
   'Sample Rate': instance.sampleRate,
   'Channels': instance.channels,
   'Filename': instance.filePath,
+  'Date': const ForceIntConverter().toJson(instance.date),
 };

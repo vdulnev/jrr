@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/injection.dart';
@@ -82,10 +83,14 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (_, i) {
                     final album = filtered[i];
+                    final subtitle = [
+                      album.artist,
+                      if (album.date.isNotEmpty) album.date,
+                    ].join(' \u00b7 ');
                     return ListTile(
                       leading: const Icon(Icons.album_outlined),
                       title: Text(album.name),
-                      subtitle: Text(album.artist),
+                      subtitle: Text(subtitle),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -96,6 +101,15 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                       onTap: () => ref
                           .read(navigationProvider.notifier)
                           .push(AlbumDetailRoute(album: album)),
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: album.name));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Copied "${album.name}"'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),

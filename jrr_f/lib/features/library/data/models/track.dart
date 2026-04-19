@@ -22,6 +22,7 @@ abstract class Track with _$Track {
     @JsonKey(name: 'Sample Rate') @Default(0) int sampleRate,
     @JsonKey(name: 'Channels') @Default(0) int channels,
     @JsonKey(name: 'Filename') @Default('') String filePath,
+    @JsonKey(name: 'Date') @ForceIntConverter() @Default(0) int date,
   }) = _Track;
 
   const Track._();

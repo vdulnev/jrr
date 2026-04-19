@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Album {
 
- String get name; String get artist; String get folderPath;
+ String get name; String get artist; String get folderPath; String get date;
 /// Create a copy of Album
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $AlbumCopyWith<Album> get copyWith => _$AlbumCopyWithImpl<Album>(this as Album, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Album&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Album&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath)&&(identical(other.date, date) || other.date == date));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,artist,folderPath);
+int get hashCode => Object.hash(runtimeType,name,artist,folderPath,date);
 
 @override
 String toString() {
-  return 'Album(name: $name, artist: $artist, folderPath: $folderPath)';
+  return 'Album(name: $name, artist: $artist, folderPath: $folderPath, date: $date)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $AlbumCopyWith<$Res>  {
   factory $AlbumCopyWith(Album value, $Res Function(Album) _then) = _$AlbumCopyWithImpl;
 @useResult
 $Res call({
- String name, String artist, String folderPath
+ String name, String artist, String folderPath, String date
 });
 
 
@@ -62,11 +62,12 @@ class _$AlbumCopyWithImpl<$Res>
 
 /// Create a copy of Album
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? artist = null,Object? folderPath = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? artist = null,Object? folderPath = null,Object? date = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,artist: null == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
 as String,folderPath: null == folderPath ? _self.folderPath : folderPath // ignore: cast_nullable_to_non_nullable
+as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -152,10 +153,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String artist,  String folderPath)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String artist,  String folderPath,  String date)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Album() when $default != null:
-return $default(_that.name,_that.artist,_that.folderPath);case _:
+return $default(_that.name,_that.artist,_that.folderPath,_that.date);case _:
   return orElse();
 
 }
@@ -173,10 +174,10 @@ return $default(_that.name,_that.artist,_that.folderPath);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String artist,  String folderPath)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String artist,  String folderPath,  String date)  $default,) {final _that = this;
 switch (_that) {
 case _Album():
-return $default(_that.name,_that.artist,_that.folderPath);case _:
+return $default(_that.name,_that.artist,_that.folderPath,_that.date);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -193,10 +194,10 @@ return $default(_that.name,_that.artist,_that.folderPath);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String artist,  String folderPath)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String artist,  String folderPath,  String date)?  $default,) {final _that = this;
 switch (_that) {
 case _Album() when $default != null:
-return $default(_that.name,_that.artist,_that.folderPath);case _:
+return $default(_that.name,_that.artist,_that.folderPath,_that.date);case _:
   return null;
 
 }
@@ -208,12 +209,13 @@ return $default(_that.name,_that.artist,_that.folderPath);case _:
 
 
 class _Album implements Album {
-  const _Album({required this.name, required this.artist, required this.folderPath});
+  const _Album({required this.name, required this.artist, required this.folderPath, this.date = ''});
   
 
 @override final  String name;
 @override final  String artist;
 @override final  String folderPath;
+@override@JsonKey() final  String date;
 
 /// Create a copy of Album
 /// with the given fields replaced by the non-null parameter values.
@@ -225,16 +227,16 @@ _$AlbumCopyWith<_Album> get copyWith => __$AlbumCopyWithImpl<_Album>(this, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Album&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Album&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath)&&(identical(other.date, date) || other.date == date));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,artist,folderPath);
+int get hashCode => Object.hash(runtimeType,name,artist,folderPath,date);
 
 @override
 String toString() {
-  return 'Album(name: $name, artist: $artist, folderPath: $folderPath)';
+  return 'Album(name: $name, artist: $artist, folderPath: $folderPath, date: $date)';
 }
 
 
@@ -245,7 +247,7 @@ abstract mixin class _$AlbumCopyWith<$Res> implements $AlbumCopyWith<$Res> {
   factory _$AlbumCopyWith(_Album value, $Res Function(_Album) _then) = __$AlbumCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String artist, String folderPath
+ String name, String artist, String folderPath, String date
 });
 
 
@@ -262,11 +264,12 @@ class __$AlbumCopyWithImpl<$Res>
 
 /// Create a copy of Album
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? artist = null,Object? folderPath = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? artist = null,Object? folderPath = null,Object? date = null,}) {
   return _then(_Album(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,artist: null == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
 as String,folderPath: null == folderPath ? _self.folderPath : folderPath // ignore: cast_nullable_to_non_nullable
+as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

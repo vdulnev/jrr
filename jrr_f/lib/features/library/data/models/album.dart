@@ -10,16 +10,21 @@ abstract class Album with _$Album {
     required String name,
     required String artist,
     required String folderPath,
+    @Default('') String date,
   }) = _Album;
 
   factory Album.fromTrack(Track track) {
     final folderPath = track.totalDiscs > 1 || track.discNumber > 0
         ? track.parentFolderPath
         : track.folderPath;
+    final date = track.date > 0
+        ? DateTime.fromMillisecondsSinceEpoch(track.date * 1000).year.toString()
+        : '';
     return Album(
       name: track.album,
       artist: track.artist,
       folderPath: folderPath,
+      date: date,
     );
   }
 }
