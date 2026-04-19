@@ -35,7 +35,14 @@ class RootScreen extends ConsumerWidget {
             },
           ),
         ),
-        if (showMiniPlayer) const MiniPlayerPanel(),
+        AnimatedSlide(
+          offset: showMiniPlayer ? Offset.zero : const Offset(0, 1),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          child: showMiniPlayer
+              ? const MiniPlayerPanel()
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
