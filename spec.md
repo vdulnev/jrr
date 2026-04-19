@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** Draft
 
 ---
@@ -28,7 +28,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Now Playing info & artwork  | v1       |
 | Zone management             | v1       |
 | Playing Now queue           | v1       |
-| Library browse & search     | v2       |
+| Library browse & search     | v2 (done)|
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
@@ -406,6 +406,85 @@ retrieval. Response is a JSON array of file objects.
 | Zone      | string |
 | ZoneType  | string |
 
+### 4.10 Library Browse & Search
+
+**Endpoint:** `Files/Search`
+
+| Parameter   | Type   | Description                              |
+|-------------|--------|------------------------------------------|
+| Action      | string | `JSON` for JSON array response           |
+| Query       | string | MCWS search expression (see below)       |
+| StartIndex  | int    | Offset for pagination (0-based)          |
+| Limit       | int    | Max results to return (-1 = unlimited)   |
+
+**Query syntax:**
+
+Field filters: `[Field]=Value` — exact match on a metadata field.
+Contains match: `[Field] contains Value`.
+Grouping: `(expr1 OR expr2)`.
+Negation: `-[Field]=Value`.
+
+Special modifiers appended to the query string:
+- `~sort=[Field]` — sort results by field
+- `~limit=N,M,[Field]` — return M items per distinct value of Field, N total groups
+- `~n=N` — random selection of N results
+
+**Escaping:** Characters `[ ] ( ) -` are special in MCWS query syntax.
+To use them literally in a value, prefix with `/`:
+`/[`, `/]`, `/(`, `/)`, `/-`.
+
+**Common queries:**
+
+| Operation           | Query                                                                      |
+|---------------------|----------------------------------------------------------------------------|
+| Search tracks       | `[Media Type]=Audio ([Name] contains term OR [Artist] contains term OR [Album] contains term)` |
+| List all artists    | `[Media Type]=Audio ~limit=-1,1,[Artist] ~sort=[Artist]`                   |
+| Albums by artist    | `[Media Type]=Audio [Artist]=[artist] ~limit=-1,1,[Album] ~sort=[Album]`   |
+| Album tracks        | `[Media Type]=Audio [Album]=[name] [Artist]=[artist]`                      |
+| Random albums       | `[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10`        |
+
+**Client-side filtering:** MCWS field matching (`[Artist]=value`) performs
+substring matching. The client must post-filter results for exact matches
+when needed (e.g., artist names containing `-`).
+
+**Multi-disc albums:** For albums with `Total Discs > 1` or `Disc # > 1`,
+use `FileParent([Filename (path)])` in a `~limit` expression to group by
+parent folder, ensuring each disc isn't listed as a separate album.
+
+### 4.11 Album Model
+
+An album is derived from track metadata, not a first-class MCWS entity.
+
+| Field      | Type   | Source                                        |
+|------------|--------|-----------------------------------------------|
+| name       | string | Track → Album field                           |
+| artist     | string | Track → Artist field                          |
+| folderPath | string | Track → Filename path (parent for multi-disc) |
+| date       | string | Track → Date field (unix timestamp → year)    |
+
+### 4.12 Track Model (Library)
+
+Extended track metadata returned by `Files/Search?Action=JSON`.
+
+| Field       | Type   | JSON Key         |
+|-------------|--------|------------------|
+| fileKey     | int    | Key              |
+| name        | string | Name             |
+| artist      | string | Artist           |
+| album       | string | Album            |
+| genre       | string | Genre            |
+| duration    | float  | Duration         |
+| trackNumber | int    | Track #          |
+| discNumber  | int    | Disc #           |
+| totalDiscs  | int    | Total Discs      |
+| imageUrl    | string | Image File       |
+| bitrate     | int    | Bitrate          |
+| bitDepth    | int    | Bit Depth        |
+| sampleRate  | int    | Sample Rate      |
+| channels    | int    | Channels         |
+| filePath    | string | Filename         |
+| date        | int    | Date (unix ts)   |
+
 ---
 
 ## 5. Polling Strategy
@@ -574,6 +653,13 @@ interface McwsClient {
   playByKey(zoneId, key, location?)
   editQueue(zoneId, action, source, target?)
   clearQueue(zoneId)
+
+  // Library
+  searchFiles(query, startIndex?, count?) → List<Track>
+  getArtists() → List<string>
+  getAlbumsByArtist(artist) → List<Album>
+  getAlbumTracks(album) → List<Track>
+  getRandomAlbums() → List<Album>
 }
 ```
 
@@ -631,3 +717,4 @@ This spec follows semantic versioning.
 | Playback/EditPlaylist     | GET    | Move/remove queue items        |
 | Playback/ClearPlaylist    | GET    | Clear the queue                |
 | File/GetImage             | GET    | Get file artwork               |
+| Files/Search              | GET    | Search/browse library          |

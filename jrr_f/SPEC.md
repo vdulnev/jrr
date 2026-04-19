@@ -25,6 +25,7 @@ Never use null assertion operator.
 | HTTP | **Dio** | with custom interceptors |
 | Local DB | **drift** (SQLite) | favorites, cached portfolio + history, alerts, settings |
 | Simple prefs | **shared_preferences** | non-sensitive UI-only flags |
+| HTTP codegen | **Retrofit** (`retrofit`) | abstract API → generated implementation |
 | Notifications | **awesome_notifications** | local price alerts |
 | Mocking (tests) | **mocktail** | per project test convention |
 
@@ -48,8 +49,12 @@ lib/
       app_exception.freezed.dart
     network/
       dio_factory.dart             # builds the Dio instance with interceptors
-      mcws_client.dart             # one method per MCWS operation
+      mcws_api.dart                # Retrofit abstract class — annotated HTTP endpoints
+      mcws_api.g.dart              # generated Retrofit implementation
+      mcws_client.dart             # domain-level client: error mapping, query building, response parsing
       mcws_xml_parser.dart         # XML → Map<String, String>
+      models/
+        auth_result.dart           # Authenticate response DTO
       interceptors/
         auth_interceptor.dart      # appends Token= query param
         logging_interceptor.dart   # Talker-based, redacts token values
@@ -60,41 +65,39 @@ lib/
       app_router.dart              # @AutoRouterConfig
       app_router.gr.dart           # generated
       navigation_notifier.dart     # Riverpod notifier owning the route stack
+      root_screen.dart             # AutoRouter.declarative + mini player
   features/
     connection/
       data/
         models/
-          server_config.dart       # persisted: host, port, username (Freezed)
-          server_config.freezed.dart
           server_info.dart         # from Alive response (Freezed)
-          server_info.freezed.dart
-          server_info.g.dart
         repositories/
-          connection_repository.dart
+          connection_repository.dart      # abstract interface
+          connection_repository_impl.dart # impl with secure storage
       providers/
-        connection_provider.dart
+        last_server_provider.dart
+        server_setup_provider.dart
+        session_provider.dart      # manages auth state
+        session_state.dart         # Restoring | Unauthenticated | Authenticated
       widgets/
         server_setup_screen.dart   # host/port/credential entry
         connecting_screen.dart     # spinner while Alive + Authenticate run
     player/
       data/
         models/
-          player_status.dart       # Freezed; includes TrackInfo?
-          player_status.freezed.dart
-          player_status.g.dart
-          track_info.dart
-          track_info.freezed.dart
-          track_info.g.dart
+          player_status.dart       # Freezed; includes Track?
           playback_state.dart      # enum
           shuffle_mode.dart        # enum
           repeat_mode.dart         # enum
         repositories/
-          player_repository.dart   # Info, transport, seek, volume, mute
+          player_repository.dart   # abstract interface
+          player_repository_impl.dart
       providers/
         player_provider.dart       # AsyncNotifier<PlayerStatus>
         polling_provider.dart      # timer-based orchestrator
       widgets/
-        now_playing_screen.dart
+        now_playing_screen.dart    # main screen with drawer nav
+        mini_player_panel.dart     # persistent mini player (slide animation)
         transport_controls.dart
         seek_bar.dart
         volume_control.dart
@@ -103,10 +106,9 @@ lib/
       data/
         models/
           zone.dart
-          zone.freezed.dart
-          zone.g.dart
         repositories/
-          zone_repository.dart
+          zone_repository.dart     # abstract interface
+          zone_repository_impl.dart
       providers/
         zone_provider.dart         # AsyncNotifier<List<Zone>>
         active_zone_provider.dart  # StateProvider<Zone?>
@@ -115,17 +117,32 @@ lib/
         zone_tile.dart
     queue/
       data/
-        models/
-          playing_now_item.dart
-          playing_now_item.freezed.dart
-          playing_now_item.g.dart
         repositories/
-          queue_repository.dart
+          queue_repository.dart    # abstract interface
+          queue_repository_impl.dart
       providers/
-        queue_provider.dart        # AsyncNotifier<List<PlayingNowItem>>
+        queue_provider.dart        # AsyncNotifier<List<Track>>
       widgets/
         queue_screen.dart
         queue_item_tile.dart
+    library/
+      data/
+        models/
+          album.dart               # Freezed; Album.fromTrack() factory
+          track.dart               # Freezed + json_serializable; shared by queue & library
+        repositories/
+          library_repository.dart  # abstract interface
+          library_repository_impl.dart
+      providers/
+        library_providers.dart     # artists, albumsByArtist, albumTracks, randomAlbums, search
+      widgets/
+        library_screen.dart        # artist browsing with client-side filtering
+        album_list_screen.dart     # reusable: takes List<Album>, title, onRefresh
+        album_detail_screen.dart   # track listing (multi-disc aware)
+        artist_albums_screen.dart  # @RoutePage wrapper for artist → albums
+        random_albums_screen.dart  # @RoutePage wrapper for random albums
+        library_item_tile.dart
+        library_action_sheet.dart
   shared/
     widgets/
       error_view.dart              # surfaces AsyncValue.error
@@ -190,12 +207,13 @@ All repositories that need to make MCWS requests resolve the client at call-time
 - **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through a Riverpod provider.
 - Single `AppRouter` with `@AutoRouterConfig`.
 - `RootScreen` wraps `AutoRouter.declarative()` and renders routes based on:
-  - `authProvider` state (auth ↔ unauth)
+  - `sessionProvider` state (Restoring | Unauthenticated | Authenticated)
   - `navigationProvider` stack (declarative nav stack)
+  - When authenticated and nav stack is non-empty, shows `MiniPlayerPanel` below the router with `AnimatedSlide` transition
 - `NavigationNotifier` (Riverpod) manages the navigation stack:
   - `push()` — add route to stack
   - `pop()` — remove from stack
-  - `clear()` — reset stack (used on logout)
+  - `clear()` — reset stack (returns to NowPlaying)
 - **Never use imperative `context.router.push/pop`** — all navigation goes through `ref.read(navigationProvider.notifier)`.
 
 ### Error handling
@@ -277,6 +295,22 @@ Interceptors are added in this order (first added = outermost):
 
 No retry interceptor for v1 — transient failures surface as errors that the user can retry manually.
 
+### Network layer architecture
+
+Two classes split HTTP from domain logic:
+
+**`McwsApi`** (Retrofit) — pure HTTP interface. Each method has a `@GET` annotation and maps to one MCWS endpoint. Returns raw `String` (XML) or `List<Track>` (JSON). Generated `_McwsApi` class implements it via Dio. Only `filesSearch` is used for all library queries.
+
+**`McwsClient`** — domain-level client. Wraps `McwsApi` calls with:
+- MCWS query string construction (field filters, `~limit`, `~sort`, etc.)
+- Value escaping (`_esc()` — prefixes `[]()-` with `/` for literal use)
+- Client-side exact-match filtering (MCWS does substring matching)
+- XML response parsing via `McwsXmlParser`
+- Error mapping (`DioException` → `AppException`)
+- Domain model transformation (`Track` → `Album`, flat XML fields → `PlayerStatus`)
+
+All repositories resolve `McwsClient` from get_it, never `McwsApi` directly.
+
 ### Offline
 
 MCWS has no offline mode. When any request fails due to a network error:
@@ -295,6 +329,7 @@ Run `dart run build_runner build --delete-conflicting-outputs` after changes to:
 - Drift tables
 - auto_route definitions
 - json_serializable DTOs
+- Retrofit API definitions (`mcws_api.dart`)
 
 `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are committed (so CI doesn't need to codegen).
 
@@ -330,7 +365,6 @@ dart run build_runner build --delete-conflicting-outputs
 
 flutter run                       # default device
 flutter run -d macos              # macOS
-flutter run --dart-define=BINANCE_ENV=testnet
 
 flutter analyze
 flutter test                      # offline unit + widget
@@ -347,7 +381,7 @@ Pre-commit checklist (matches the global Dart rules):
 
 ## 9. Implementation Phases
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation (done)
 - `flutter create`, `pubspec.yaml` with all dependencies, `build_runner` working
 - `get_it` DI setup (`injection.dart`)
 - `AppRouter` scaffold + `NavigationNotifier`
@@ -356,56 +390,58 @@ Pre-commit checklist (matches the global Dart rules):
 - `Dio` factory with `AuthInterceptor` + `LoggingInterceptor`
 - Drift database with `saved_servers` table
 - `flutter_secure_storage` integration for credential storage
+- macOS entitlements: `com.apple.security.network.client`, keychain access
 
-### Phase 2 — Connection & Authentication
-- `ServerConfig` + `ServerInfo` models
-- `McwsClient.alive()` + `McwsClient.authenticate()`
-- `ConnectionRepository`
-- `ConnectionProvider` (`AsyncNotifier`)
+### Phase 2 — Connection & Authentication (done)
+- `ServerInfo` model
+- `McwsApi` (Retrofit) + `McwsClient` two-layer architecture
+- `ConnectionRepository` (interface + impl with `FlutterSecureStorage`)
+- `SessionProvider` + `SessionState` (Restoring | Unauthenticated | Authenticated)
 - `ServerSetupScreen` + `ConnectingScreen`
 - Navigation guard: redirect to setup when unauthenticated
 
-### Phase 3 — Player Core
-- Domain models: `Zone`, `PlayerStatus`, `TrackInfo`, enums
+### Phase 3 — Player Core (done)
+- Domain models: `Zone`, `PlayerStatus`, `Track`, enums
 - `McwsClient` transport, info, seek, volume, mute, shuffle, repeat methods
-- `PlayerRepository` + `ZoneRepository`
+- `PlayerRepository` + `ZoneRepository` (interfaces + impls)
 - `PollingProvider` (timer-based, respects intervals from parent spec §5.1)
 - `PlayerProvider` + `ZoneProvider` + `ActiveZoneProvider`
 - `NowPlayingScreen` with `TransportControls`, `SeekBar`, `VolumeControl`, `ArtworkWidget`
+- Drawer navigation in NowPlayingScreen (Library sub-items: Artists, Random Albums)
 - `ZoneListScreen`
 
-### Phase 4 — Playing Now Queue
-- `PlayingNowItem` model
+### Phase 4 — Playing Now Queue (done)
+- Queue uses shared `Track` model (no separate `PlayingNowItem`)
 - `QueueRepository` (Playlist, PlayByIndex, PlayByKey, EditPlaylist, ClearPlaylist)
 - `QueueProvider` (refreshes when `playingNowChangeCounter` increments)
 - `QueueScreen` + `QueueItemTile`
 
-### Phase 5 — Library Browse & Search
-Aligned with parent spec v2.0 scope.
+### Phase 5 — Library Browse & Search (done)
+- **API layer:** Single `filesSearch` Retrofit endpoint; `McwsClient` builds MCWS queries with `_esc()` escaping for `[]()-` characters
+- **Browse:** Artist list → album list → track list drill-down
+  - `LibraryScreen` — artist browsing with client-side text filtering
+  - `AlbumListScreen` — reusable widget taking `List<Album>`, `title`, optional `onRefresh`; filter field, long-press copy, play/add-to-queue actions
+  - `AlbumDetailScreen` — track listing, multi-disc aware (groups by disc number)
+  - `ArtistAlbumsScreen` / `RandomAlbumsScreen` — thin `@RoutePage` wrappers
+- **Search:** `McwsClient.searchFiles(query)` — multi-field search (Name, Artist, Album)
+- **Random Albums:** 10 random albums via `~limit` + `~n` modifiers
+- **Models:**
+  - `Track` (Freezed + json_serializable) — shared by queue, library, and player
+  - `Album` (Freezed) — derived from Track via `Album.fromTrack()` factory; includes `date` (year from unix timestamp)
+  - `Album.folderPath` — uses `parentFolderPath` for multi-disc albums
+- **Queue integration:** Play now / Add to queue actions on albums and tracks via `Playback/PlayByKey`
+- **Client-side filtering:** Exact artist match (MCWS does substring matching)
+- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`
+- **LibraryRepository** interface + impl
 
-- **Browse**
-  - `McwsClient.getFiles()` — `File/Search` with browse filters (artist, album, genre)
-  - `McwsClient.getAlbums()`, `getArtists()`, `getGenres()` — field-distinct queries
-  - `LibraryRepository` interface + impl
-  - `LibraryProvider` (`AsyncNotifier<List<LibraryItem>>`) — paginated, keepAlive: false
-  - `BrowseScreen` — top-level entry: Artists / Albums / Genres tabs
-  - `ArtistScreen`, `AlbumScreen` — drill-down lists
-  - `LibraryItemTile` — shared tile for any browse result
+### Phase 6 — Mini Player (done)
+- `MiniPlayerPanel` — persistent panel at bottom of screen when navigated away from NowPlaying
+- Shows artwork, track name, artist, prev/play-pause/next buttons, 2px progress bar
+- Tap navigates back to NowPlaying
+- `AnimatedSlide` transition (slides down when returning to NowPlaying)
+- Integrated in `RootScreen` via `showMiniPlayer` flag based on nav stack state
 
-- **Search**
-  - `McwsClient.search(query)` — `File/Search` with `Query` parameter
-  - `SearchProvider` — debounced, auto-dispose
-  - `SearchScreen` with `SearchBar`, results list
-
-- **Queue integration**
-  - Play album / artist / track via `Playback/PlayByKey` with `Location=End` or `Next`
-  - "Play now", "Play next", "Add to queue" actions on all browse results
-
-- **Data model**
-  - `LibraryItem` (Freezed): fileKey, name, artist, album, imageUrl
-  - Drift table `library_cache` for offline browsing (optional, defer if time-constrained)
-
-### Phase 6 — Polish & Multi-platform
+### Phase 7 — Polish & Multi-platform
 - Adaptive layouts (compact mobile vs expanded desktop)
 - App lifecycle handling — pause/resume polling (§5.3 of parent spec)
 - Error recovery UX (retry flows, reconnect)
@@ -434,3 +470,4 @@ Aligned with parent spec v2.0 scope.
 | 0.1.0 | 2026-04-14 | Initial Flutter spec — all TODO sections filled in |
 | 0.1.1 | 2026-04-15 | get_it scopes for McwsClient session lifecycle; `skipAuth` in AuthInterceptor; logout is async |
 | 0.1.2 | 2026-04-16 | Added Phase 5 — Library Browse & Search (parent spec v2.0); Polish renamed to Phase 6 |
+| 0.2.0 | 2026-04-19 | Phases 1–6 done. Added: Retrofit API layer, mini player with AnimatedSlide, library browse (artists → albums → tracks), random albums, Album/Track models with date, MCWS query escaping, client-side exact filtering, multi-disc album support. Updated project structure to match reality. |
