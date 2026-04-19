@@ -31,3 +31,9 @@ Future<List<Track>> albumTracks(Ref ref, Album album) async {
   final result = await getIt<LibraryRepository>().getAlbumTracks(album);
   return result.getOrElse((e) => throw e);
 }
+
+@riverpod
+Future<List<Album>> randomAlbums(Ref ref) async {
+  final result = await getIt<LibraryRepository>().getRandomAlbums();
+  return result.getOrElse((e) => throw e);
+}

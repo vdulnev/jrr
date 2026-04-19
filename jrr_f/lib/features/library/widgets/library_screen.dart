@@ -72,7 +72,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () => ref
                                 .read(navigationProvider.notifier)
-                                .push(AlbumListRoute(artist: artist)),
+                                .push(ArtistAlbumsRoute(artist: artist)),
                           );
                         },
                       ),

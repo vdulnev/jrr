@@ -272,3 +272,42 @@ final class AlbumTracksFamily extends $Family
   @override
   String toString() => r'albumTracksProvider';
 }
+
+@ProviderFor(randomAlbums)
+final randomAlbumsProvider = RandomAlbumsProvider._();
+
+final class RandomAlbumsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Album>>,
+          List<Album>,
+          FutureOr<List<Album>>
+        >
+    with $FutureModifier<List<Album>>, $FutureProvider<List<Album>> {
+  RandomAlbumsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'randomAlbumsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$randomAlbumsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Album>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Album>> create(Ref ref) {
+    return randomAlbums(ref);
+  }
+}
+
+String _$randomAlbumsHash() => r'c0d295839fc0060642bab9caa22555901315805c';

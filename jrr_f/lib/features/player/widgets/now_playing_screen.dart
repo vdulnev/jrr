@@ -66,15 +66,31 @@ class NowPlayingScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              ListTile(
+              ExpansionTile(
                 leading: const Icon(Icons.library_music_outlined),
                 title: const Text('Library'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ref
-                      .read(navigationProvider.notifier)
-                      .push(const LibraryRoute());
-                },
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 72),
+                    title: const Text('Artists'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      ref
+                          .read(navigationProvider.notifier)
+                          .push(const LibraryRoute());
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 72),
+                    title: const Text('Random Albums'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      ref
+                          .read(navigationProvider.notifier)
+                          .push(const RandomAlbumsRoute());
+                    },
+                  ),
+                ],
               ),
               ListTile(
                 leading: const Icon(Icons.queue_music_outlined),

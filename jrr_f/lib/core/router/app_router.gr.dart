@@ -58,31 +58,31 @@ class AlbumDetailRouteArgs {
 }
 
 /// generated route for
-/// [AlbumListScreen]
-class AlbumListRoute extends PageRouteInfo<AlbumListRouteArgs> {
-  AlbumListRoute({
+/// [ArtistAlbumsScreen]
+class ArtistAlbumsRoute extends PageRouteInfo<ArtistAlbumsRouteArgs> {
+  ArtistAlbumsRoute({
     required String artist,
     Key? key,
     List<PageRouteInfo>? children,
   }) : super(
-         AlbumListRoute.name,
-         args: AlbumListRouteArgs(artist: artist, key: key),
+         ArtistAlbumsRoute.name,
+         args: ArtistAlbumsRouteArgs(artist: artist, key: key),
          initialChildren: children,
        );
 
-  static const String name = 'AlbumListRoute';
+  static const String name = 'ArtistAlbumsRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      final args = data.argsAs<AlbumListRouteArgs>();
-      return AlbumListScreen(artist: args.artist, key: args.key);
+      final args = data.argsAs<ArtistAlbumsRouteArgs>();
+      return ArtistAlbumsScreen(artist: args.artist, key: args.key);
     },
   );
 }
 
-class AlbumListRouteArgs {
-  const AlbumListRouteArgs({required this.artist, this.key});
+class ArtistAlbumsRouteArgs {
+  const ArtistAlbumsRouteArgs({required this.artist, this.key});
 
   final String artist;
 
@@ -90,13 +90,13 @@ class AlbumListRouteArgs {
 
   @override
   String toString() {
-    return 'AlbumListRouteArgs{artist: $artist, key: $key}';
+    return 'ArtistAlbumsRouteArgs{artist: $artist, key: $key}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! AlbumListRouteArgs) return false;
+    if (other is! ArtistAlbumsRouteArgs) return false;
     return artist == other.artist && key == other.key;
   }
 
@@ -194,6 +194,22 @@ class QueueRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return const QueueScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [RandomAlbumsScreen]
+class RandomAlbumsRoute extends PageRouteInfo<void> {
+  const RandomAlbumsRoute({List<PageRouteInfo>? children})
+    : super(RandomAlbumsRoute.name, initialChildren: children);
+
+  static const String name = 'RandomAlbumsRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const RandomAlbumsScreen();
     },
   );
 }

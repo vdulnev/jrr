@@ -154,4 +154,11 @@ abstract class McwsApi {
 
   @GET('Files/Search?Action=JSON')
   Future<List<Track>> getAlbumTracks({@Query('Query') required String query});
+
+  @GET('Files/Search?Action=JSON')
+  Future<List<Track>> getRandomAlbums({
+    @Query('Query')
+    String query =
+        '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
+  });
 }

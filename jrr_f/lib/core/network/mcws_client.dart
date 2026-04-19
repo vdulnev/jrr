@@ -312,24 +312,8 @@ class McwsClient {
       () => _api.getAlbumsByArtist(query: query),
       (tracks) => right(
         tracks
-            .where((track) => track.artist == artist)
-            .map((track) {
-              final albumName = track.album;
-              if (albumName.isEmpty) return null;
-              final String folderPath;
-              if (track.totalDiscs > 1 || track.discNumber > 0) {
-                // For multi-disc albums use common parent folder
-                folderPath = track.parentFolderPath;
-              } else {
-                folderPath = track.folderPath;
-              }
-              return Album(
-                name: albumName,
-                artist: track.artist,
-                folderPath: folderPath,
-              );
-            })
-            .whereType<Album>()
+            .where((t) => t.artist == artist && t.album.isNotEmpty)
+            .map(Album.fromTrack)
             .toList(),
       ),
     );
@@ -347,6 +331,12 @@ class McwsClient {
       (tracks) => right(tracks),
     );
   }
+
+  Future<Either<AppException, List<Album>>> getRandomAlbums() =>
+      _request(() => _api.getRandomAlbums(), (tracks) {
+        final albums = tracks.map(Album.fromTrack).toList();
+        return right(albums);
+      });
 
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,
