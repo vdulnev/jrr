@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
+import '../../features/player/widgets/mini_player_panel.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../router/navigation_notifier.dart';
 import 'app_router.dart';
@@ -21,13 +22,21 @@ class RootScreen extends ConsumerWidget {
     }
 
     final navStack = ref.watch(navigationProvider);
+    final showMiniPlayer = session is Authenticated && navStack.isNotEmpty;
 
-    return AutoRouter.declarative(
-      routes: (_) => switch (session) {
-        Unauthenticated() => [const ServerSetupRoute()],
-        Authenticated() => [const NowPlayingRoute(), ...navStack],
-        Restoring() => [const ServerSetupRoute()],
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: AutoRouter.declarative(
+            routes: (_) => switch (session) {
+              Unauthenticated() => [const ServerSetupRoute()],
+              Authenticated() => [const NowPlayingRoute(), ...navStack],
+              Restoring() => [const ServerSetupRoute()],
+            },
+          ),
+        ),
+        if (showMiniPlayer) const MiniPlayerPanel(),
+      ],
     );
   }
 }
