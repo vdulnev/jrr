@@ -11,8 +11,14 @@ import 'library_action_sheet.dart';
 class LibraryItemTile extends ConsumerStatefulWidget {
   final Track item;
   final int? trackNumber;
+  final bool collapsedByDefault;
 
-  const LibraryItemTile({required this.item, this.trackNumber, super.key});
+  const LibraryItemTile({
+    required this.item,
+    this.trackNumber,
+    this.collapsedByDefault = false,
+    super.key,
+  });
 
   @override
   ConsumerState<LibraryItemTile> createState() => _LibraryItemTileState();
@@ -44,12 +50,32 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: item.filePath.isNotEmpty && _expanded
-          ? Text(item.filePath)
+      subtitle: _expanded || !widget.collapsedByDefault
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  [
+                    item.artist,
+                    item.album,
+                    item.dateDisplay,
+                  ].where((s) => s.isNotEmpty).join(' \u00b7 '),
+                ),
+                if (_expanded && item.filePath.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      item.filePath,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            )
           : null,
-      onTap: item.filePath.isNotEmpty
-          ? () => setState(() => _expanded = !_expanded)
-          : null,
+      onTap: () => setState(() => _expanded = !_expanded),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

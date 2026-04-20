@@ -29,6 +29,26 @@ abstract class Track with _$Track {
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
+  String get dateDisplay {
+    if (date <= 0) return '';
+    // If it's a 4-digit year already
+    if (date > 1000 && date < 3000) return date.toString();
+
+    // JRiver dates are days since 1899-12-30.
+    // 30000 days is approx year 1982. 50000 is year 2036.
+    if (date >= 1) {
+      final dt = jriverDateToDateTime(date.toDouble());
+      return dt.year.toString();
+    }
+    return '';
+  }
+
+  static DateTime jriverDateToDateTime(double value) {
+    // JRiver base date: 1899-12-30
+    final base = DateTime(1899, 12, 30);
+    return base.add(Duration(days: value.toInt()));
+  }
+
   String get folderPath => parentPath(filePath);
 
   String get parentFolderPath => parentPath(folderPath);

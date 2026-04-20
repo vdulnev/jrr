@@ -18,7 +18,7 @@ abstract class Album with _$Album {
         ? track.parentFolderPath
         : track.folderPath;
     final date = track.date > 0
-        ? DateTime.fromMillisecondsSinceEpoch(track.date * 1000).year.toString()
+        ? Track.jriverDateToDateTime(track.date.toDouble()).year.toString()
         : '';
     return Album(
       name: track.album,

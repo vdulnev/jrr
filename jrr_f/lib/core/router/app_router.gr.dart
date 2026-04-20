@@ -151,6 +151,53 @@ class ConnectingRouteArgs {
 }
 
 /// generated route for
+/// [FolderTracksScreen]
+class FolderTracksRoute extends PageRouteInfo<FolderTracksRouteArgs> {
+  FolderTracksRoute({
+    required String folderPath,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+         FolderTracksRoute.name,
+         args: FolderTracksRouteArgs(folderPath: folderPath, key: key),
+         initialChildren: children,
+       );
+
+  static const String name = 'FolderTracksRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<FolderTracksRouteArgs>();
+      return FolderTracksScreen(folderPath: args.folderPath, key: args.key);
+    },
+  );
+}
+
+class FolderTracksRouteArgs {
+  const FolderTracksRouteArgs({required this.folderPath, this.key});
+
+  final String folderPath;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'FolderTracksRouteArgs{folderPath: $folderPath, key: $key}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! FolderTracksRouteArgs) return false;
+    return folderPath == other.folderPath && key == other.key;
+  }
+
+  @override
+  int get hashCode => folderPath.hashCode ^ key.hashCode;
+}
+
+/// generated route for
 /// [LibraryScreen]
 class LibraryRoute extends PageRouteInfo<void> {
   const LibraryRoute({List<PageRouteInfo>? children})

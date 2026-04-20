@@ -27,20 +27,37 @@ class AlbumDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (album.artist.isNotEmpty)
-              Text(
-                album.artist,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+        title: tracksState.maybeWhen(
+          data: (_) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (album.artist.isNotEmpty)
+                Text(
+                  album.artist,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
+            ],
+          ),
+          orElse: () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (album.artist.isNotEmpty)
+                Text(
+                  album.artist,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -125,6 +142,8 @@ class AlbumDetailScreen extends ConsumerWidget {
                 trackNumber: tracks[i].trackNumber > 0
                     ? tracks[i].trackNumber
                     : i + 1,
+
+                collapsedByDefault: true,
               ),
             );
           }
@@ -168,6 +187,7 @@ class _MultiDiscList extends StatelessWidget {
             LibraryItemTile(
               item: track,
               trackNumber: track.trackNumber > 0 ? track.trackNumber : null,
+              collapsedByDefault: true,
             ),
         ],
       ],

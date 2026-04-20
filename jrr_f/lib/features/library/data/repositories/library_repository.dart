@@ -17,6 +17,10 @@ abstract interface class LibraryRepository {
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album);
 
+  Future<Either<AppException, List<Track>>> getTracksByFolder(
+    String folderPath,
+  );
+
   Future<Either<AppException, List<Album>>> getRandomAlbums({int count});
 
   /// Replaces the Playing Now queue and starts playback immediately.

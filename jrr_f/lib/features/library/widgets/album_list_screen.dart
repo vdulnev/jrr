@@ -83,14 +83,11 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (_, i) {
                     final album = filtered[i];
-                    final subtitle = [
-                      album.artist,
-                      if (album.date.isNotEmpty) album.date,
-                    ].join(' \u00b7 ');
+                    final subtitle = album.date;
                     return ListTile(
                       leading: const Icon(Icons.album_outlined),
                       title: Text(album.name),
-                      subtitle: Text(subtitle),
+                      subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -129,6 +126,15 @@ class _AlbumActionButtons extends ConsumerWidget {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (action) async {
+        if (action == 'folder') {
+          if (album.folderPath.isNotEmpty) {
+            ref
+                .read(navigationProvider.notifier)
+                .push(FolderTracksRoute(folderPath: album.folderPath));
+          }
+          return;
+        }
+
         final tracks = await ref.read(albumTracksProvider(album).future);
         final zone = ref.read(activeZoneProvider);
         if (zone == null) return;
@@ -169,6 +175,16 @@ class _AlbumActionButtons extends ConsumerWidget {
             visualDensity: VisualDensity.compact,
           ),
         ),
+        if (album.folderPath.isNotEmpty)
+          const PopupMenuItem(
+            value: 'folder',
+            child: ListTile(
+              leading: Icon(Icons.folder_open_outlined),
+              title: Text('Open folder'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
       ],
     );
   }

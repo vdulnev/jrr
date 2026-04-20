@@ -335,6 +335,15 @@ class McwsClient {
     );
   }
 
+  Future<Either<AppException, List<Track>>> getTracksByFolder(
+    String folderPath,
+  ) => _request(
+    () => _api.filesSearch(
+      query: '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}"',
+    ),
+    (tracks) => right(tracks),
+  );
+
   Future<Either<AppException, List<Album>>> getRandomAlbums() => _request(
     () => _api.filesSearch(
       query:

@@ -6,6 +6,7 @@ import '../../features/library/data/models/album.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../features/library/widgets/album_detail_screen.dart';
 import '../../features/library/widgets/artist_albums_screen.dart';
+import '../../features/library/widgets/folder_tracks_screen.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/library/widgets/random_albums_screen.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
@@ -34,6 +35,7 @@ class AppRouter extends RootStackRouter {
         AutoRoute(page: ArtistAlbumsRoute.page),
         AutoRoute(page: RandomAlbumsRoute.page),
         AutoRoute(page: AlbumDetailRoute.page),
+        AutoRoute(page: FolderTracksRoute.page),
         AutoRoute(page: ConnectingRoute.page),
       ],
     ),

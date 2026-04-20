@@ -33,6 +33,12 @@ Future<List<Track>> albumTracks(Ref ref, Album album) async {
 }
 
 @riverpod
+Future<List<Track>> folderTracks(Ref ref, String folderPath) async {
+  final result = await getIt<LibraryRepository>().getTracksByFolder(folderPath);
+  return result.getOrElse((e) => throw e);
+}
+
+@riverpod
 Future<List<Album>> randomAlbums(Ref ref) async {
   final result = await getIt<LibraryRepository>().getRandomAlbums();
   return result.getOrElse((e) => throw e);

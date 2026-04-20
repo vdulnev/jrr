@@ -32,6 +32,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().getAlbumTracks(album);
 
   @override
+  Future<Either<AppException, List<Track>>> getTracksByFolder(
+    String folderPath,
+  ) => getIt<McwsClient>().getTracksByFolder(folderPath);
+
+  @override
   Future<Either<AppException, List<Album>>> getRandomAlbums({int count = 10}) =>
       getIt<McwsClient>().getRandomAlbums();
 

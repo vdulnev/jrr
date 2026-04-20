@@ -273,6 +273,81 @@ final class AlbumTracksFamily extends $Family
   String toString() => r'albumTracksProvider';
 }
 
+@ProviderFor(folderTracks)
+final folderTracksProvider = FolderTracksFamily._();
+
+final class FolderTracksProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Track>>,
+          List<Track>,
+          FutureOr<List<Track>>
+        >
+    with $FutureModifier<List<Track>>, $FutureProvider<List<Track>> {
+  FolderTracksProvider._({
+    required FolderTracksFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'folderTracksProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$folderTracksHash();
+
+  @override
+  String toString() {
+    return r'folderTracksProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Track>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Track>> create(Ref ref) {
+    final argument = this.argument as String;
+    return folderTracks(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FolderTracksProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$folderTracksHash() => r'15939081bccc9375ac8538f5c62ac0ace32fda9b';
+
+final class FolderTracksFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Track>>, String> {
+  FolderTracksFamily._()
+    : super(
+        retry: null,
+        name: r'folderTracksProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FolderTracksProvider call(String folderPath) =>
+      FolderTracksProvider._(argument: folderPath, from: this);
+
+  @override
+  String toString() => r'folderTracksProvider';
+}
+
 @ProviderFor(randomAlbums)
 final randomAlbumsProvider = RandomAlbumsProvider._();
 
