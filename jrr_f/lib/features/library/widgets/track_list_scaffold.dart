@@ -31,96 +31,108 @@ class TrackListScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => ref.read(navigationProvider.notifier).pop(),
-        ),
-        title: title,
-        bottom: tracksState.maybeWhen(
-          data: (tracks) => tracks.isNotEmpty
-              ? PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow_outlined),
-                        tooltip: 'Play all',
-                        onPressed: () {
-                          final zone = ref.read(activeZoneProvider);
-                          if (zone == null) return;
-                          getIt<LibraryRepository>().playNow(
-                            zone.id,
-                            tracks.map((t) => t.fileKey).toList(),
-                          );
-                          ref.read(playerProvider.notifier).refresh();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle_outline),
-                        tooltip: 'Add all to playing now',
-                        onPressed: () {
-                          final zone = ref.read(activeZoneProvider);
-                          if (zone == null) return;
-                          getIt<LibraryRepository>().addToQueue(
-                            zone.id,
-                            tracks.map((t) => t.fileKey).toList(),
-                          );
-                          ref.read(playerProvider.notifier).refresh();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Added "$addedSnackbarLabel"'
-                                  ' to playing now',
-                                ),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () => showLibraryActionSheet(
-                          context,
-                          ref,
-                          items: tracks,
-                          title: actionSheetTitle,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : null,
-          orElse: () => null,
-        ),
-      ),
-      body: tracksState.when(
-        loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(error: e, onRetry: onRetry),
-        data: (tracks) {
-          if (tracks.isEmpty) {
-            return const Center(child: Text('No tracks found'));
-          }
-          final isMultiDisc = tracks.any(
-            (t) => t.totalDiscs > 1 || t.discNumber > 1,
-          );
-          if (isMultiDisc) {
-            return _MultiDiscList(tracks: tracks);
-          }
-          return ListView.builder(
-            itemCount: tracks.length,
-            itemBuilder: (_, i) => LibraryItemTile(
-              item: tracks[i],
-              trackNumber: tracks[i].trackNumber > 0
-                  ? tracks[i].trackNumber
-                  : i + 1,
-              collapsedByDefault: true,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: back button row
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => ref.read(navigationProvider.notifier).pop(),
+                ),
+                const Spacer(),
+                ...tracksState.maybeWhen(
+                  data: (tracks) => tracks.isNotEmpty
+                      ? [
+                          IconButton(
+                            icon: const Icon(Icons.play_arrow_outlined),
+                            tooltip: 'Play all',
+                            onPressed: () {
+                              final zone = ref.read(activeZoneProvider);
+                              if (zone == null) return;
+                              getIt<LibraryRepository>().playNow(
+                                zone.id,
+                                tracks.map((t) => t.fileKey).toList(),
+                              );
+                              ref.read(playerProvider.notifier).refresh();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            tooltip: 'Add all to playing now',
+                            onPressed: () {
+                              final zone = ref.read(activeZoneProvider);
+                              if (zone == null) return;
+                              getIt<LibraryRepository>().addToQueue(
+                                zone.id,
+                                tracks.map((t) => t.fileKey).toList(),
+                              );
+                              ref.read(playerProvider.notifier).refresh();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Added "$addedSnackbarLabel"'
+                                      ' to playing now',
+                                    ),
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.more_vert),
+                            onPressed: () => showLibraryActionSheet(
+                              context,
+                              ref,
+                              items: tracks,
+                              title: actionSheetTitle,
+                            ),
+                          ),
+                        ]
+                      : <Widget>[],
+                  orElse: () => <Widget>[],
+                ),
+              ],
             ),
-          );
-        },
+            // Title — full width, no truncation
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: title,
+            ),
+            // Content
+            Expanded(
+              child: tracksState.when(
+                loading: () => const LoadingView(),
+                error: (e, _) => ErrorView(error: e, onRetry: onRetry),
+                data: (tracks) {
+                  if (tracks.isEmpty) {
+                    return const Center(child: Text('No tracks found'));
+                  }
+                  final isMultiDisc = tracks.any(
+                    (t) => t.totalDiscs > 1 || t.discNumber > 1,
+                  );
+                  if (isMultiDisc) {
+                    return _MultiDiscList(tracks: tracks);
+                  }
+                  return ListView.builder(
+                    itemCount: tracks.length,
+                    itemBuilder: (_, i) => LibraryItemTile(
+                      item: tracks[i],
+                      trackNumber: tracks[i].trackNumber > 0
+                          ? tracks[i].trackNumber
+                          : i + 1,
+                      collapsedByDefault: true,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

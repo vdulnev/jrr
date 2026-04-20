@@ -322,8 +322,7 @@ class McwsClient {
   );
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
-    final base =
-        '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
+    final base = '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
     final query = album.folderPath.isNotEmpty
         ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;

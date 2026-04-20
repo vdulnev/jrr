@@ -11,7 +11,10 @@ abstract class Track with _$Track {
     @JsonKey(name: 'Name') @ForceStringConverter() @Default('') String name,
     @JsonKey(name: 'Artist') @ForceStringConverter() @Default('') String artist,
     @JsonKey(name: 'Album') @ForceStringConverter() @Default('') String album,
-    @JsonKey(name: 'Album Artist') @ForceStringConverter() @Default('') String albumArtist,
+    @JsonKey(name: 'Album Artist')
+    @ForceStringConverter()
+    @Default('')
+    String albumArtist,
     @JsonKey(name: 'Genre') @Default('') String genre,
     @JsonKey(name: 'Duration') @Default(0) double duration,
     @JsonKey(name: 'Track #') @Default(0) int trackNumber,
@@ -23,7 +26,10 @@ abstract class Track with _$Track {
     @JsonKey(name: 'Sample Rate') @Default(0) int sampleRate,
     @JsonKey(name: 'Channels') @Default(0) int channels,
     @JsonKey(name: 'Filename') @Default('') String filePath,
-    @JsonKey(name: 'Date (readable)') @ForceIntConverter() @Default('') String dateReadable,
+    @JsonKey(name: 'Date (readable)')
+    @ForceStringConverter()
+    @Default('')
+    String dateReadable,
   }) = _Track;
 
   const Track._();

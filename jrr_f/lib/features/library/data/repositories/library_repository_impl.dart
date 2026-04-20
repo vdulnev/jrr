@@ -12,10 +12,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
   Future<Either<AppException, List<Track>>> search(
     String query, {
     int startIndex = 0,
-  }) => getIt<McwsClient>().searchFiles(
-    query,
-    startIndex: startIndex,
-  );
+  }) => getIt<McwsClient>().searchFiles(query, startIndex: startIndex);
 
   @override
   Future<Either<AppException, List<String>>> getArtists() =>
