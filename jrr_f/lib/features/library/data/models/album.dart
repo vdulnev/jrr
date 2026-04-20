@@ -9,6 +9,7 @@ abstract class Album with _$Album {
   const factory Album({
     required String name,
     required String artist,
+    required String albumArtist,
     required String folderPath,
     @Default('') String date,
   }) = _Album;
@@ -17,12 +18,11 @@ abstract class Album with _$Album {
     final folderPath = track.totalDiscs > 1 || track.discNumber > 0
         ? track.parentFolderPath
         : track.folderPath;
-    final date = track.date > 0
-        ? Track.jriverDateToDateTime(track.date.toDouble()).year.toString()
-        : '';
+    final date = track.dateReadable;
     return Album(
       name: track.album,
       artist: track.artist,
+      albumArtist: track.albumArtist,
       folderPath: folderPath,
       date: date,
     );

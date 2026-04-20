@@ -19,9 +19,9 @@ class AlbumDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(album.name),
-          if (album.artist.isNotEmpty)
+          if (album.albumArtist.isNotEmpty)
             Text(
-              album.artist,
+              album.albumArtist,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

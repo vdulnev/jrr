@@ -699,13 +699,11 @@ class _McwsApi implements McwsApi {
   Future<List<Track>> filesSearch({
     required String query,
     int startIndex = 0,
-    int count = 100,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'Query': query,
       r'StartIndex': startIndex,
-      r'Limit': count,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -713,7 +711,7 @@ class _McwsApi implements McwsApi {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'Files/Search?Action=JSON',
+            'Files/Search?Action=JSON&Fields=Calculated',
             queryParameters: queryParameters,
             data: _data,
           )

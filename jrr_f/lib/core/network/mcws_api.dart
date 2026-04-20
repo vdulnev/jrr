@@ -134,10 +134,9 @@ abstract class McwsApi {
     @Query('ZoneType') String zoneType = 'ID',
   });
 
-  @GET('Files/Search?Action=JSON')
+  @GET('Files/Search?Action=JSON&Fields=Calculated')
   Future<List<Track>> filesSearch({
     @Query('Query') required String query,
     @Query('StartIndex') int startIndex = 0,
-    @Query('Limit') int count = 100,
   });
 }

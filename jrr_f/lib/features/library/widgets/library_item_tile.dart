@@ -58,7 +58,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
                   [
                     item.artist,
                     item.album,
-                    item.dateDisplay,
+                    item.dateReadable,
                   ].where((s) => s.isNotEmpty).join(' \u00b7 '),
                 ),
                 if (_expanded && item.filePath.isNotEmpty)

@@ -8,7 +8,6 @@ abstract interface class LibraryRepository {
   Future<Either<AppException, List<Track>>> search(
     String query, {
     int startIndex,
-    int count,
   });
 
   Future<Either<AppException, List<String>>> getArtists();

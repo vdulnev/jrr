@@ -279,7 +279,6 @@ class McwsClient {
   Future<Either<AppException, List<Track>>> searchFiles(
     String query, {
     int startIndex = 0,
-    int count = 100,
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return right([]);
@@ -290,7 +289,6 @@ class McwsClient {
         query:
             '[Media Type]=Audio ([Name] contains $term OR [Artist] contains $term OR [Album] contains $term)',
         startIndex: startIndex,
-        count: count,
       ),
       (items) => right(items..sort((a, b) => a.name.compareTo(b.name))),
     );
@@ -325,7 +323,7 @@ class McwsClient {
 
   Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
     final base =
-        '[Media Type]=Audio [Album]=[${_esc(album.name)}] [Artist]=[${_esc(album.artist)}]';
+        '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
     final query = album.folderPath.isNotEmpty
         ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;

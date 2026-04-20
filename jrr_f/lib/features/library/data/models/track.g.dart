@@ -17,6 +17,9 @@ _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   album: json['Album'] == null
       ? ''
       : const ForceStringConverter().fromJson(json['Album']),
+  albumArtist: json['Album Artist'] == null
+      ? ''
+      : const ForceStringConverter().fromJson(json['Album Artist']),
   genre: json['Genre'] as String? ?? '',
   duration: (json['Duration'] as num?)?.toDouble() ?? 0,
   trackNumber: (json['Track #'] as num?)?.toInt() ?? 0,
@@ -28,9 +31,7 @@ _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   sampleRate: (json['Sample Rate'] as num?)?.toInt() ?? 0,
   channels: (json['Channels'] as num?)?.toInt() ?? 0,
   filePath: json['Filename'] as String? ?? '',
-  date: json['Date'] == null
-      ? 0
-      : const ForceIntConverter().fromJson(json['Date']),
+  dateReadable: json['Date (readable)'] as String? ?? '',
 );
 
 Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
@@ -38,6 +39,7 @@ Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
   'Name': const ForceStringConverter().toJson(instance.name),
   'Artist': const ForceStringConverter().toJson(instance.artist),
   'Album': const ForceStringConverter().toJson(instance.album),
+  'Album Artist': const ForceStringConverter().toJson(instance.albumArtist),
   'Genre': instance.genre,
   'Duration': instance.duration,
   'Track #': instance.trackNumber,
@@ -49,5 +51,5 @@ Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
   'Sample Rate': instance.sampleRate,
   'Channels': instance.channels,
   'Filename': instance.filePath,
-  'Date': const ForceIntConverter().toJson(instance.date),
+  'Date (readable)': instance.dateReadable,
 };
