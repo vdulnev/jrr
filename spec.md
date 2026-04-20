@@ -441,6 +441,7 @@ To use them literally in a value, prefix with `/`:
 | List all artists    | `[Media Type]=Audio ~limit=-1,1,[Artist] ~sort=[Artist]`                   |
 | Albums by artist    | `[Media Type]=Audio [Artist]=[artist] ~limit=-1,1,[Album] ~sort=[Album]`   |
 | Album tracks        | `[Media Type]=Audio [Album]=[name] [Artist]=[artist]`                      |
+| Tracks by folder    | `[Media Type]=Audio [Filename (path)]="folderPath"`                        |
 | Random albums       | `[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10`        |
 
 **Client-side filtering:** MCWS field matching (`[Artist]=value`) performs
@@ -659,6 +660,7 @@ interface McwsClient {
   getArtists() → List<string>
   getAlbumsByArtist(artist) → List<Album>
   getAlbumTracks(album) → List<Track>
+  getTracksByFolder(folderPath) → List<Track>
   getRandomAlbums() → List<Album>
 }
 ```

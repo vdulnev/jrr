@@ -134,14 +134,16 @@ lib/
           library_repository.dart  # abstract interface
           library_repository_impl.dart
       providers/
-        library_providers.dart     # artists, albumsByArtist, albumTracks, randomAlbums, search
+        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search
       widgets/
         library_screen.dart        # artist browsing with client-side filtering
-        album_list_screen.dart     # reusable: takes List<Album>, title, onRefresh
-        album_detail_screen.dart   # track listing (multi-disc aware)
+        album_list_screen.dart     # reusable: takes List<Album>, title, onRefresh; "Open folder" action
+        album_detail_screen.dart   # thin @RoutePage wrapper → TrackListScaffold
+        folder_tracks_screen.dart  # folder-based track view with parent/child navigation
+        track_list_scaffold.dart   # shared scaffold: header (back + actions) + title + track list body
         artist_albums_screen.dart  # @RoutePage wrapper for artist → albums
         random_albums_screen.dart  # @RoutePage wrapper for random albums
-        library_item_tile.dart
+        library_item_tile.dart     # track tile with collapsible info (artist · album · date + filePath)
         library_action_sheet.dart
   shared/
     widgets/
@@ -420,19 +422,23 @@ Pre-commit checklist (matches the global Dart rules):
 - **API layer:** Single `filesSearch` Retrofit endpoint; `McwsClient` builds MCWS queries with `_esc()` escaping for `[]()-` characters
 - **Browse:** Artist list → album list → track list drill-down
   - `LibraryScreen` — artist browsing with client-side text filtering
-  - `AlbumListScreen` — reusable widget taking `List<Album>`, `title`, optional `onRefresh`; filter field, long-press copy, play/add-to-queue actions
-  - `AlbumDetailScreen` — track listing, multi-disc aware (groups by disc number)
+  - `AlbumListScreen` — reusable widget taking `List<Album>`, `title`, optional `onRefresh`; filter field, long-press copy, play/add-to-queue/open-folder actions
+  - `TrackListScaffold` — shared scaffold for all track list screens; custom header (back button + play/add/more actions), full-width non-truncated title, loading/error/empty states, multi-disc grouping
+  - `AlbumDetailScreen` — thin `@RoutePage` wrapper passing album title + `albumTracksProvider` to `TrackListScaffold`
+  - `FolderTracksScreen` — displays all tracks matching a folder path; stateful with parent/child folder navigation (up/down arrows); uses `Track.parentPath()` for folder hierarchy traversal; history stack enables forward (up to root) and back (down to original album folder)
   - `ArtistAlbumsScreen` / `RandomAlbumsScreen` — thin `@RoutePage` wrappers
 - **Search:** `McwsClient.searchFiles(query)` — multi-field search (Name, Artist, Album)
 - **Random Albums:** 10 random albums via `~limit` + `~n` modifiers
+- **Folder browsing:** `McwsClient.getTracksByFolder(folderPath)` — queries `[Filename (path)]="path"` to fetch all audio files in a directory; accessible via "Open folder" action on album list items
 - **Models:**
-  - `Track` (Freezed + json_serializable) — shared by queue, library, and player
-  - `Album` (Freezed) — derived from Track via `Album.fromTrack()` factory; includes `date` (year from unix timestamp)
+  - `Track` (Freezed + json_serializable) — shared by queue, library, and player; `Track.parentPath()` static utility for folder hierarchy navigation
+  - `Album` (Freezed) — derived from Track via `Album.fromTrack()` factory; includes `albumArtist`, `date` (readable date string)
   - `Album.folderPath` — uses `parentFolderPath` for multi-disc albums
-- **Queue integration:** Play now / Add to queue actions on albums and tracks via `Playback/PlayByKey`
+- **Track tile:** `LibraryItemTile` with `collapsedByDefault` parameter; when collapsed shows only track name, tap expands to show artist · album · date info line + full file path
+- **Queue integration:** Play now / Add to queue actions on albums, tracks, and folders via `Playback/PlayByKey`
 - **Client-side filtering:** Exact artist match (MCWS does substring matching)
-- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`
-- **LibraryRepository** interface + impl
+- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `folderTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`
+- **LibraryRepository** interface + impl (includes `getTracksByFolder`)
 
 ### Phase 6 — Mini Player (done)
 - `MiniPlayerPanel` — persistent panel at bottom of screen when navigated away from NowPlaying
@@ -471,3 +477,4 @@ Pre-commit checklist (matches the global Dart rules):
 | 0.1.1 | 2026-04-15 | get_it scopes for McwsClient session lifecycle; `skipAuth` in AuthInterceptor; logout is async |
 | 0.1.2 | 2026-04-16 | Added Phase 5 — Library Browse & Search (parent spec v2.0); Polish renamed to Phase 6 |
 | 0.2.0 | 2026-04-19 | Phases 1–6 done. Added: Retrofit API layer, mini player with AnimatedSlide, library browse (artists → albums → tracks), random albums, Album/Track models with date, MCWS query escaping, client-side exact filtering, multi-disc album support. Updated project structure to match reality. |
+| 0.2.1 | 2026-04-20 | Folder browsing: FolderTracksScreen with parent/child folder navigation, TrackListScaffold extracted as shared track list widget, "Open folder" action on album list, collapsible track info in LibraryItemTile, Album.albumArtist field, Track.dateReadable field. |
