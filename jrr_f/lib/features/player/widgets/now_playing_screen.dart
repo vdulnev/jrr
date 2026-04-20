@@ -90,6 +90,16 @@ class NowPlayingScreen extends ConsumerWidget {
                           .push(const RandomAlbumsRoute());
                     },
                   ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 72),
+                    title: const Text('Browse'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      ref
+                          .read(navigationProvider.notifier)
+                          .push(const BrowseRoute());
+                    },
+                  ),
                 ],
               ),
               ListTile(

@@ -105,6 +105,22 @@ class ArtistAlbumsRouteArgs {
 }
 
 /// generated route for
+/// [BrowseScreen]
+class BrowseRoute extends PageRouteInfo<void> {
+  const BrowseRoute({List<PageRouteInfo>? children})
+    : super(BrowseRoute.name, initialChildren: children);
+
+  static const String name = 'BrowseRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const BrowseScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [ConnectingScreen]
 class ConnectingRoute extends PageRouteInfo<ConnectingRouteArgs> {
   ConnectingRoute({Key? key, String? address, List<PageRouteInfo>? children})

@@ -2,9 +2,13 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/app_exception.dart';
 import '../models/album.dart';
+import '../models/browse_item.dart';
 import '../models/track.dart';
 
 abstract interface class LibraryRepository {
+  Future<Either<AppException, List<BrowseItem>>> browseChildren(String id);
+
+  Future<Either<AppException, List<Track>>> browseFiles(String id);
   Future<Either<AppException, List<Track>>> search(
     String query, {
     int startIndex,

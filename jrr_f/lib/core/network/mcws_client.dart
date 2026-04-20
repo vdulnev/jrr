@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
+import '../../features/library/data/models/browse_item.dart';
 import '../../features/library/data/models/track.dart';
 import '../../features/player/data/models/playback_state.dart';
 import '../../features/player/data/models/player_status.dart';
@@ -348,6 +349,25 @@ class McwsClient {
     ),
     (tracks) => right(tracks.map(Album.fromTrack).toList()),
   );
+
+  // -------------------------------------------------------------------------
+  // Browse tree
+  // -------------------------------------------------------------------------
+
+  Future<Either<AppException, List<BrowseItem>>> browseChildren(String id) =>
+      _request(
+        () => _api.browseChildren(id: id),
+        (xml) => _parser
+            .parse(xml)
+            .map(
+              (fields) => fields.entries
+                  .map((e) => BrowseItem(name: e.key, id: e.value))
+                  .toList(),
+            ),
+      );
+
+  Future<Either<AppException, List<Track>>> browseFiles(String id) =>
+      _request(() => _api.browseFiles(id: id), (items) => right(items));
 
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,

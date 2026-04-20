@@ -4,10 +4,18 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../models/album.dart';
+import '../models/browse_item.dart';
 import '../models/track.dart';
 import 'library_repository.dart';
 
 class LibraryRepositoryImpl implements LibraryRepository {
+  @override
+  Future<Either<AppException, List<BrowseItem>>> browseChildren(String id) =>
+      getIt<McwsClient>().browseChildren(id);
+
+  @override
+  Future<Either<AppException, List<Track>>> browseFiles(String id) =>
+      getIt<McwsClient>().browseFiles(id);
   @override
   Future<Either<AppException, List<Track>>> search(
     String query, {

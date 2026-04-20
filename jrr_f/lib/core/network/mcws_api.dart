@@ -139,4 +139,14 @@ abstract class McwsApi {
     @Query('Query') required String query,
     @Query('StartIndex') int startIndex = 0,
   });
+
+  @GET('Browse/Children')
+  Future<String> browseChildren({
+    @Query('ID') required String id,
+    @Query('Version') int version = 1,
+    @Query('ErrorOnMissing') int errorOnMissing = 0,
+  });
+
+  @GET('Browse/Files?Action=JSON')
+  Future<List<Track>> browseFiles({@Query('ID') required String id});
 }

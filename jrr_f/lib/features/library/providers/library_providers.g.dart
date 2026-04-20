@@ -386,3 +386,153 @@ final class RandomAlbumsProvider
 }
 
 String _$randomAlbumsHash() => r'c0d295839fc0060642bab9caa22555901315805c';
+
+@ProviderFor(browseChildren)
+final browseChildrenProvider = BrowseChildrenFamily._();
+
+final class BrowseChildrenProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<BrowseItem>>,
+          List<BrowseItem>,
+          FutureOr<List<BrowseItem>>
+        >
+    with $FutureModifier<List<BrowseItem>>, $FutureProvider<List<BrowseItem>> {
+  BrowseChildrenProvider._({
+    required BrowseChildrenFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'browseChildrenProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$browseChildrenHash();
+
+  @override
+  String toString() {
+    return r'browseChildrenProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<BrowseItem>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<BrowseItem>> create(Ref ref) {
+    final argument = this.argument as String;
+    return browseChildren(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BrowseChildrenProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$browseChildrenHash() => r'394fa24f2a41f6b316eff58dc8fe9164a1f13555';
+
+final class BrowseChildrenFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<BrowseItem>>, String> {
+  BrowseChildrenFamily._()
+    : super(
+        retry: null,
+        name: r'browseChildrenProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  BrowseChildrenProvider call(String id) =>
+      BrowseChildrenProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'browseChildrenProvider';
+}
+
+@ProviderFor(browseFiles)
+final browseFilesProvider = BrowseFilesFamily._();
+
+final class BrowseFilesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Track>>,
+          List<Track>,
+          FutureOr<List<Track>>
+        >
+    with $FutureModifier<List<Track>>, $FutureProvider<List<Track>> {
+  BrowseFilesProvider._({
+    required BrowseFilesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'browseFilesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$browseFilesHash();
+
+  @override
+  String toString() {
+    return r'browseFilesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Track>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Track>> create(Ref ref) {
+    final argument = this.argument as String;
+    return browseFiles(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BrowseFilesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$browseFilesHash() => r'd71976a5b99c3a0a38f561bdc28e561f76a899e8';
+
+final class BrowseFilesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Track>>, String> {
+  BrowseFilesFamily._()
+    : super(
+        retry: null,
+        name: r'browseFilesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  BrowseFilesProvider call(String id) =>
+      BrowseFilesProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'browseFilesProvider';
+}

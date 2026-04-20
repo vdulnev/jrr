@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
 import '../data/models/album.dart';
+import '../data/models/browse_item.dart';
 import '../data/models/track.dart';
 import '../data/repositories/library_repository.dart';
 
@@ -41,5 +42,17 @@ Future<List<Track>> folderTracks(Ref ref, String folderPath) async {
 @riverpod
 Future<List<Album>> randomAlbums(Ref ref) async {
   final result = await getIt<LibraryRepository>().getRandomAlbums();
+  return result.getOrElse((e) => throw e);
+}
+
+@riverpod
+Future<List<BrowseItem>> browseChildren(Ref ref, String id) async {
+  final result = await getIt<LibraryRepository>().browseChildren(id);
+  return result.getOrElse((e) => throw e);
+}
+
+@riverpod
+Future<List<Track>> browseFiles(Ref ref, String id) async {
+  final result = await getIt<LibraryRepository>().browseFiles(id);
   return result.getOrElse((e) => throw e);
 }
