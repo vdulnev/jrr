@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +21,13 @@ final getIt = GetIt.instance;
 
 Future<void> configureDependencies() async {
   // Talker — single instance, shared by all loggers
-  getIt.registerSingleton<Talker>(Talker());
+  getIt.registerSingleton<Talker>(
+    Talker(
+      logger: TalkerLogger(
+        settings: TalkerLoggerSettings(enableColors: !Platform.isIOS),
+      ),
+    ),
+  );
 
   // Persistent storage
   getIt.registerSingleton<AppDatabase>(AppDatabase());
