@@ -90,6 +90,16 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.queue_play_next),
+            tooltip: 'Play next',
+            onPressed: () async {
+              final zone = ref.read(activeZoneProvider);
+              if (zone == null) return;
+              getIt<LibraryRepository>().playNext(zone.id, [item.fileKey]);
+              ref.read(playerProvider.notifier).refresh();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'Add to playing now',
             onPressed: () async {

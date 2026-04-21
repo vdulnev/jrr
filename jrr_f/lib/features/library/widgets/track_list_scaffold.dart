@@ -60,6 +60,19 @@ class TrackListScaffold extends ConsumerWidget {
                             },
                           ),
                           IconButton(
+                            icon: const Icon(Icons.queue_play_next),
+                            tooltip: 'Play next',
+                            onPressed: () {
+                              final zone = ref.read(activeZoneProvider);
+                              if (zone == null) return;
+                              getIt<LibraryRepository>().playNext(
+                                zone.id,
+                                tracks.map((t) => t.fileKey).toList(),
+                              );
+                              ref.read(playerProvider.notifier).refresh();
+                            },
+                          ),
+                          IconButton(
                             icon: const Icon(Icons.add_circle_outline),
                             tooltip: 'Add all to playing now',
                             onPressed: () {

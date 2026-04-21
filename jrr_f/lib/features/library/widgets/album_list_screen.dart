@@ -143,6 +143,8 @@ class _AlbumActionButtons extends ConsumerWidget {
 
         if (action == 'play') {
           getIt<LibraryRepository>().playNow(zone.id, keys);
+        } else if (action == 'playNext') {
+          getIt<LibraryRepository>().playNext(zone.id, keys);
         } else if (action == 'add') {
           getIt<LibraryRepository>().addToQueue(zone.id, keys);
           if (context.mounted) {
@@ -162,6 +164,15 @@ class _AlbumActionButtons extends ConsumerWidget {
           child: ListTile(
             leading: Icon(Icons.play_arrow_outlined),
             title: Text('Play'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'playNext',
+          child: ListTile(
+            leading: Icon(Icons.queue_play_next),
+            title: Text('Play next'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
