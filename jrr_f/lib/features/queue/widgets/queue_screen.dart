@@ -42,7 +42,7 @@ class QueueScreen extends ConsumerWidget {
                       queueState.maybeWhen(
                         data: (items) => Text(
                           '${items.length} tracks',
-                          style: AppTextStyles.monoSmall,
+                          style: AppTextStyles.monoLabel,
                         ),
                         orElse: () => const SizedBox.shrink(),
                       ),
@@ -124,7 +124,7 @@ class QueueScreen extends ConsumerWidget {
                                         child: Text(
                                           '${i + 1}',
                                           textAlign: TextAlign.center,
-                                          style: AppTextStyles.monoMedium,
+                                          style: AppTextStyles.monoLabel,
                                         ),
                                       ),
                                     const SizedBox(width: 14),
@@ -156,7 +156,7 @@ class QueueScreen extends ConsumerWidget {
                                     ),
                                     Text(
                                       _formatDuration(track.duration),
-                                      style: AppTextStyles.monoMedium,
+                                      style: AppTextStyles.monoLabel,
                                     ),
                                     const SizedBox(width: 8),
                                     const Icon(

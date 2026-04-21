@@ -78,7 +78,7 @@ class MiniPlayerPanel extends ConsumerWidget {
                               children: [
                                 Text(
                                   track.name,
-                                  style: AppTextStyles.miniPlayerTitle,
+                                  style: AppTextStyles.labelLarge,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

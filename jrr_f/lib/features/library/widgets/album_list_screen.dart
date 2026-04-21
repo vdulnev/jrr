@@ -78,7 +78,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                     prefixIcon: Icon(Icons.search, size: 18),
                     isDense: true,
                   ),
-                  style: AppTextStyles.filterInput,
+                  style: AppTextStyles.labelLarge,
                   onChanged: (v) => setState(() => _filter = v),
                 ),
               ),

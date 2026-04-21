@@ -49,7 +49,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                   child: Text(
                     '${widget.index}',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.monoMedium,
+                    style: AppTextStyles.monoLabel,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -59,7 +59,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                     children: [
                       Text(
                         track.name.isNotEmpty ? track.name : 'Unknown',
-                        style: AppTextStyles.segmentLabel.copyWith(
+                        style: AppTextStyles.labelLarge.copyWith(
                           color: AppColors.text,
                         ),
                         maxLines: 1,
@@ -86,18 +86,14 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                   children: [
                     Text(
                       _formatDuration(track.duration),
-                      style: AppTextStyles.monoSmall,
+                      style: AppTextStyles.monoLabel,
                     ),
                     if (_expanded && track.bitrate > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           _formatBitrate(track),
-                          style: TextStyle(
-                            fontFamily: AppFonts.mono,
-                            fontSize: 9,
-                            color: AppColors.accent.withValues(alpha: 0.6),
-                          ),
+                          style: AppTextStyles.accentSmall,
                         ),
                       ),
                   ],

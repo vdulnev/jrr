@@ -134,49 +134,55 @@ class NowPlayingScreen extends ConsumerWidget {
                               if (status.trackInfo != null) ...[
                                 const SizedBox(height: 3),
                                 Text(
-                                  status.trackInfo?.artist ?? '',
+                                  [
+                                    status.trackInfo?.dateReadable,
+                                    status.trackInfo?.album
+                                  ]
+                                      .where((s) => s != null && s.isNotEmpty)
+                                      .join(' · '),
                                   style: AppTextStyles.nowPlayingArtist,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  status.trackInfo?.album ?? '',
-                                  style: AppTextStyles.monoMedium,
+                                  status.trackInfo?.artist ?? '',
+                                  style: AppTextStyles.nowPlayingArtist.copyWith(
+                                    color: AppColors.text3,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                            ],
-                          ),
-                        ),
+                                ],
+                                ),
+                                ),
 
-                        // Progress bar
-                        const SizedBox(height: 16),
-                        AppProgressBar(
-                          progress: progress,
-                          onChanged: (v) {
-                            final ms = (v * status.durationMs).round();
-                            ref.read(playerProvider.notifier).seekTo(ms);
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
+                                // Progress bar
+                                const SizedBox(height: 16),
+                                AppProgressBar(
+                                progress: progress,
+                                onChanged: (v) {
+                                final ms = (v * status.durationMs).round();
+                                ref.read(playerProvider.notifier).seekTo(ms);
+                                },
+                                ),
+                                Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 2),
+                                child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                Text(
                                 _fmt(elapsed),
-                                style: AppTextStyles.monoSmall,
-                              ),
-                              Text(
+                                style: AppTextStyles.monoLabel,
+                                ),
+                                Text(
                                 '-${_fmt(remaining)}',
-                                style: AppTextStyles.monoSmall,
-                              ),
-                            ],
-                          ),
-                        ),
-
+                                style: AppTextStyles.monoLabel,
+                                ),
+                                ],
+                                ),
+                                ),
                         // Transport controls
                         const SizedBox(height: 20),
                         Row(

@@ -69,7 +69,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               alignment: Alignment.center,
                               child: Text(
                                 _tabs[i],
-                                style: AppTextStyles.segmentLabel.copyWith(
+                                style: AppTextStyles.labelLarge.copyWith(
                                   color: isActive
                                       ? AppColors.text
                                       : AppColors.text3,
@@ -137,7 +137,7 @@ class _ArtistsTab extends ConsumerWidget {
                   prefixIcon: Icon(Icons.search, size: 18),
                   isDense: true,
                 ),
-                style: AppTextStyles.filterInput,
+                style: AppTextStyles.labelLarge,
                 onChanged: onFilterChanged,
               ),
             ),

@@ -123,7 +123,7 @@ class _ZoneTile extends StatelessWidget {
                   if (zone.isDLNA)
                     const Padding(
                       padding: EdgeInsets.only(top: 2),
-                      child: Text('DLNA', style: AppTextStyles.monoSmall),
+                      child: Text('DLNA', style: AppTextStyles.monoLabel),
                     ),
                 ],
               ),

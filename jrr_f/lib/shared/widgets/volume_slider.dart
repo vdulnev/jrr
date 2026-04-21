@@ -132,7 +132,7 @@ class _VolumeSliderState extends State<VolumeSlider> {
           width: 32,
           child: Text(
             '${(widget.value * 100).round()}',
-            style: AppTextStyles.monoSmall,
+            style: AppTextStyles.monoLabel,
             textAlign: TextAlign.end,
           ),
         ),

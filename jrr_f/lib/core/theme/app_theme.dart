@@ -25,15 +25,15 @@ abstract final class AppFonts {
 }
 
 abstract final class AppTextStyles {
-  /// LIBRARY, OUTPUT, PLAYBACK — mono section labels
+  /// LIBRARY, OUTPUT, PLAYBACK — mono section labels (11px)
   static const sectionLabel = TextStyle(
     fontFamily: AppFonts.mono,
-    fontSize: 10,
-    letterSpacing: 3,
+    fontSize: 11,
+    letterSpacing: 2.5,
     color: AppColors.accent,
   );
 
-  /// Main screen titles (24px)
+  /// Main screen titles (24px - MD3 Headline Small)
   static const screenTitle = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w700,
@@ -41,8 +41,39 @@ abstract final class AppTextStyles {
     letterSpacing: -0.5,
   );
 
-  /// Sub-screen titles (22px)
+  /// Sub-screen titles (20px - HIG Title 3)
   static const subScreenTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    letterSpacing: -0.4,
+    height: 1.2,
+  );
+
+  /// List item primary text (16px - MD3 Body Large)
+  static const itemTitle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: AppColors.text,
+    letterSpacing: -0.2,
+  );
+
+  /// Secondary/subtitle text (13px - HIG Footnote)
+  static const itemSubtitle = TextStyle(
+    fontSize: 13,
+    color: AppColors.text2,
+    height: 1.3,
+  );
+
+  /// Mono label — dates, counts, durations (12px - MD3 Label Medium)
+  static const monoLabel = TextStyle(
+    fontFamily: AppFonts.mono,
+    fontSize: 12,
+    color: AppColors.text3,
+  );
+
+  /// Now-playing track name (22px)
+  static const nowPlayingTitle = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.text,
@@ -50,67 +81,32 @@ abstract final class AppTextStyles {
     height: 1.2,
   );
 
-  /// List item primary text (14px, w500)
-  static const itemTitle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.text,
-  );
-
-  /// Secondary/subtitle text (11px)
-  static const itemSubtitle = TextStyle(fontSize: 11, color: AppColors.text3);
-
-  /// Mono small — dates, counts (10px)
-  static const monoSmall = TextStyle(
-    fontFamily: AppFonts.mono,
-    fontSize: 12,
-    color: AppColors.text3,
-  );
-
-  /// Mono medium — durations, track numbers (11px)
-  static const monoMedium = TextStyle(
-    fontFamily: AppFonts.mono,
-    fontSize: 12,
-    color: AppColors.text3,
-  );
-
-  /// Now-playing track name (20px)
-  static const nowPlayingTitle = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: AppColors.text,
-    letterSpacing: -0.3,
-    height: 1.2,
-  );
-
-  /// Now-playing artist (14px)
+  /// Now-playing artist (16px)
   static const nowPlayingArtist = TextStyle(
-    fontSize: 14,
+    fontSize: 16,
     color: AppColors.text2,
   );
 
-  /// Mini-player track name (13px, w600)
-  static const miniPlayerTitle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.text,
-  );
-
-  /// Segment tab label (13px, w500) — apply color per state
-  static const segmentLabel = TextStyle(
-    fontSize: 13,
+  /// Standard label for buttons, tabs, inputs (14px - MD3 Label Large)
+  static const labelLarge = TextStyle(
+    fontSize: 14,
     fontWeight: FontWeight.w500,
+    letterSpacing: 0.1,
   );
 
-  /// Accent link/back button text (13px, w500)
+  /// Legacy aliases for action styles
   static const accentButton = TextStyle(
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: FontWeight.w500,
     color: AppColors.accent,
   );
 
-  /// Small accent — Shuffle, Refresh chips (12px)
-  static const accentSmall = TextStyle(fontSize: 12, color: AppColors.accent);
+  /// Small accent labels (12px)
+  static const accentSmall = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.accent,
+  );
 
   /// Avatar initial letter
   static const avatarLetter = TextStyle(
@@ -121,22 +117,19 @@ abstract final class AppTextStyles {
 
   /// Section heading — UP NEXT
   static const sectionHeading = TextStyle(
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: FontWeight.w600,
     color: AppColors.text3,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   );
 
   /// Empty / muted state text
-  static const emptyState = TextStyle(color: AppColors.text3);
+  static const emptyState = TextStyle(fontSize: 14, color: AppColors.text3);
 
-  /// Filter text input
-  static const filterInput = TextStyle(fontSize: 13);
-
-  /// Chip label (11px, sans)
+  /// Chip label (12px)
   static const chipLabel = TextStyle(
     fontFamily: AppFonts.sans,
-    fontSize: 11,
+    fontSize: 12,
     color: AppColors.text2,
   );
 }
@@ -161,13 +154,7 @@ ThemeData buildAppTheme() {
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: TextStyle(
-        fontFamily: AppFonts.sans,
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        letterSpacing: -0.4,
-      ),
+      titleTextStyle: AppTextStyles.subScreenTitle,
       iconTheme: IconThemeData(color: AppColors.text2),
     ),
     dividerTheme: const DividerThemeData(
@@ -178,6 +165,8 @@ ThemeData buildAppTheme() {
     listTileTheme: const ListTileThemeData(
       textColor: AppColors.text,
       iconColor: AppColors.text2,
+      titleTextStyle: AppTextStyles.itemTitle,
+      subtitleTextStyle: AppTextStyles.itemSubtitle,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -194,55 +183,26 @@ ThemeData buildAppTheme() {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.accent),
       ),
-      hintStyle: const TextStyle(color: AppColors.text3, fontSize: 13),
+      hintStyle: AppTextStyles.emptyState,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.bg3,
-      contentTextStyle: const TextStyle(
-        fontFamily: AppFonts.sans,
-        color: AppColors.text,
-      ),
+      contentTextStyle: AppTextStyles.itemTitle,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       behavior: SnackBarBehavior.floating,
     ),
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        letterSpacing: -0.5,
-      ),
-      titleLarge: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        letterSpacing: -0.4,
-      ),
-      titleMedium: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: AppColors.text,
-      ),
-      titleSmall: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: AppColors.text3,
-        letterSpacing: 1,
-      ),
-      bodyLarge: TextStyle(fontSize: 14, color: AppColors.text),
-      bodyMedium: TextStyle(fontSize: 13, color: AppColors.text),
-      bodySmall: TextStyle(fontSize: 11, color: AppColors.text3),
-      labelSmall: TextStyle(
-        fontFamily: AppFonts.mono,
-        fontSize: 10,
-        color: AppColors.text3,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: AppFonts.mono,
-        fontSize: 11,
-        color: AppColors.text3,
-      ),
+      headlineLarge: AppTextStyles.screenTitle,
+      titleLarge: AppTextStyles.subScreenTitle,
+      titleMedium: AppTextStyles.itemTitle,
+      titleSmall: AppTextStyles.sectionHeading,
+      bodyLarge: AppTextStyles.itemTitle,
+      bodyMedium: AppTextStyles.labelLarge,
+      bodySmall: AppTextStyles.itemSubtitle,
+      labelLarge: AppTextStyles.labelLarge,
+      labelMedium: AppTextStyles.monoLabel,
+      labelSmall: AppTextStyles.sectionLabel,
     ),
   );
 }

@@ -57,7 +57,7 @@ class AlbumRowTile extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Text(album.date, style: AppTextStyles.monoSmall),
+                  Text(album.date, style: AppTextStyles.monoLabel),
                 ],
               ),
             ),

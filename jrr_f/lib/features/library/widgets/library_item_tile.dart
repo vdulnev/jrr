@@ -66,10 +66,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       item.filePath,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                      style: AppTextStyles.monoLabel,
                     ),
                   ),
               ],

@@ -170,7 +170,7 @@ class _Breadcrumb extends StatelessWidget {
               onTap: i < stack.length - 1 ? () => onTap(i) : null,
               child: Text(
                 stack[i].name,
-                style: AppTextStyles.monoSmall.copyWith(
+                style: AppTextStyles.monoLabel.copyWith(
                   color: i < stack.length - 1
                       ? AppColors.text3
                       : AppColors.accent,
