@@ -7,6 +7,7 @@ import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/transport_button.dart';
+import '../../../shared/widgets/volume_slider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../zones/providers/zone_provider.dart';
 import '../../queue/providers/queue_provider.dart';
@@ -261,6 +262,15 @@ class NowPlayingScreen extends ConsumerWidget {
                               child: const Icon(Icons.repeat, size: 18),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        VolumeSlider(
+                          value: status.volume,
+                          isMuted: status.isMuted,
+                          onChanged: (v) =>
+                              ref.read(playerProvider.notifier).setVolume(v),
+                          onMuteToggle: () =>
+                              ref.read(playerProvider.notifier).toggleMute(),
                         ),
                         const SizedBox(height: 16),
                       ],

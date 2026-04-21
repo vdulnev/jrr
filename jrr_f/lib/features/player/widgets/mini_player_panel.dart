@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/transport_button.dart';
+import '../../../shared/widgets/volume_slider.dart';
 import '../data/models/playback_state.dart';
 import '../providers/player_provider.dart';
 import 'artwork_widget.dart';
@@ -58,90 +59,102 @@ class MiniPlayerPanel extends ConsumerWidget {
                 ),
                 // Content
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                  child: Column(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(7),
-                        child: ArtworkWidget(
-                          imageUrl: track.imageUrl,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              track.name,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.text,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              track.artist,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.text3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          TransportButton(
-                            size: 36,
-                            onPressed: () =>
-                                ref.read(playerProvider.notifier).previous(),
-                            child: const Icon(
-                              Icons.skip_previous_rounded,
-                              size: 20,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(7),
+                            child: ArtworkWidget(
+                              imageUrl: track.imageUrl,
+                              size: 40,
                             ),
                           ),
-                          TransportButton(
-                            size: 36,
-                            onPressed: () =>
-                                ref.read(playerProvider.notifier).playPause(),
-                            child: Icon(
-                              isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              size: 20,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  track.name,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.text,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  track.artist,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.text3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
-                          TransportButton(
-                            size: 36,
-                            onPressed: () =>
-                                ref.read(playerProvider.notifier).next(),
-                            child: const Icon(
-                              Icons.skip_next_rounded,
-                              size: 20,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TransportButton(
+                                size: 36,
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .previous(),
+                                child: const Icon(
+                                  Icons.skip_previous_rounded,
+                                  size: 20,
+                                ),
+                              ),
+                              TransportButton(
+                                size: 36,
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .playPause(),
+                                child: Icon(
+                                  isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  size: 20,
+                                ),
+                              ),
+                              TransportButton(
+                                size: 36,
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .next(),
+                                child: const Icon(
+                                  Icons.skip_next_rounded,
+                                  size: 20,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 2),
+                      VolumeSlider(
+                        value: status.volume,
+                        isMuted: status.isMuted,
+                        onChanged: (v) =>
+                            ref.read(playerProvider.notifier).setVolume(v),
+                        onMuteToggle: () =>
+                            ref.read(playerProvider.notifier).toggleMute(),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
+                ],
+                ),
+                ),
+                );
+                },      orElse: () => const SizedBox.shrink(),
     );
   }
 }

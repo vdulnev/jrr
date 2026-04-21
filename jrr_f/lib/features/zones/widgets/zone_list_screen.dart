@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/volume_slider.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/zone.dart';
 import '../providers/active_zone_provider.dart';
 import '../providers/zone_provider.dart';
-import 'volume_knob.dart';
 
 @RoutePage()
 class ZoneListScreen extends ConsumerWidget {
@@ -101,7 +101,7 @@ class _VolumeSection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
         decoration: BoxDecoration(
           color: AppColors.bg2,
           borderRadius: BorderRadius.circular(16),
@@ -118,35 +118,12 @@ class _VolumeSection extends ConsumerWidget {
                 color: AppColors.text3,
               ),
             ),
-            const SizedBox(height: 12),
-            VolumeKnob(
-              value: isMuted ? 0.0 : volume,
+            const SizedBox(height: 4),
+            VolumeSlider(
+              value: volume,
+              isMuted: isMuted,
               onChanged: (v) => ref.read(playerProvider.notifier).setVolume(v),
-            ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => ref.read(playerProvider.notifier).toggleMute(),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isMuted
-                        ? Icons.volume_off_rounded
-                        : Icons.volume_up_rounded,
-                    size: 16,
-                    color: isMuted ? AppColors.accent : AppColors.text3,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isMuted ? 'Muted' : '${(volume * 100).round()}%',
-                    style: TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 11,
-                      color: isMuted ? AppColors.accent : AppColors.text3,
-                    ),
-                  ),
-                ],
-              ),
+              onMuteToggle: () => ref.read(playerProvider.notifier).toggleMute(),
             ),
           ],
         ),
