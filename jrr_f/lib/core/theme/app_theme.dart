@@ -35,7 +35,7 @@ abstract final class AppTextStyles {
 
   /// Main screen titles (24px - MD3 Headline Small)
   static const screenTitle = TextStyle(
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.text,
     letterSpacing: -0.5,
@@ -74,7 +74,7 @@ abstract final class AppTextStyles {
 
   /// Now-playing track name (22px)
   static const nowPlayingTitle = TextStyle(
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: FontWeight.w700,
     color: AppColors.text,
     letterSpacing: -0.4,

@@ -116,7 +116,7 @@ class NowPlayingScreen extends ConsumerWidget {
 
                   // Track info + controls
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.only(top: 16, left: 24, right: 24),
                     child: Column(
                       children: [
                         // Track info
