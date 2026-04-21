@@ -68,3 +68,54 @@ abstract class _$NavigationNotifier
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(ActiveTab)
+final activeTabProvider = ActiveTabProvider._();
+
+final class ActiveTabProvider extends $NotifierProvider<ActiveTab, AppTab> {
+  ActiveTabProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activeTabProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeTabHash();
+
+  @$internal
+  @override
+  ActiveTab create() => ActiveTab();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppTab value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppTab>(value),
+    );
+  }
+}
+
+String _$activeTabHash() => r'bed30a98366ad65b53769190ed60ee3baaf81f09';
+
+abstract class _$ActiveTab extends $Notifier<AppTab> {
+  AppTab build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AppTab, AppTab>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AppTab, AppTab>,
+              AppTab,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

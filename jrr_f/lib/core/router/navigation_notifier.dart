@@ -3,6 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'navigation_notifier.g.dart';
 
+enum AppTab { nowPlaying, queue, library, zones }
+
 @riverpod
 class NavigationNotifier extends _$NavigationNotifier {
   @override
@@ -24,5 +26,17 @@ class NavigationNotifier extends _$NavigationNotifier {
   /// Resets the stack to a single root route (used on logout).
   void clear([PageRouteInfo? root]) {
     state = root != null ? [root] : [];
+  }
+}
+
+@riverpod
+class ActiveTab extends _$ActiveTab {
+  @override
+  AppTab build() => AppTab.nowPlaying;
+
+  void select(AppTab tab) {
+    // Clear nav stack when switching tabs
+    ref.read(navigationProvider.notifier).clear();
+    state = tab;
   }
 }

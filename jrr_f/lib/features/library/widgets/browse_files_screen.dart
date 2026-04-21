@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jrr_f/core/theme/app_theme.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -55,54 +56,9 @@ class _BrowseFilesViewState extends ConsumerState<BrowseFilesView> {
                     tooltip: _grouped ? 'Flat list' : 'Group by artist/album',
                     onPressed: () => setState(() => _grouped = !_grouped),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.play_arrow_outlined),
-                    tooltip: 'Play all',
-                    onPressed: () {
-                      final zone = ref.read(activeZoneProvider);
-                      if (zone == null) return;
-                      getIt<LibraryRepository>().playNow(
-                        zone.id,
-                        tracks.map((t) => t.fileKey).toList(),
-                      );
-                      ref.read(playerProvider.notifier).refresh();
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.queue_play_next),
-                    tooltip: 'Play next',
-                    onPressed: () {
-                      final zone = ref.read(activeZoneProvider);
-                      if (zone == null) return;
-                      getIt<LibraryRepository>().playNext(
-                        zone.id,
-                        tracks.map((t) => t.fileKey).toList(),
-                      );
-                      ref.read(playerProvider.notifier).refresh();
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Add all to playing now',
-                    onPressed: () {
-                      final zone = ref.read(activeZoneProvider);
-                      if (zone == null) return;
-                      getIt<LibraryRepository>().addToQueue(
-                        zone.id,
-                        tracks.map((t) => t.fileKey).toList(),
-                      );
-                      ref.read(playerProvider.notifier).refresh();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Added "${widget.title}" to playing now',
-                            ),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
-                      }
-                    },
+                  _BrowseTracksPopupMenu(
+                    tracks: tracks,
+                    label: widget.title,
                   ),
                 ],
               ),
@@ -203,7 +159,7 @@ class _ArtistHeader extends ConsumerWidget {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          _PlayAddButtons(tracks: tracks, ref: ref, context: context),
+          _BrowseTracksPopupMenu(tracks: tracks),
         ],
       ),
     );
@@ -230,70 +186,75 @@ class _AlbumHeader extends ConsumerWidget {
               ),
             ),
           ),
-          _PlayAddButtons(tracks: tracks, ref: ref, context: context),
+          _BrowseTracksPopupMenu(tracks: tracks),
         ],
       ),
     );
   }
 }
 
-class _PlayAddButtons extends StatelessWidget {
+class _BrowseTracksPopupMenu extends ConsumerWidget {
   final List<Track> tracks;
-  final WidgetRef ref;
-  final BuildContext context;
+  final String? label;
 
-  const _PlayAddButtons({
-    required this.tracks,
-    required this.ref,
-    required this.context,
-  });
+  const _BrowseTracksPopupMenu({required this.tracks, this.label});
 
   @override
-  Widget build(BuildContext _) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.play_arrow_outlined, size: 20),
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Play',
-          onPressed: () {
-            final zone = ref.read(activeZoneProvider);
-            if (zone == null) return;
-            getIt<LibraryRepository>().playNow(
-              zone.id,
-              tracks.map((t) => t.fileKey).toList(),
-            );
-            ref.read(playerProvider.notifier).refresh();
-          },
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
+      padding: EdgeInsets.zero,
+      onSelected: (action) {
+        final zone = ref.read(activeZoneProvider);
+        if (zone == null) return;
+        final keys = tracks.map((t) => t.fileKey).toList();
+        final repo = getIt<LibraryRepository>();
+
+        switch (action) {
+          case 'play':
+            repo.playNow(zone.id, keys);
+          case 'playNext':
+            repo.playNext(zone.id, keys);
+          case 'add':
+            repo.addToQueue(zone.id, keys);
+            if (label != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Added "$label" to playing now'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            }
+        }
+        ref.read(playerProvider.notifier).refresh();
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: 'play',
+          child: ListTile(
+            leading: Icon(Icons.play_arrow_outlined),
+            title: Text('Play'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
         ),
-        IconButton(
-          icon: const Icon(Icons.queue_play_next, size: 20),
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Play next',
-          onPressed: () {
-            final zone = ref.read(activeZoneProvider);
-            if (zone == null) return;
-            getIt<LibraryRepository>().playNext(
-              zone.id,
-              tracks.map((t) => t.fileKey).toList(),
-            );
-            ref.read(playerProvider.notifier).refresh();
-          },
+        PopupMenuItem(
+          value: 'playNext',
+          child: ListTile(
+            leading: Icon(Icons.queue_play_next),
+            title: Text('Play next'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
         ),
-        IconButton(
-          icon: const Icon(Icons.add_circle_outline, size: 20),
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Add to playing now',
-          onPressed: () {
-            final zone = ref.read(activeZoneProvider);
-            if (zone == null) return;
-            getIt<LibraryRepository>().addToQueue(
-              zone.id,
-              tracks.map((t) => t.fileKey).toList(),
-            );
-            ref.read(playerProvider.notifier).refresh();
-          },
+        PopupMenuItem(
+          value: 'add',
+          child: ListTile(
+            leading: Icon(Icons.add_circle_outline),
+            title: Text('Add to playing now'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
         ),
       ],
     );

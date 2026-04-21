@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/router/navigation_notifier.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../data/models/album.dart';
 import '../providers/library_providers.dart';
+import 'album_row_tile.dart';
+import 'browse_screen.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -17,70 +21,294 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  String _filter = '';
+  int _tabIndex = 0;
+  String _artistFilter = '';
+
+  static const _tabs = ['Artists', 'Random', 'Browse'];
 
   @override
   Widget build(BuildContext context) {
-    final artistsState = ref.watch(artistsProvider);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Artists'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => ref.read(navigationProvider.notifier).pop(),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'LIBRARY',
+                    style: TextStyle(
+                      fontFamily: AppFonts.mono,
+                      fontSize: 9,
+                      letterSpacing: 3,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Browse',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Segmented tab control
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: AppColors.bg2,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: List.generate(_tabs.length, (i) {
+                        final isActive = _tabIndex == i;
+                        return Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _tabIndex = i),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? AppColors.bg4
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _tabs[i],
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: isActive
+                                      ? AppColors.text
+                                      : AppColors.text3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Tab content
+            Expanded(
+              child: IndexedStack(
+                index: _tabIndex,
+                children: [
+                  _ArtistsTab(
+                    filter: _artistFilter,
+                    onFilterChanged: (v) => setState(() => _artistFilter = v),
+                  ),
+                  const _RandomTab(),
+                  const _BrowseTab(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      body: artistsState.when(
-        loading: () => const LoadingView(),
-        error: (e, _) =>
-            ErrorView(error: e, onRetry: () => ref.invalidate(artistsProvider)),
-        data: (artists) {
-          if (artists.isEmpty) {
-            return const Center(child: Text('No artists found'));
-          }
-          final filtered = _filter.isEmpty
-              ? artists
-              : artists
-                    .where(
-                      (a) => a.toLowerCase().contains(_filter.toLowerCase()),
-                    )
-                    .toList();
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Filter artists',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
-                  onChanged: (v) => setState(() => _filter = v),
+    );
+  }
+}
+
+class _ArtistsTab extends ConsumerWidget {
+  final String filter;
+  final ValueChanged<String> onFilterChanged;
+
+  const _ArtistsTab({required this.filter, required this.onFilterChanged});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final artistsState = ref.watch(artistsProvider);
+
+    return artistsState.when(
+      loading: () => const LoadingView(),
+      error: (e, _) =>
+          ErrorView(error: e, onRetry: () => ref.invalidate(artistsProvider)),
+      data: (artists) {
+        final filtered = filter.isEmpty
+            ? artists
+            : artists
+                  .where((a) => a.toLowerCase().contains(filter.toLowerCase()))
+                  .toList();
+
+        return Column(
+          children: [
+            // Filter field
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Filter artists\u2026',
+                  prefixIcon: Icon(Icons.search, size: 18),
+                  isDense: true,
                 ),
+                style: const TextStyle(fontSize: 13),
+                onChanged: onFilterChanged,
               ),
-              Expanded(
-                child: filtered.isEmpty
-                    ? const Center(child: Text('No matches'))
-                    : ListView.builder(
-                        itemCount: filtered.length,
-                        itemBuilder: (_, i) {
-                          final artist = filtered[i];
-                          return ListTile(
-                            leading: const Icon(Icons.person_outline),
-                            title: Text(artist),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => ref
-                                .read(navigationProvider.notifier)
-                                .push(ArtistAlbumsRoute(artist: artist)),
-                          );
-                        },
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No matches',
+                        style: TextStyle(color: AppColors.text3),
                       ),
-              ),
-            ],
-          );
-        },
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 148),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final artist = filtered[i];
+                        return GestureDetector(
+                          onTap: () => ref
+                              .read(navigationProvider.notifier)
+                              .push(ArtistAlbumsRoute(artist: artist)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: AppColors.line),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Avatar circle
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.bg3,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    artist.isNotEmpty
+                                        ? artist[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    artist,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.text,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: AppColors.text3,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RandomTab extends ConsumerWidget {
+  const _RandomTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final albumsState = ref.watch(randomAlbumsProvider);
+
+    return albumsState.when(
+      loading: () => const LoadingView(),
+      error: (e, _) => ErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(randomAlbumsProvider),
       ),
+      data: (albums) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 8, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () => ref.invalidate(randomAlbumsProvider),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.line2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Shuffle',
+                      style: TextStyle(fontSize: 12, color: AppColors.accent),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: AlbumListView(albums: albums)),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrowseTab extends StatelessWidget {
+  const _BrowseTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const BrowseTreeView();
+  }
+}
+
+/// Reusable album list for embedded use (Random tab, etc.)
+class AlbumListView extends ConsumerWidget {
+  final List<Album> albums;
+
+  const AlbumListView({required this.albums, super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 148),
+      itemCount: albums.length,
+      itemBuilder: (_, i) {
+        final album = albums[i];
+        return AlbumRowTile(album: album);
+      },
     );
   }
 }

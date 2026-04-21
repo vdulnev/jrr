@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 class App extends ConsumerStatefulWidget {
   const App({super.key});
@@ -25,17 +26,9 @@ class _AppState extends ConsumerState<App> {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'JRiver Remote',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0066CC)),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0066CC),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
+      darkTheme: buildAppTheme(),
+      themeMode: ThemeMode.dark,
       routerConfig: _router.config(
         navigatorObservers: () => [TalkerRouteObserver(getIt<Talker>())],
       ),

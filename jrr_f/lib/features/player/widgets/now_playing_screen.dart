@@ -1,21 +1,22 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/router/app_router.dart';
-import '../../../core/router/navigation_notifier.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
-import '../../connection/providers/session_provider.dart';
-import '../../queue/providers/queue_provider.dart';
+import '../../../shared/widgets/progress_bar.dart';
+import '../../../shared/widgets/transport_button.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../zones/providers/zone_provider.dart';
+import '../../queue/providers/queue_provider.dart';
+import '../data/models/playback_state.dart';
+import '../data/models/repeat_mode.dart';
+import '../data/models/shuffle_mode.dart';
+import '../../library/data/models/track.dart';
 import '../providers/player_provider.dart';
 import '../providers/polling_provider.dart';
 import 'artwork_widget.dart';
-import 'seek_bar.dart';
-import 'transport_controls.dart';
-import 'volume_control.dart';
 
 @RoutePage()
 class NowPlayingScreen extends ConsumerWidget {
@@ -23,11 +24,8 @@ class NowPlayingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Start polling (keepAlive, so this only creates it once).
     ref.watch(pollingProvider);
-    // Trigger zone list load and auto-selection.
     ref.watch(zoneListProvider);
-    // Keep queue provider alive while on this screen so change counter is watched.
     ref.watch(queueProvider);
 
     final activeZone = ref.watch(activeZoneProvider);
@@ -38,186 +36,261 @@ class NowPlayingScreen extends ConsumerWidget {
     final playerState = ref.watch(playerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(activeZone.name),
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu),
-            tooltip: 'Menu',
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            children: [
-              DrawerHeader(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                ),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    'JRiver Remote',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-              ),
-              ExpansionTile(
-                leading: const Icon(Icons.library_music_outlined),
-                title: const Text('Library'),
-                children: [
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 72),
-                    title: const Text('Artists'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      ref
-                          .read(navigationProvider.notifier)
-                          .push(const LibraryRoute());
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 72),
-                    title: const Text('Random Albums'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      ref
-                          .read(navigationProvider.notifier)
-                          .push(const RandomAlbumsRoute());
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 72),
-                    title: const Text('Browse'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      ref
-                          .read(navigationProvider.notifier)
-                          .push(const BrowseRoute());
-                    },
-                  ),
-                ],
-              ),
-              ListTile(
-                leading: const Icon(Icons.queue_music_outlined),
-                title: const Text('Queue'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ref
-                      .read(navigationProvider.notifier)
-                      .push(const QueueRoute());
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.speaker_group_outlined),
-                title: const Text('Zones'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ref
-                      .read(navigationProvider.notifier)
-                      .push(const ZoneListRoute());
-                },
-              ),
-              const Spacer(),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Disconnect'),
-                onTap: () => ref.read(sessionProvider.notifier).logout(),
-              ),
-            ],
-          ),
-        ),
-      ),
       body: playerState.when(
         loading: () => const LoadingView(),
         error: (e, _) =>
             ErrorView(error: e, onRetry: () => ref.invalidate(playerProvider)),
-        data: (status) => SafeArea(
-          child: SingleChildScrollView(
+        data: (status) {
+          final progress = status.durationMs > 0
+              ? status.positionMs / status.durationMs
+              : 0.0;
+          final elapsed = status.positionMs ~/ 1000;
+          final remaining = (status.durationMs - status.positionMs) ~/ 1000;
+
+          return SafeArea(
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.only(bottom: 88),
               child: Column(
                 children: [
-                  ArtworkWidget(
-                    imageUrl: status.trackInfo?.imageUrl,
-                    size: 280,
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'NOW PLAYING',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.mono,
+                                  fontSize: 9,
+                                  letterSpacing: 3,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${activeZone.name}'
+                                '${_formatQuality(status.trackInfo)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.text3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
+
+                  // Album art
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxWidth: 280,
+                              maxHeight: 280,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.line2),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0xCC000000),
+                                  blurRadius: 60,
+                                  offset: Offset(0, 16),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: ArtworkWidget(
+                              imageUrl: status.trackInfo?.imageUrl,
+                              size: 280,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Track info + controls
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       children: [
-                        Text(
-                          status.trackInfo?.name ?? 'Nothing playing',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        // Track info
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                status.trackInfo?.name ?? 'Nothing playing',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.text,
+                                  letterSpacing: -0.3,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (status.trackInfo != null) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  status.trackInfo?.artist ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.text2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  status.trackInfo?.album ?? '',
+                                  style: const TextStyle(
+                                    fontFamily: AppFonts.mono,
+                                    fontSize: 11,
+                                    color: AppColors.text3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                        if (status.trackInfo != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            status.trackInfo?.artist ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+
+                        // Progress bar
+                        const SizedBox(height: 16),
+                        AppProgressBar(
+                          progress: progress,
+                          onChanged: (v) {
+                            final ms = (v * status.durationMs).round();
+                            ref.read(playerProvider.notifier).seekTo(ms);
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _fmt(elapsed),
+                                style: const TextStyle(
+                                  fontFamily: AppFonts.mono,
+                                  fontSize: 10,
+                                  color: AppColors.text3,
                                 ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            status.trackInfo?.album ?? '',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                              ),
+                              Text(
+                                '-${_fmt(remaining)}',
+                                style: const TextStyle(
+                                  fontFamily: AppFonts.mono,
+                                  fontSize: 10,
+                                  color: AppColors.text3,
                                 ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+
+                        // Transport controls
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TransportButton(
+                              size: 40,
+                              color: status.shuffleMode != ShuffleMode.off
+                                  ? AppColors.accent
+                                  : AppColors.text3,
+                              onPressed: () => ref
+                                  .read(playerProvider.notifier)
+                                  .toggleShuffle(),
+                              child: const Icon(Icons.shuffle, size: 18),
+                            ),
+                            TransportButton(
+                              size: 44,
+                              onPressed: () =>
+                                  ref.read(playerProvider.notifier).previous(),
+                              child: const Icon(
+                                Icons.skip_previous_rounded,
+                                size: 28,
+                              ),
+                            ),
+                            TransportButton(
+                              size: 60,
+                              accent: true,
+                              onPressed: () =>
+                                  ref.read(playerProvider.notifier).playPause(),
+                              child: Icon(
+                                status.state == PlaybackState.playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                size: 32,
+                              ),
+                            ),
+                            TransportButton(
+                              size: 44,
+                              onPressed: () =>
+                                  ref.read(playerProvider.notifier).next(),
+                              child: const Icon(
+                                Icons.skip_next_rounded,
+                                size: 28,
+                              ),
+                            ),
+                            TransportButton(
+                              size: 40,
+                              color: status.repeatMode != RepeatMode.off
+                                  ? AppColors.accent
+                                  : AppColors.text3,
+                              onPressed: () => ref
+                                  .read(playerProvider.notifier)
+                                  .cycleRepeat(),
+                              child: const Icon(Icons.repeat, size: 18),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SeekBar(
-                    positionMs: status.positionMs,
-                    durationMs: status.durationMs,
-                    positionDisplay: status.positionDisplay,
-                  ),
-                  const SizedBox(height: 8),
-                  TransportControls(status: status),
-                  const SizedBox(height: 8),
-                  VolumeControl(status: status),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      status.playingNowPositionDisplay.isNotEmpty
-                          ? status.playingNowPositionDisplay
-                          : '',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
+  }
+
+  String _fmt(int seconds) {
+    if (seconds < 0) seconds = 0;
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  String _formatQuality(Track? trackInfo) {
+    if (trackInfo == null) return '';
+    if (trackInfo.bitDepth > 0 && trackInfo.sampleRate > 0) {
+      final sr = trackInfo.sampleRate >= 1000
+          ? '${(trackInfo.sampleRate / 1000).round()}'
+          : '${trackInfo.sampleRate}';
+      return ' \u00b7 FLAC ${trackInfo.bitDepth}/$sr';
+    }
+    if (trackInfo.bitrate > 0) return ' \u00b7 ${trackInfo.bitrate} kbps';
+    return '';
   }
 }

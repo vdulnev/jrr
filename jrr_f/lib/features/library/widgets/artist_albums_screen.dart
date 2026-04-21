@@ -2,8 +2,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/router/navigation_notifier.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/sub_screen_header.dart';
 import '../providers/library_providers.dart';
 import 'album_list_screen.dart';
 
@@ -18,19 +20,44 @@ class ArtistAlbumsScreen extends ConsumerWidget {
     final state = ref.watch(albumsByArtistProvider(artist));
     return state.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: Text(artist)),
-        body: const LoadingView(),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              SubScreenHeader(
+                title: artist,
+                subtitle: 'Artist',
+                onBack: () => ref.read(navigationProvider.notifier).pop(),
+              ),
+              const Expanded(child: LoadingView()),
+            ],
+          ),
+        ),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: Text(artist)),
-        body: ErrorView(
-          error: e,
-          onRetry: () => ref.invalidate(albumsByArtistProvider(artist)),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              SubScreenHeader(
+                title: artist,
+                subtitle: 'Artist',
+                onBack: () => ref.read(navigationProvider.notifier).pop(),
+              ),
+              Expanded(
+                child: ErrorView(
+                  error: e,
+                  onRetry: () => ref.invalidate(albumsByArtistProvider(artist)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       data: (albums) => AlbumListScreen(
         albums: albums,
         title: artist,
+        subtitle: 'Artist',
         onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
       ),
     );

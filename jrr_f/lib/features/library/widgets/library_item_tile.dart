@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/injection.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
 import '../data/repositories/library_repository.dart';
-import 'library_action_sheet.dart';
 
 class LibraryItemTile extends ConsumerStatefulWidget {
   final Track item;
@@ -76,51 +76,64 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             )
           : null,
       onTap: () => setState(() => _expanded = !_expanded),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.play_arrow_outlined),
-            tooltip: 'Play',
-            onPressed: () async {
-              final zone = ref.read(activeZoneProvider);
-              if (zone == null) return;
-              getIt<LibraryRepository>().playNow(zone.id, [item.fileKey]);
-              ref.read(playerProvider.notifier).refresh();
-            },
+      trailing: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
+        padding: EdgeInsets.zero,
+        onSelected: (action) => _handleAction(action, item),
+        itemBuilder: (_) => const [
+          PopupMenuItem(
+            value: 'play',
+            child: ListTile(
+              leading: Icon(Icons.play_arrow_outlined),
+              title: Text('Play'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.queue_play_next),
-            tooltip: 'Play next',
-            onPressed: () async {
-              final zone = ref.read(activeZoneProvider);
-              if (zone == null) return;
-              getIt<LibraryRepository>().playNext(zone.id, [item.fileKey]);
-              ref.read(playerProvider.notifier).refresh();
-            },
+          PopupMenuItem(
+            value: 'playNext',
+            child: ListTile(
+              leading: Icon(Icons.queue_play_next),
+              title: Text('Play next'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Add to playing now',
-            onPressed: () async {
-              final zone = ref.read(activeZoneProvider);
-              if (zone == null) return;
-              getIt<LibraryRepository>().addToQueue(zone.id, [item.fileKey]);
-              ref.read(playerProvider.notifier).refresh();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Added to playing now'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
+          PopupMenuItem(
+            value: 'add',
+            child: ListTile(
+              leading: Icon(Icons.add_circle_outline),
+              title: Text('Add to playing now'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
           ),
         ],
       ),
-      onLongPress: () =>
-          showLibraryActionSheet(context, ref, items: [item], title: item.name),
     );
+  }
+
+  void _handleAction(String action, Track item) {
+    final zone = ref.read(activeZoneProvider);
+    if (zone == null) return;
+    final repo = getIt<LibraryRepository>();
+
+    switch (action) {
+      case 'play':
+        repo.playNow(zone.id, [item.fileKey]);
+      case 'playNext':
+        repo.playNext(zone.id, [item.fileKey]);
+      case 'add':
+        repo.addToQueue(zone.id, [item.fileKey]);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to playing now'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+    }
+    ref.read(playerProvider.notifier).refresh();
   }
 }
