@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
-import '../../../shared/widgets/volume_slider.dart';
-import '../../player/providers/player_provider.dart';
 import '../data/models/zone.dart';
 import '../providers/active_zone_provider.dart';
 import '../providers/zone_provider.dart';
@@ -54,8 +52,6 @@ class ZoneListScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            // Volume knob for active zone
-            if (activeZone != null) _VolumeSection(zone: activeZone),
             // Zone list
             Expanded(
               child: zonesState.when(
@@ -79,51 +75,6 @@ class ZoneListScreen extends ConsumerWidget {
                   },
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VolumeSection extends ConsumerWidget {
-  final Zone zone;
-
-  const _VolumeSection({required this.zone});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
-    final volume = playerState.asData?.value.volume ?? 0.0;
-    final isMuted = playerState.asData?.value.isMuted ?? false;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
-        decoration: BoxDecoration(
-          color: AppColors.bg2,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.line2),
-        ),
-        child: Column(
-          children: [
-            Text(
-              zone.name,
-              style: const TextStyle(
-                fontFamily: AppFonts.mono,
-                fontSize: 10,
-                letterSpacing: 1,
-                color: AppColors.text3,
-              ),
-            ),
-            const SizedBox(height: 4),
-            VolumeSlider(
-              value: volume,
-              isMuted: isMuted,
-              onChanged: (v) => ref.read(playerProvider.notifier).setVolume(v),
-              onMuteToggle: () => ref.read(playerProvider.notifier).toggleMute(),
             ),
           ],
         ),
