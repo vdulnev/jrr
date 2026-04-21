@@ -28,7 +28,7 @@ abstract final class AppTextStyles {
   /// LIBRARY, OUTPUT, PLAYBACK — mono section labels
   static const sectionLabel = TextStyle(
     fontFamily: AppFonts.mono,
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 3,
     color: AppColors.accent,
   );
@@ -63,20 +63,20 @@ abstract final class AppTextStyles {
   /// Mono small — dates, counts (10px)
   static const monoSmall = TextStyle(
     fontFamily: AppFonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: AppColors.text3,
   );
 
   /// Mono medium — durations, track numbers (11px)
   static const monoMedium = TextStyle(
     fontFamily: AppFonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: AppColors.text3,
   );
 
   /// Now-playing track name (20px)
   static const nowPlayingTitle = TextStyle(
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.text,
     letterSpacing: -0.3,
