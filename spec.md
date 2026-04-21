@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Status:** Draft
 
 ---
@@ -29,6 +29,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Zone management             | v1       |
 | Playing Now queue           | v1       |
 | Library browse & search     | v2 (done)|
+| Library tree browsing       | v3 (done)|
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
@@ -463,7 +464,53 @@ An album is derived from track metadata, not a first-class MCWS entity.
 | folderPath | string | Track → Filename path (parent for multi-disc) |
 | date       | string | Track → Date field (unix timestamp → year)    |
 
-### 4.12 Track Model (Library)
+### 4.12 Browse Tree
+
+MCWS exposes a hierarchical browse tree via two endpoints.
+
+**Browse/Children — list child nodes**
+
+**Endpoint:** `Browse/Children`
+
+| Parameter      | Type   | Description                           |
+|----------------|--------|---------------------------------------|
+| ID             | string | Node ID (`-1` for root)               |
+| Version        | int    | API version (use `1`)                 |
+| ErrorOnMissing | int    | `0` = return empty on missing node    |
+
+Response is XML with `<Item Name="label">childId</Item>` elements.
+Each item represents a child node in the browse hierarchy. The `Name`
+attribute is the display label and the element text is the child ID
+used for further traversal.
+
+Example (root):
+```xml
+<Response Status="OK">
+  <Item Name="Audio">1</Item>
+  <Item Name="Playlists">4</Item>
+</Response>
+```
+
+**Browse/Files — get tracks at a leaf node**
+
+**Endpoint:** `Browse/Files`
+
+| Parameter | Type   | Description                           |
+|-----------|--------|---------------------------------------|
+| ID        | string | Browse node ID                        |
+| Action    | string | `JSON` for JSON array response        |
+
+Returns a JSON array of track objects (same schema as `Files/Search`
+with `Action=JSON`). Used when a browse node has no children (leaf).
+
+### 4.13 BrowseItem Model
+
+| Field | Type   | Source                         |
+|-------|--------|--------------------------------|
+| id    | string | Item element text (child ID)   |
+| name  | string | Item Name attribute (label)    |
+
+### 4.14 Track Model (Library)
 
 Extended track metadata returned by `Files/Search?Action=JSON`.
 
@@ -662,6 +709,10 @@ interface McwsClient {
   getAlbumTracks(album) → List<Track>
   getTracksByFolder(folderPath) → List<Track>
   getRandomAlbums() → List<Album>
+
+  // Browse tree
+  browseChildren(id) → List<BrowseItem>
+  browseFiles(id) → List<Track>
 }
 ```
 
@@ -720,3 +771,5 @@ This spec follows semantic versioning.
 | Playback/ClearPlaylist    | GET    | Clear the queue                |
 | File/GetImage             | GET    | Get file artwork               |
 | Files/Search              | GET    | Search/browse library          |
+| Browse/Children           | GET    | List child browse nodes        |
+| Browse/Files              | GET    | Get tracks at browse leaf node |

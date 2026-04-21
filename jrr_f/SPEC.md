@@ -129,12 +129,13 @@ lib/
       data/
         models/
           album.dart               # Freezed; Album.fromTrack() factory
+          browse_item.dart           # Freezed; id + name for browse tree nodes
           track.dart               # Freezed + json_serializable; shared by queue & library
         repositories/
           library_repository.dart  # abstract interface
           library_repository_impl.dart
       providers/
-        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search
+        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search, browseChildren, browseFiles
       widgets/
         library_screen.dart        # artist browsing with client-side filtering
         album_list_screen.dart     # reusable: takes List<Album>, title, onRefresh; "Open folder" action
@@ -144,6 +145,8 @@ lib/
         artist_albums_screen.dart  # @RoutePage wrapper for artist → albums
         random_albums_screen.dart  # @RoutePage wrapper for random albums
         library_item_tile.dart     # track tile with collapsible info (artist · album · date + filePath)
+        browse_screen.dart         # tree navigation with internal stack; Browse/Children for nodes, Browse/Files for leaves
+        browse_files_screen.dart   # leaf node track list with flat/grouped toggle; grouped by artist → album+date; play/add actions per group
         library_action_sheet.dart
   shared/
     widgets/
@@ -301,7 +304,7 @@ No retry interceptor for v1 — transient failures surface as errors that the us
 
 Two classes split HTTP from domain logic:
 
-**`McwsApi`** (Retrofit) — pure HTTP interface. Each method has a `@GET` annotation and maps to one MCWS endpoint. Returns raw `String` (XML) or `List<Track>` (JSON). Generated `_McwsApi` class implements it via Dio. Only `filesSearch` is used for all library queries.
+**`McwsApi`** (Retrofit) — pure HTTP interface. Each method has a `@GET` annotation and maps to one MCWS endpoint. Returns raw `String` (XML) or `List<Track>` (JSON). Generated `_McwsApi` class implements it via Dio. `filesSearch` is used for all library search queries; `browseChildren` (XML) and `browseFiles` (JSON) are used for tree browsing.
 
 **`McwsClient`** — domain-level client. Wraps `McwsApi` calls with:
 - MCWS query string construction (field filters, `~limit`, `~sort`, etc.)
@@ -437,8 +440,13 @@ Pre-commit checklist (matches the global Dart rules):
 - **Track tile:** `LibraryItemTile` with `collapsedByDefault` parameter; when collapsed shows only track name, tap expands to show artist · album · date info line + full file path
 - **Queue integration:** Play now / Add to queue actions on albums, tracks, and folders via `Playback/PlayByKey`
 - **Client-side filtering:** Exact artist match (MCWS does substring matching)
-- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `folderTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`
-- **LibraryRepository** interface + impl (includes `getTracksByFolder`)
+- **Browse tree:** Hierarchical library browsing via MCWS `Browse/Children` and `Browse/Files` endpoints
+  - `BrowseScreen` — tree navigation with internal stack; `Browse/Children` fetches child nodes, leaf nodes (empty children) switch to `Browse/Files` for tracks
+  - `BrowseFilesView` — displays tracks at leaf nodes; toggle between flat list and grouped view (by artist → album+date+folderPath); play/add-to-queue actions on individual tracks, artist groups, and album groups
+  - `BrowseItem` model (Freezed) — `id` + `name` for browse tree nodes
+  - Accessible via drawer → Library → Browse
+- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `folderTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`, `browseChildrenProvider`, `browseFilesProvider`
+- **LibraryRepository** interface + impl (includes `getTracksByFolder`, `browseChildren`, `browseFiles`)
 
 ### Phase 6 — Mini Player (done)
 - `MiniPlayerPanel` — persistent panel at bottom of screen when navigated away from NowPlaying
@@ -478,3 +486,4 @@ Pre-commit checklist (matches the global Dart rules):
 | 0.1.2 | 2026-04-16 | Added Phase 5 — Library Browse & Search (parent spec v2.0); Polish renamed to Phase 6 |
 | 0.2.0 | 2026-04-19 | Phases 1–6 done. Added: Retrofit API layer, mini player with AnimatedSlide, library browse (artists → albums → tracks), random albums, Album/Track models with date, MCWS query escaping, client-side exact filtering, multi-disc album support. Updated project structure to match reality. |
 | 0.2.1 | 2026-04-20 | Folder browsing: FolderTracksScreen with parent/child folder navigation, TrackListScaffold extracted as shared track list widget, "Open folder" action on album list, collapsible track info in LibraryItemTile, Album.albumArtist field, Track.dateReadable field. |
+| 0.3.0 | 2026-04-21 | Browse tree: BrowseScreen with hierarchical navigation via Browse/Children and Browse/Files MCWS endpoints. BrowseFilesView with flat/grouped toggle (group by artist → album+date), play/add actions per artist and album group. BrowseItem model. Drawer "Browse" entry. |
