@@ -56,10 +56,7 @@ class _BrowseFilesViewState extends ConsumerState<BrowseFilesView> {
                     tooltip: _grouped ? 'Flat list' : 'Group by artist/album',
                     onPressed: () => setState(() => _grouped = !_grouped),
                   ),
-                  _BrowseTracksPopupMenu(
-                    tracks: tracks,
-                    label: widget.title,
-                  ),
+                  _BrowseTracksPopupMenu(tracks: tracks, label: widget.title),
                 ],
               ),
             ),

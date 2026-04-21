@@ -24,6 +24,123 @@ abstract final class AppFonts {
   static const mono = 'IBMPlexMono';
 }
 
+abstract final class AppTextStyles {
+  /// LIBRARY, OUTPUT, PLAYBACK — mono section labels
+  static const sectionLabel = TextStyle(
+    fontFamily: AppFonts.mono,
+    fontSize: 9,
+    letterSpacing: 3,
+    color: AppColors.accent,
+  );
+
+  /// Main screen titles (24px)
+  static const screenTitle = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    letterSpacing: -0.5,
+  );
+
+  /// Sub-screen titles (22px)
+  static const subScreenTitle = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    letterSpacing: -0.4,
+    height: 1.2,
+  );
+
+  /// List item primary text (14px, w500)
+  static const itemTitle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.text,
+  );
+
+  /// Secondary/subtitle text (11px)
+  static const itemSubtitle = TextStyle(fontSize: 11, color: AppColors.text3);
+
+  /// Mono small — dates, counts (10px)
+  static const monoSmall = TextStyle(
+    fontFamily: AppFonts.mono,
+    fontSize: 10,
+    color: AppColors.text3,
+  );
+
+  /// Mono medium — durations, track numbers (11px)
+  static const monoMedium = TextStyle(
+    fontFamily: AppFonts.mono,
+    fontSize: 11,
+    color: AppColors.text3,
+  );
+
+  /// Now-playing track name (20px)
+  static const nowPlayingTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text,
+    letterSpacing: -0.3,
+    height: 1.2,
+  );
+
+  /// Now-playing artist (14px)
+  static const nowPlayingArtist = TextStyle(
+    fontSize: 14,
+    color: AppColors.text2,
+  );
+
+  /// Mini-player track name (13px, w600)
+  static const miniPlayerTitle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text,
+  );
+
+  /// Segment tab label (13px, w500) — apply color per state
+  static const segmentLabel = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+  );
+
+  /// Accent link/back button text (13px, w500)
+  static const accentButton = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.accent,
+  );
+
+  /// Small accent — Shuffle, Refresh chips (12px)
+  static const accentSmall = TextStyle(fontSize: 12, color: AppColors.accent);
+
+  /// Avatar initial letter
+  static const avatarLetter = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.accent,
+  );
+
+  /// Section heading — UP NEXT
+  static const sectionHeading = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text3,
+    letterSpacing: 1,
+  );
+
+  /// Empty / muted state text
+  static const emptyState = TextStyle(color: AppColors.text3);
+
+  /// Filter text input
+  static const filterInput = TextStyle(fontSize: 13);
+
+  /// Chip label (11px, sans)
+  static const chipLabel = TextStyle(
+    fontFamily: AppFonts.sans,
+    fontSize: 11,
+    color: AppColors.text2,
+  );
+}
+
 ThemeData buildAppTheme() {
   return ThemeData(
     brightness: Brightness.dark,

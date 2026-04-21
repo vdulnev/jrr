@@ -104,7 +104,10 @@ class _VolumeSliderState extends State<VolumeSlider> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: AppColors.text,
-                                border: Border.all(color: AppColors.bg1, width: 2),
+                                border: Border.all(
+                                  color: AppColors.bg1,
+                                  width: 2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.3),
@@ -129,11 +132,7 @@ class _VolumeSliderState extends State<VolumeSlider> {
           width: 32,
           child: Text(
             '${(widget.value * 100).round()}',
-            style: const TextStyle(
-              fontFamily: AppFonts.mono,
-              fontSize: 10,
-              color: AppColors.text3,
-            ),
+            style: AppTextStyles.monoSmall,
             textAlign: TextAlign.end,
           ),
         ),

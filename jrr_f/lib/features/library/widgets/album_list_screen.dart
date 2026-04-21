@@ -62,10 +62,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                         ),
                         child: const Text(
                           'Refresh',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.accent,
-                          ),
+                          style: AppTextStyles.accentSmall,
                         ),
                       ),
                     )
@@ -81,7 +78,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                     prefixIcon: Icon(Icons.search, size: 18),
                     isDense: true,
                   ),
-                  style: const TextStyle(fontSize: 13),
+                  style: AppTextStyles.filterInput,
                   onChanged: (v) => setState(() => _filter = v),
                 ),
               ),
@@ -91,7 +88,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   ? const Center(
                       child: Text(
                         'No matches',
-                        style: TextStyle(color: AppColors.text3),
+                        style: AppTextStyles.emptyState,
                       ),
                     )
                   : ListView.builder(

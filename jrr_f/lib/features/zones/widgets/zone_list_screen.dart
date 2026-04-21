@@ -30,25 +30,9 @@ class ZoneListScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'OUTPUT',
-                    style: TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 9,
-                      letterSpacing: 3,
-                      color: AppColors.accent,
-                    ),
-                  ),
+                  Text('OUTPUT', style: AppTextStyles.sectionLabel),
                   SizedBox(height: 6),
-                  Text(
-                    'Zones',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.text,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+                  Text('Zones', style: AppTextStyles.screenTitle),
                 ],
               ),
             ),
@@ -132,23 +116,14 @@ class _ZoneTile extends StatelessWidget {
                 children: [
                   Text(
                     zone.name,
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.itemTitle.copyWith(
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                      color: AppColors.text,
                     ),
                   ),
                   if (zone.isDLNA)
                     const Padding(
                       padding: EdgeInsets.only(top: 2),
-                      child: Text(
-                        'DLNA',
-                        style: TextStyle(
-                          fontFamily: AppFonts.mono,
-                          fontSize: 10,
-                          color: AppColors.text3,
-                        ),
-                      ),
+                      child: Text('DLNA', style: AppTextStyles.monoSmall),
                     ),
                 ],
               ),

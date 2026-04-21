@@ -78,21 +78,14 @@ class MiniPlayerPanel extends ConsumerWidget {
                               children: [
                                 Text(
                                   track.name,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.text,
-                                  ),
+                                  style: AppTextStyles.miniPlayerTitle,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
                                   track.artist,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.text3,
-                                  ),
+                                  style: AppTextStyles.itemSubtitle,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -126,9 +119,8 @@ class MiniPlayerPanel extends ConsumerWidget {
                               ),
                               TransportButton(
                                 size: 36,
-                                onPressed: () => ref
-                                    .read(playerProvider.notifier)
-                                    .next(),
+                                onPressed: () =>
+                                    ref.read(playerProvider.notifier).next(),
                                 child: const Icon(
                                   Icons.skip_next_rounded,
                                   size: 20,
@@ -150,11 +142,12 @@ class MiniPlayerPanel extends ConsumerWidget {
                     ],
                   ),
                 ),
-                ],
-                ),
-                ),
-                );
-                },      orElse: () => const SizedBox.shrink(),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }

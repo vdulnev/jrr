@@ -40,25 +40,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'LIBRARY',
-                    style: TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 9,
-                      letterSpacing: 3,
-                      color: AppColors.accent,
-                    ),
-                  ),
+                  const Text('LIBRARY', style: AppTextStyles.sectionLabel),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Browse',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.text,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+                  const Text('Browse', style: AppTextStyles.screenTitle),
                   const SizedBox(height: 14),
                   // Segmented tab control
                   Container(
@@ -85,9 +69,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               alignment: Alignment.center,
                               child: Text(
                                 _tabs[i],
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                                style: AppTextStyles.segmentLabel.copyWith(
                                   color: isActive
                                       ? AppColors.text
                                       : AppColors.text3,
@@ -155,7 +137,7 @@ class _ArtistsTab extends ConsumerWidget {
                   prefixIcon: Icon(Icons.search, size: 18),
                   isDense: true,
                 ),
-                style: const TextStyle(fontSize: 13),
+                style: AppTextStyles.filterInput,
                 onChanged: onFilterChanged,
               ),
             ),
@@ -164,7 +146,7 @@ class _ArtistsTab extends ConsumerWidget {
                   ? const Center(
                       child: Text(
                         'No matches',
-                        style: TextStyle(color: AppColors.text3),
+                        style: AppTextStyles.emptyState,
                       ),
                     )
                   : ListView.builder(
@@ -201,22 +183,14 @@ class _ArtistsTab extends ConsumerWidget {
                                     artist.isNotEmpty
                                         ? artist[0].toUpperCase()
                                         : '?',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.accent,
-                                    ),
+                                    style: AppTextStyles.avatarLetter,
                                   ),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Text(
                                     artist,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.text,
-                                    ),
+                                    style: AppTextStyles.itemTitle,
                                   ),
                                 ),
                                 const Icon(
@@ -271,7 +245,7 @@ class _RandomTab extends ConsumerWidget {
                     ),
                     child: const Text(
                       'Shuffle',
-                      style: TextStyle(fontSize: 12, color: AppColors.accent),
+                      style: AppTextStyles.accentSmall,
                     ),
                   ),
                 ),

@@ -52,23 +52,12 @@ class AlbumRowTile extends ConsumerWidget {
                 children: [
                   Text(
                     album.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.text,
-                    ),
+                    style: AppTextStyles.itemTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    album.date,
-                    style: const TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 10,
-                      color: AppColors.text3,
-                    ),
-                  ),
+                  Text(album.date, style: AppTextStyles.monoSmall),
                 ],
               ),
             ),

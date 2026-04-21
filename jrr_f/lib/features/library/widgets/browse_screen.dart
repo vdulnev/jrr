@@ -170,9 +170,7 @@ class _Breadcrumb extends StatelessWidget {
               onTap: i < stack.length - 1 ? () => onTap(i) : null,
               child: Text(
                 stack[i].name,
-                style: TextStyle(
-                  fontFamily: AppFonts.mono,
-                  fontSize: 10,
+                style: AppTextStyles.monoSmall.copyWith(
                   color: i < stack.length - 1
                       ? AppColors.text3
                       : AppColors.accent,
@@ -225,14 +223,7 @@ class _BrowseNodeList extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.text,
-                    ),
-                  ),
+                  child: Text(item.name, style: AppTextStyles.itemTitle),
                 ),
                 const Icon(
                   Icons.chevron_right,

@@ -32,37 +32,17 @@ class QueueScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'PLAYBACK',
-                    style: TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 9,
-                      letterSpacing: 3,
-                      color: AppColors.accent,
-                    ),
-                  ),
+                  const Text('PLAYBACK', style: AppTextStyles.sectionLabel),
                   const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'Queue',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
+                      const Text('Queue', style: AppTextStyles.screenTitle),
                       queueState.maybeWhen(
                         data: (items) => Text(
                           '${items.length} tracks',
-                          style: const TextStyle(
-                            fontFamily: AppFonts.mono,
-                            fontSize: 10,
-                            color: AppColors.text3,
-                          ),
+                          style: AppTextStyles.monoSmall,
                         ),
                         orElse: () => const SizedBox.shrink(),
                       ),
@@ -74,15 +54,7 @@ class QueueScreen extends ConsumerWidget {
             // "Up Next" label
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text(
-                'UP NEXT',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text3,
-                  letterSpacing: 1,
-                ),
-              ),
+              child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
             ),
             // Queue list
             Expanded(
@@ -97,7 +69,7 @@ class QueueScreen extends ConsumerWidget {
                     return const Center(
                       child: Text(
                         'Queue is empty',
-                        style: TextStyle(color: AppColors.text3),
+                        style: AppTextStyles.emptyState,
                       ),
                     );
                   }
@@ -152,11 +124,7 @@ class QueueScreen extends ConsumerWidget {
                                         child: Text(
                                           '${i + 1}',
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontFamily: AppFonts.mono,
-                                            fontSize: 11,
-                                            color: AppColors.text3,
-                                          ),
+                                          style: AppTextStyles.monoMedium,
                                         ),
                                       ),
                                     const SizedBox(width: 14),
@@ -167,23 +135,19 @@ class QueueScreen extends ConsumerWidget {
                                         children: [
                                           Text(
                                             track.name,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: isCurrent
-                                                  ? FontWeight.w600
-                                                  : FontWeight.w400,
-                                              color: AppColors.text,
-                                            ),
+                                            style: AppTextStyles.itemTitle
+                                                .copyWith(
+                                                  fontWeight: isCurrent
+                                                      ? FontWeight.w600
+                                                      : FontWeight.w400,
+                                                ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 1),
                                           Text(
                                             track.artist,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: AppColors.text3,
-                                            ),
+                                            style: AppTextStyles.itemSubtitle,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -192,11 +156,7 @@ class QueueScreen extends ConsumerWidget {
                                     ),
                                     Text(
                                       _formatDuration(track.duration),
-                                      style: const TextStyle(
-                                        fontFamily: AppFonts.mono,
-                                        fontSize: 11,
-                                        color: AppColors.text3,
-                                      ),
+                                      style: AppTextStyles.monoMedium,
                                     ),
                                     const SizedBox(width: 8),
                                     const Icon(

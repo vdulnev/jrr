@@ -21,14 +21,7 @@ class ActionChipButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(13),
         ),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: AppFonts.sans,
-            fontSize: 11,
-            color: AppColors.text2,
-          ),
-        ),
+        child: Text(label, style: AppTextStyles.chipLabel),
       ),
     );
   }

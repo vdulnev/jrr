@@ -30,14 +30,7 @@ class SubScreenHeader extends StatelessWidget {
               children: [
                 Icon(Icons.chevron_left, size: 18, color: AppColors.accent),
                 SizedBox(width: 2),
-                Text(
-                  'Back',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.accent,
-                  ),
-                ),
+                Text('Back', style: AppTextStyles.accentButton),
               ],
             ),
           ),
@@ -54,24 +47,10 @@ class SubScreenHeader extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           subtitle!.toUpperCase(),
-                          style: const TextStyle(
-                            fontFamily: AppFonts.mono,
-                            fontSize: 9,
-                            letterSpacing: 3,
-                            color: AppColors.accent,
-                          ),
+                          style: AppTextStyles.sectionLabel,
                         ),
                       ),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text,
-                        letterSpacing: -0.4,
-                        height: 1.2,
-                      ),
-                    ),
+                    Text(title, style: AppTextStyles.subScreenTitle),
                   ],
                 ),
               ),

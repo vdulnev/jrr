@@ -49,11 +49,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                   child: Text(
                     '${widget.index}',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: AppFonts.mono,
-                      fontSize: 11,
-                      color: AppColors.text3,
-                    ),
+                    style: AppTextStyles.monoMedium,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -63,9 +59,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                     children: [
                       Text(
                         track.name.isNotEmpty ? track.name : 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        style: AppTextStyles.segmentLabel.copyWith(
                           color: AppColors.text,
                         ),
                         maxLines: 1,
@@ -80,10 +74,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                               track.album,
                               track.dateReadable,
                             ].where((s) => s.isNotEmpty).join(' \u00b7 '),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.text3,
-                            ),
+                            style: AppTextStyles.itemSubtitle,
                           ),
                         ),
                     ],
@@ -95,11 +86,7 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                   children: [
                     Text(
                       _formatDuration(track.duration),
-                      style: const TextStyle(
-                        fontFamily: AppFonts.mono,
-                        fontSize: 10,
-                        color: AppColors.text3,
-                      ),
+                      style: AppTextStyles.monoSmall,
                     ),
                     if (_expanded && track.bitrate > 0)
                       Padding(

@@ -65,21 +65,13 @@ class NowPlayingScreen extends ConsumerWidget {
                             children: [
                               const Text(
                                 'NOW PLAYING',
-                                style: TextStyle(
-                                  fontFamily: AppFonts.mono,
-                                  fontSize: 9,
-                                  letterSpacing: 3,
-                                  color: AppColors.accent,
-                                ),
+                                style: AppTextStyles.sectionLabel,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${activeZone.name}'
                                 '${_formatQuality(status.trackInfo)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.text3,
-                                ),
+                                style: AppTextStyles.itemSubtitle,
                               ),
                             ],
                           ),
@@ -135,13 +127,7 @@ class NowPlayingScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 status.trackInfo?.name ?? 'Nothing playing',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.text,
-                                  letterSpacing: -0.3,
-                                  height: 1.2,
-                                ),
+                                style: AppTextStyles.nowPlayingTitle,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -149,21 +135,14 @@ class NowPlayingScreen extends ConsumerWidget {
                                 const SizedBox(height: 3),
                                 Text(
                                   status.trackInfo?.artist ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.text2,
-                                  ),
+                                  style: AppTextStyles.nowPlayingArtist,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   status.trackInfo?.album ?? '',
-                                  style: const TextStyle(
-                                    fontFamily: AppFonts.mono,
-                                    fontSize: 11,
-                                    color: AppColors.text3,
-                                  ),
+                                  style: AppTextStyles.monoMedium,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -188,19 +167,11 @@ class NowPlayingScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 _fmt(elapsed),
-                                style: const TextStyle(
-                                  fontFamily: AppFonts.mono,
-                                  fontSize: 10,
-                                  color: AppColors.text3,
-                                ),
+                                style: AppTextStyles.monoSmall,
                               ),
                               Text(
                                 '-${_fmt(remaining)}',
-                                style: const TextStyle(
-                                  fontFamily: AppFonts.mono,
-                                  fontSize: 10,
-                                  color: AppColors.text3,
-                                ),
+                                style: AppTextStyles.monoSmall,
                               ),
                             ],
                           ),
