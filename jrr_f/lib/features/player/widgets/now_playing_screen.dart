@@ -12,9 +12,9 @@ import '../../zones/providers/active_zone_provider.dart';
 import '../../zones/providers/zone_provider.dart';
 import '../../queue/providers/queue_provider.dart';
 import '../data/models/playback_state.dart';
+import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
-import '../../library/data/models/track.dart';
 import '../providers/player_provider.dart';
 import '../providers/polling_provider.dart';
 import 'artwork_widget.dart';
@@ -70,7 +70,7 @@ class NowPlayingScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '${activeZone.name}'
-                                '${_formatQuality(status.trackInfo)}',
+                                '${_formatQuality(status)}',
                                 style: AppTextStyles.itemSubtitle,
                               ),
                             ],
@@ -105,7 +105,7 @@ class NowPlayingScreen extends ConsumerWidget {
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: ArtworkWidget(
-                              imageUrl: status.trackInfo?.imageUrl,
+                              imageUrl: status.imageUrl,
                               size: 280,
                             ),
                           ),
@@ -126,63 +126,59 @@ class NowPlayingScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                status.trackInfo?.name ?? 'Nothing playing',
+                                status.name.isNotEmpty
+                                    ? status.name
+                                    : 'Nothing playing',
                                 style: AppTextStyles.nowPlayingTitle,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              if (status.trackInfo != null) ...[
+                              if (status.fileKey >= 0) ...[
                                 const SizedBox(height: 3),
                                 Text(
-                                  [
-                                    status.trackInfo?.dateReadable,
-                                    status.trackInfo?.album
-                                  ]
-                                      .where((s) => s != null && s.isNotEmpty)
-                                      .join(' · '),
+                                  status.album,
                                   style: AppTextStyles.nowPlayingArtist,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  status.trackInfo?.artist ?? '',
-                                  style: AppTextStyles.nowPlayingArtist.copyWith(
-                                    color: AppColors.text3,
-                                  ),
+                                  status.artist,
+                                  style: AppTextStyles.nowPlayingArtist
+                                      .copyWith(color: AppColors.text3),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                                ],
-                                ),
-                                ),
+                            ],
+                          ),
+                        ),
 
-                                // Progress bar
-                                const SizedBox(height: 16),
-                                AppProgressBar(
-                                progress: progress,
-                                onChanged: (v) {
-                                final ms = (v * status.durationMs).round();
-                                ref.read(playerProvider.notifier).seekTo(ms);
-                                },
-                                ),
-                                Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 2),
-                                child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                Text(
+                        // Progress bar
+                        const SizedBox(height: 16),
+                        AppProgressBar(
+                          progress: progress,
+                          onChanged: (v) {
+                            final ms = (v * status.durationMs).round();
+                            ref.read(playerProvider.notifier).seekTo(ms);
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
                                 _fmt(elapsed),
                                 style: AppTextStyles.monoLabel,
-                                ),
-                                Text(
+                              ),
+                              Text(
                                 '-${_fmt(remaining)}',
                                 style: AppTextStyles.monoLabel,
-                                ),
-                                ],
-                                ),
-                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         // Transport controls
                         const SizedBox(height: 20),
                         Row(
@@ -269,15 +265,15 @@ class NowPlayingScreen extends ConsumerWidget {
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  String _formatQuality(Track? trackInfo) {
-    if (trackInfo == null) return '';
-    if (trackInfo.bitDepth > 0 && trackInfo.sampleRate > 0) {
-      final sr = trackInfo.sampleRate >= 1000
-          ? '${(trackInfo.sampleRate / 1000).round()}'
-          : '${trackInfo.sampleRate}';
-      return ' \u00b7 FLAC ${trackInfo.bitDepth}/$sr';
+  String _formatQuality(PlayerStatus status) {
+    if (status.fileKey < 0) return '';
+    if (status.bitDepth > 0 && status.sampleRate > 0) {
+      final sr = status.sampleRate >= 1000
+          ? '${(status.sampleRate / 1000).round()}'
+          : '${status.sampleRate}';
+      return ' \u00b7 FLAC ${status.bitDepth}/$sr';
     }
-    if (trackInfo.bitrate > 0) return ' \u00b7 ${trackInfo.bitrate} kbps';
+    if (status.bitrate > 0) return ' \u00b7 ${status.bitrate} kbps';
     return '';
   }
 }

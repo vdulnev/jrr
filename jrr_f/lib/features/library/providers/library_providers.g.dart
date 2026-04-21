@@ -536,3 +536,72 @@ final class BrowseFilesFamily extends $Family
   @override
   String toString() => r'browseFilesProvider';
 }
+
+@ProviderFor(searchByFileKey)
+final searchByFileKeyProvider = SearchByFileKeyFamily._();
+
+final class SearchByFileKeyProvider
+    extends $FunctionalProvider<AsyncValue<Track?>, Track?, FutureOr<Track?>>
+    with $FutureModifier<Track?>, $FutureProvider<Track?> {
+  SearchByFileKeyProvider._({
+    required SearchByFileKeyFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'searchByFileKeyProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$searchByFileKeyHash();
+
+  @override
+  String toString() {
+    return r'searchByFileKeyProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Track?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Track?> create(Ref ref) {
+    final argument = this.argument as int;
+    return searchByFileKey(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SearchByFileKeyProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$searchByFileKeyHash() => r'0bbfae24b7f3fda2a0da6447167d360512f3fb69';
+
+final class SearchByFileKeyFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Track?>, int> {
+  SearchByFileKeyFamily._()
+    : super(
+        retry: null,
+        name: r'searchByFileKeyProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  SearchByFileKeyProvider call(int fileKey) =>
+      SearchByFileKeyProvider._(argument: fileKey, from: this);
+
+  @override
+  String toString() => r'searchByFileKeyProvider';
+}

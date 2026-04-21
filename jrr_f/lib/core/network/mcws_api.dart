@@ -140,6 +140,11 @@ abstract class McwsApi {
     @Query('StartIndex') int startIndex = 0,
   });
 
+  @GET('File/GetInfo?Action=JSON&Fields=Calculated')
+  Future<Track> searchByFileKey({
+    @Query('File') required int fileKey,
+  });
+
   @GET('Browse/Children')
   Future<String> browseChildren({
     @Query('ID') required String id,

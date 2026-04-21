@@ -60,4 +60,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
     String zoneId,
     List<int> fileKeys,
   ) => getIt<McwsClient>().addToQueue(zoneId, fileKeys, location: 0);
+  
+  @override
+  Future<Either<AppException, Track?>> searchByFileKey(int fileKey) =>
+      getIt<McwsClient>().searchByFileKey(fileKey);
 }

@@ -120,28 +120,12 @@ class McwsClient {
         (responseStr) => _parser.parse(responseStr).flatMap((fields) {
           final volDisplay = fields['VolumeDisplay'] ?? '';
 
-          final fileKey = int.tryParse(fields['FileKey'] ?? '-1') ?? -1;
-          Track? trackInfo;
-          if (fileKey >= 0) {
-            trackInfo = Track(
-              fileKey: fileKey,
-              name: fields['Name'] ?? '',
-              artist: fields['Artist'] ?? '',
-              album: fields['Album'] ?? '',
-              imageUrl: fields['ImageURL'] ?? '',
-              bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
-              bitDepth: int.tryParse(fields['Bitdepth'] ?? '0') ?? 0,
-              sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
-              channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
-            );
-          }
-
           return right(
             PlayerStatus(
               zoneId: fields['ZoneID'] ?? zoneId,
               zoneName: fields['ZoneName'] ?? '',
+              fileKey: int.tryParse(fields['FileKey'] ?? '-1') ?? -1,
               state: PlaybackState.fromMcws(fields['State'] ?? '0'),
-              trackInfo: trackInfo,
               positionMs: int.tryParse(fields['PositionMS'] ?? '0') ?? 0,
               durationMs: int.tryParse(fields['DurationMS'] ?? '0') ?? 0,
               positionDisplay: fields['PositionDisplay'] ?? '',
@@ -156,6 +140,14 @@ class McwsClient {
                   fields['PlayingNowPositionDisplay'] ?? '',
               playingNowChangeCounter:
                   int.tryParse(fields['PlayingNowChangeCounter'] ?? '0') ?? 0,
+              name: fields['Name'] ?? '',
+              artist: fields['Artist'] ?? '',
+              album: fields['Album'] ?? '',
+              imageUrl: fields['ImageURL'] ?? '',
+              bitrate: int.tryParse(fields['Bitrate'] ?? '0') ?? 0,
+              bitDepth: int.tryParse(fields['Bitdepth'] ?? '0') ?? 0,
+              sampleRate: int.tryParse(fields['SampleRate'] ?? '0') ?? 0,
+              channels: int.tryParse(fields['Channels'] ?? '0') ?? 0,
             ),
           );
         }),
@@ -293,6 +285,17 @@ class McwsClient {
       ),
       (items) => right(items..sort((a, b) => a.name.compareTo(b.name))),
     );
+  }
+
+  Future<Either<AppException, Track?>> searchByFileKey(int fileKey) async {
+    if (fileKey > 0) {
+      return _request(
+        () => _api.searchByFileKey(fileKey: fileKey),
+        (track) => right(track),
+      );
+    } else {
+      return right(null);
+    }
   }
 
   Future<Either<AppException, List<String>>> getArtists() => _request(

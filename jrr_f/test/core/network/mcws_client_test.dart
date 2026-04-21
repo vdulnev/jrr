@@ -214,8 +214,8 @@ void main() {
 
       expect(result.isRight(), true);
       final status = result.getOrElse((_) => throw Exception('Failed'));
-      expect(status.trackInfo?.name, 'Waterloo');
-      expect(status.trackInfo?.artist, 'ABBA');
+      expect(status.name, 'Waterloo');
+      expect(status.artist, 'ABBA');
     });
   });
 

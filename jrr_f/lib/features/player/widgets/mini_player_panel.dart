@@ -18,13 +18,11 @@ class MiniPlayerPanel extends ConsumerWidget {
     final playerState = ref.watch(playerProvider);
     return playerState.maybeWhen(
       data: (status) {
-        final track = status.trackInfo;
-        if (track == null) return const SizedBox.shrink();
+        if (status.fileKey < 0) return const SizedBox.shrink();
         final isPlaying = status.state == PlaybackState.playing;
         final progress = status.durationMs > 0
             ? (status.positionMs / status.durationMs).clamp(0.0, 1.0)
             : 0.0;
-
         return GestureDetector(
           onTap: onTap,
           child: Container(
@@ -67,7 +65,7 @@ class MiniPlayerPanel extends ConsumerWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(7),
                             child: ArtworkWidget(
-                              imageUrl: track.imageUrl,
+                              imageUrl: status.imageUrl,
                               size: 40,
                             ),
                           ),
@@ -77,14 +75,14 @@ class MiniPlayerPanel extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  track.name,
+                                  status.name,
                                   style: AppTextStyles.labelLarge,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  track.artist,
+                                  status.artist,
                                   style: AppTextStyles.itemSubtitle,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -119,8 +117,9 @@ class MiniPlayerPanel extends ConsumerWidget {
                               ),
                               TransportButton(
                                 size: 36,
-                                onPressed: () =>
-                                    ref.read(playerProvider.notifier).next(),
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .next(),
                                 child: const Icon(
                                   Icons.skip_next_rounded,
                                   size: 20,

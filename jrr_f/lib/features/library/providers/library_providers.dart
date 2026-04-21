@@ -56,3 +56,9 @@ Future<List<Track>> browseFiles(Ref ref, String id) async {
   final result = await getIt<LibraryRepository>().browseFiles(id);
   return result.getOrElse((e) => throw e);
 }
+
+@riverpod
+Future<Track?> searchByFileKey(Ref ref, int fileKey) async {
+  final result = await getIt<LibraryRepository>().searchByFileKey(fileKey);
+  return result.getOrElse((e) => throw e);
+}
