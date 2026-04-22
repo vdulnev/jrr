@@ -96,8 +96,8 @@ lib/
         player_provider.dart       # AsyncNotifier<PlayerStatus>
         polling_provider.dart      # timer-based orchestrator
       widgets/
-        now_playing_screen.dart    # main screen with drawer nav
-        mini_player_panel.dart     # persistent mini player (slide animation)
+        now_playing_screen.dart    # main tab screen; artwork, transport, seek, volume
+        mini_player_panel.dart     # persistent mini player in layout flow (Column-based)
         transport_controls.dart
         seek_bar.dart
         volume_control.dart
@@ -113,8 +113,7 @@ lib/
         zone_provider.dart         # AsyncNotifier<List<Zone>>
         active_zone_provider.dart  # StateProvider<Zone?>
       widgets/
-        zone_list_screen.dart
-        zone_tile.dart
+        zone_list_screen.dart      # top-level tab with zone list, volume control for active zone
     queue/
       data/
         repositories/
@@ -129,29 +128,33 @@ lib/
       data/
         models/
           album.dart               # Freezed; Album.fromTrack() factory
-          browse_item.dart           # Freezed; id + name for browse tree nodes
+          browse_item.dart         # Freezed; id + name for browse tree nodes
           track.dart               # Freezed + json_serializable; shared by queue & library
         repositories/
           library_repository.dart  # abstract interface
           library_repository_impl.dart
       providers/
-        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search, browseChildren, browseFiles
+        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search, browseChildren, browseFiles, libraryTabIndex
       widgets/
-        library_screen.dart        # artist browsing with client-side filtering
-        album_list_screen.dart     # reusable: takes List<Album>, title, onRefresh; "Open folder" action
+        library_screen.dart        # top-level tab with segmented control (Artists/Random/Browse)
+        album_list_screen.dart     # reusable: takes List<Album>, title, subtitle, onRefresh; SubScreenHeader, filter field (>5 albums), AlbumRowTile
         album_detail_screen.dart   # thin @RoutePage wrapper → TrackListScaffold
+        album_row_tile.dart        # album row with art placeholder, kebab PopupMenuButton (play/play-next/add/open-folder)
         folder_tracks_screen.dart  # folder-based track view with parent/child navigation
-        track_list_scaffold.dart   # shared scaffold: header (back + actions) + title + track list body
+        track_list_scaffold.dart   # shared scaffold: SubScreenHeader + title widget + subtitle + track list body + multi-disc grouping
         artist_albums_screen.dart  # @RoutePage wrapper for artist → albums
         random_albums_screen.dart  # @RoutePage wrapper for random albums
-        library_item_tile.dart     # track tile with collapsible info (artist · album · date + filePath)
-        browse_screen.dart         # tree navigation with internal stack; Browse/Children for nodes, Browse/Files for leaves
-        browse_files_screen.dart   # leaf node track list with flat/grouped toggle; grouped by artist → album+date; play/add actions per group
+        library_item_tile.dart     # track tile with collapsible info, kebab popup menu, long-press path sheet
+        browse_screen.dart         # tree navigation with internal stack; Browse/Children for nodes, Browse/Files for leaves; also BrowseTreeView for embedded use
+        browse_files_screen.dart   # leaf node track list with flat/grouped toggle; grouped by artist → album+date; kebab popup menus per group
         library_action_sheet.dart
   shared/
     widgets/
       error_view.dart              # surfaces AsyncValue.error
       loading_view.dart
+      sub_screen_header.dart       # shared header: back button, title/titleWidget, subtitle, trailing, content
+      transport_button.dart        # reusable circular icon button for transport controls
+      volume_slider.dart           # compact horizontal volume slider with mute toggle
     extensions/
       async_value_ext.dart         # .whenWidget() helper
 test/
@@ -209,16 +212,22 @@ All repositories that need to make MCWS requests resolve the client at call-time
 - CI should reject commits with unformatted code.
 
 ## Routing (auto_route)
-- **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through a Riverpod provider.
+- **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through Riverpod providers.
 - Single `AppRouter` with `@AutoRouterConfig`.
-- `RootScreen` wraps `AutoRouter.declarative()` and renders routes based on:
-  - `sessionProvider` state (Restoring | Unauthenticated | Authenticated)
-  - `navigationProvider` stack (declarative nav stack)
-  - When authenticated and nav stack is non-empty, shows `MiniPlayerPanel` below the router with `AnimatedSlide` transition
-- `NavigationNotifier` (Riverpod) manages the navigation stack:
+- **`RootScreen`** wraps authentication guard + `_AuthenticatedShell`:
+  - `sessionProvider` state (Restoring | Unauthenticated | Authenticated) gates access
+  - `_AuthenticatedShell` renders the bottom tab bar with 4 tabs (Playing, Queue, Library, Zones)
+  - Tab content rendered via `IndexedStack` for state preservation
+  - When nav stack is non-empty, sub-screens rendered via `AutoRouter.declarative()` on top
+  - `MiniPlayerPanel` shown in Column layout flow (between content and tab bar) when not on NowPlaying tab or when sub-screens are pushed
+- **`ActiveTab`** (Riverpod `@riverpod` notifier) manages bottom tab selection:
+  - `AppTab` enum: `nowPlaying`, `queue`, `library`, `zones`
+  - `select(tab)` clears nav stack then switches tab
+- **`NavigationNotifier`** (Riverpod) manages the sub-screen navigation stack:
   - `push()` — add route to stack
   - `pop()` — remove from stack
-  - `clear()` — reset stack (returns to NowPlaying)
+  - `replace()` — replace top route
+  - `clear()` — reset stack
 - **Never use imperative `context.router.push/pop`** — all navigation goes through `ref.read(navigationProvider.notifier)`.
 
 ### Error handling
@@ -424,11 +433,11 @@ Pre-commit checklist (matches the global Dart rules):
 ### Phase 5 — Library Browse & Search (done)
 - **API layer:** Single `filesSearch` Retrofit endpoint; `McwsClient` builds MCWS queries with `_esc()` escaping for `[]()-` characters
 - **Browse:** Artist list → album list → track list drill-down
-  - `LibraryScreen` — artist browsing with client-side text filtering
-  - `AlbumListScreen` — reusable widget taking `List<Album>`, `title`, optional `onRefresh`; filter field, long-press copy, play/add-to-queue/open-folder actions
-  - `TrackListScaffold` — shared scaffold for all track list screens; custom header (back button + play/add/more actions), full-width non-truncated title, loading/error/empty states, multi-disc grouping
-  - `AlbumDetailScreen` — thin `@RoutePage` wrapper passing album title + `albumTracksProvider` to `TrackListScaffold`
-  - `FolderTracksScreen` — displays all tracks matching a folder path; stateful with parent/child folder navigation (up/down arrows); uses `Track.parentPath()` for folder hierarchy traversal; history stack enables forward (up to root) and back (down to original album folder)
+  - `LibraryScreen` — top-level tab with segmented control (Artists/Random/Browse); `ConsumerWidget` with `libraryTabIndexProvider`
+  - `AlbumListScreen` — reusable: takes `List<Album>`, title, subtitle, optional onRefresh; `SubScreenHeader`, filter field (shown when >5 albums), `AlbumRowTile` items
+  - `TrackListScaffold` — shared scaffold for all track list screens; `SubScreenHeader` with title widget, subtitle, kebab `_TracksPopupMenu` trailing action; loading/error/empty states, multi-disc grouping with disc headers, optional `headerContent` slot
+  - `AlbumDetailScreen` — thin `@RoutePage` wrapper passing album title + subtitle (artist) + `albumTracksProvider` to `TrackListScaffold`
+  - `FolderTracksScreen` — displays all tracks matching a folder path; stateful with parent/child folder navigation (up/down arrows in `headerContent`); uses `Track.parentPath()` for folder hierarchy traversal; history stack enables forward (up to root) and back (down to original album folder)
   - `ArtistAlbumsScreen` / `RandomAlbumsScreen` — thin `@RoutePage` wrappers
 - **Search:** `McwsClient.searchFiles(query)` — multi-field search (Name, Artist, Album)
 - **Random Albums:** 10 random albums via `~limit` + `~n` modifiers
@@ -437,25 +446,61 @@ Pre-commit checklist (matches the global Dart rules):
   - `Track` (Freezed + json_serializable) — shared by queue, library, and player; `Track.parentPath()` static utility for folder hierarchy navigation
   - `Album` (Freezed) — derived from Track via `Album.fromTrack()` factory; includes `albumArtist`, `date` (readable date string)
   - `Album.folderPath` — uses `parentFolderPath` for multi-disc albums
-- **Track tile:** `LibraryItemTile` with `collapsedByDefault` parameter; when collapsed shows only track name, tap expands to show artist · album · date info line + full file path
+- **Track tile:** `LibraryItemTile` with `collapsedByDefault` parameter; tap toggles expanded state (shows folder/file paths); long-press shows bottom sheet with selectable file path + clipboard copy; kebab `PopupMenuButton` for play actions
 - **Queue integration:** Play now / Add to queue actions on albums, tracks, and folders via `Playback/PlayByKey`
 - **Client-side filtering:** Exact artist match (MCWS does substring matching)
 - **Browse tree:** Hierarchical library browsing via MCWS `Browse/Children` and `Browse/Files` endpoints
   - `BrowseScreen` — tree navigation with internal stack; `Browse/Children` fetches child nodes, leaf nodes (empty children) switch to `Browse/Files` for tracks
-  - `BrowseFilesView` — displays tracks at leaf nodes; toggle between flat list and grouped view (by artist → album+date+folderPath); play/add-to-queue actions on individual tracks, artist groups, and album groups
+  - `BrowseFilesView` — displays tracks at leaf nodes; toggle between flat list and grouped view (by artist → album+date+folderPath); kebab popup menus on individual tracks, artist groups, and album groups
   - `BrowseItem` model (Freezed) — `id` + `name` for browse tree nodes
   - Accessible via drawer → Library → Browse
 - **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `folderTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`, `browseChildrenProvider`, `browseFilesProvider`
 - **LibraryRepository** interface + impl (includes `getTracksByFolder`, `browseChildren`, `browseFiles`)
 
 ### Phase 6 — Mini Player (done)
-- `MiniPlayerPanel` — persistent panel at bottom of screen when navigated away from NowPlaying
-- Shows artwork, track name, artist, prev/play-pause/next buttons, 2px progress bar
-- Tap navigates back to NowPlaying
-- `AnimatedSlide` transition (slides down when returning to NowPlaying)
-- Integrated in `RootScreen` via `showMiniPlayer` flag based on nav stack state
+- `MiniPlayerPanel` — persistent panel in layout flow (Column-based, not overlay)
+- Shows artwork, track name, artist, prev/play-pause/next transport buttons, 2px progress bar, inline volume slider with mute toggle
+- Tap navigates back to NowPlaying tab
+- Positioned in Column between Expanded content and bottomNavigationBar — participates in layout flow so it never overlaps modals or menus
+- Integrated in `RootScreen._AuthenticatedShell` via `showMiniPlayer` flag (true when not on NowPlaying tab or when sub-screens are pushed)
 
-### Phase 7 — Polish & Multi-platform
+### Phase 7 — UI Design System & Polish (done)
+- **Design token system:**
+  - `AppColors` — dark theme color palette (bg0–bg4, line/line2, text/text2/text3, accent/accentDim)
+  - `AppFonts` — font family constants (Inter sans, IBMPlexMono mono)
+  - `AppTextStyles` — centralized text style constants (~18 named styles: sectionLabel, screenTitle, subScreenTitle, itemTitle, itemSubtitle, monoLabel, nowPlayingTitle, nowPlayingArtist, labelLarge, accentButton, accentSmall, avatarLetter, sectionHeading, emptyState, chipLabel)
+  - `buildAppTheme()` — Material 3 ThemeData wired to design tokens (colorScheme, textTheme, listTileTheme, inputDecorationTheme, snackBarTheme, appBarTheme, dividerTheme)
+- **Consistent kebab popup menus:**
+  - All playable items use `PopupMenuButton<String>` with consistent menu items: Play, Play next, Add to playing now
+  - Uniform icon: `Icons.more_vert` (18px, `AppColors.text3`)
+  - Menu items use `ListTile` with `contentPadding: EdgeInsets.zero` and `VisualDensity.compact`
+  - Applied across: `LibraryItemTile` (individual tracks), `AlbumRowTile` (albums + optional "Open folder"), `TrackListScaffold._TracksPopupMenu` (bulk track actions), `BrowseFilesView._BrowseTracksPopupMenu` (browse leaf actions per artist/album group)
+- **Bottom tab navigation:**
+  - 4 tabs: Playing, Queue, Library, Zones
+  - Custom `_TabBar` with uppercase mono labels, accent color for active tab
+  - `IndexedStack` preserves tab state
+  - `ActiveTab` Riverpod notifier clears nav stack on tab switch
+- **Sub-screen navigation:**
+  - `SubScreenHeader` shared widget: back button (chevron + "Back"), title (string or widget), optional subtitle (uppercase mono label), optional trailing widget, optional content area
+  - Used by: `AlbumListScreen`, `TrackListScaffold`, `BrowseScreen`, `FolderTracksScreen`
+- **Library screen redesign:**
+  - `LibraryScreen` as `ConsumerWidget` with segmented tab control (Artists/Random/Browse)
+  - `libraryTabIndexProvider` manages active tab
+  - Artists tab: text filter field, avatar circles with initial letter, chevron navigation
+  - Random tab: shuffle button, `AlbumListView` with `AlbumRowTile`
+  - Browse tab: embedded `BrowseTreeView`
+- **Track tile enhancements:**
+  - `LibraryItemTile`: collapsible info (tap toggles expanded state showing folder/file paths), long-press shows bottom sheet with selectable file path + copy button, kebab popup menu for play actions
+- **Zone screen redesign:**
+  - Top-level tab (not pushed route)
+  - Custom header with OUTPUT/Zones labels
+  - Zone tiles with icon (cast for DLNA, speaker for local), active zone indicator dot
+  - Active zone highlighted with accent dim background
+- **Shared widgets:**
+  - `TransportButton` — circular icon button for transport controls
+  - `VolumeSlider` — compact horizontal volume slider with mute toggle icon
+
+### Phase 8 — Polish & Multi-platform
 - Adaptive layouts (compact mobile vs expanded desktop)
 - App lifecycle handling — pause/resume polling (§5.3 of parent spec)
 - Error recovery UX (retry flows, reconnect)
@@ -487,3 +532,4 @@ Pre-commit checklist (matches the global Dart rules):
 | 0.2.0 | 2026-04-19 | Phases 1–6 done. Added: Retrofit API layer, mini player with AnimatedSlide, library browse (artists → albums → tracks), random albums, Album/Track models with date, MCWS query escaping, client-side exact filtering, multi-disc album support. Updated project structure to match reality. |
 | 0.2.1 | 2026-04-20 | Folder browsing: FolderTracksScreen with parent/child folder navigation, TrackListScaffold extracted as shared track list widget, "Open folder" action on album list, collapsible track info in LibraryItemTile, Album.albumArtist field, Track.dateReadable field. |
 | 0.3.0 | 2026-04-21 | Browse tree: BrowseScreen with hierarchical navigation via Browse/Children and Browse/Files MCWS endpoints. BrowseFilesView with flat/grouped toggle (group by artist → album+date), play/add actions per artist and album group. BrowseItem model. Drawer "Browse" entry. |
+| 0.4.0 | 2026-04-21 | UI design system: centralized AppTextStyles, consistent kebab PopupMenuButton menus across all playable items, bottom tab navigation (Playing/Queue/Library/Zones), mini player in Column layout flow, SubScreenHeader shared widget, LibraryScreen segmented tabs, ZoneListScreen as top-level tab, TransportButton/VolumeSlider shared widgets. Phase 7 done, renumbered Phase 8 for future polish. |

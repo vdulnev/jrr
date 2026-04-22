@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.3.0
+**Version:** 0.4.0
 **Status:** Draft
 
 ---
@@ -30,6 +30,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Playing Now queue           | v1       |
 | Library browse & search     | v2 (done)|
 | Library tree browsing       | v3 (done)|
+| UI design system & polish   | v4 (done)|
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
