@@ -110,7 +110,7 @@ jobs:
           path: jrr_f/JRiverRemote-Linux.tar.gz
 
   release:
-    needs: [build-android, build-windows, build-macos, build-linux]
+    needs: [build-android, build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
