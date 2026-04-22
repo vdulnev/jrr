@@ -58,6 +58,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
         albums: albums,
         title: artist,
         subtitle: 'Artist',
+        showArtist: false,
         onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
       ),
     );

@@ -13,8 +13,13 @@ import '../providers/library_providers.dart';
 
 class AlbumRowTile extends ConsumerWidget {
   final Album album;
+  final bool showArtist;
 
-  const AlbumRowTile({required this.album, super.key});
+  const AlbumRowTile({
+    required this.album,
+    this.showArtist = true,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,13 +56,20 @@ class AlbumRowTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    album.name,
+                    [album.date, album.name].where((s) => s.isNotEmpty).join(' - '),
                     style: AppTextStyles.itemTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
-                  Text(album.date, style: AppTextStyles.monoLabel),
+                  if (showArtist) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      album.artist,
+                      style: AppTextStyles.itemSubtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),

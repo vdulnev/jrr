@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../library/providers/library_providers.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -36,6 +37,11 @@ class NowPlayingScreen extends ConsumerWidget {
 
     final playerState = ref.watch(playerProvider);
 
+    // Optimized: Only re-read fileKey when it actually changes
+    final fileKey = ref.watch(
+      playerProvider.select((s) => s.asData?.value.fileKey ?? -1),
+    );
+
     return Scaffold(
       body: playerState.when(
         loading: () => const LoadingView(),
@@ -47,6 +53,12 @@ class NowPlayingScreen extends ConsumerWidget {
               : 0.0;
           final elapsed = status.positionMs ~/ 1000;
           final remaining = (status.durationMs - status.positionMs) ~/ 1000;
+
+          // Fetch full track info to get dateReadable (which isn't in PlayerStatus)
+          // Only triggers when fileKey changes
+          final track = fileKey >= 0
+              ? ref.watch(searchByFileKeyProvider(fileKey)).asData?.value
+              : null;
 
           return SafeArea(
             bottom: false,
@@ -136,16 +148,14 @@ class NowPlayingScreen extends ConsumerWidget {
                               if (status.fileKey >= 0) ...[
                                 const SizedBox(height: 3),
                                 Text(
-                                  status.album,
+                                  [
+                                    status.artist,
+                                    [
+                                      status.album,
+                                      track?.dateReadable ?? '',
+                                    ].where((s) => s.isNotEmpty).join(' - ')
+                                  ].where((s) => s.isNotEmpty).join(' - '),
                                   style: AppTextStyles.nowPlayingArtist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  status.artist,
-                                  style: AppTextStyles.nowPlayingArtist
-                                      .copyWith(color: AppColors.text3),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

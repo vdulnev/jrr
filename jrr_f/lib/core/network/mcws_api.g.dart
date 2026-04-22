@@ -731,12 +731,12 @@ class _McwsApi implements McwsApi {
   }
 
   @override
-  Future<Track> searchByFileKey({required int fileKey}) async {
+  Future<List<Track>> searchByFileKey({required int fileKey}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'File': fileKey};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<Track>(
+    final _options = _setStreamType<List<Track>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -746,10 +746,12 @@ class _McwsApi implements McwsApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late Track _value;
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<Track> _value;
     try {
-      _value = Track.fromJson(_result.data!);
+      _value = _result.data!
+          .map((dynamic i) => Track.fromJson(i as Map<String, dynamic>))
+          .toList();
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

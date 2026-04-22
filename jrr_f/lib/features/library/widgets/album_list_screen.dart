@@ -12,12 +12,14 @@ class AlbumListScreen extends ConsumerStatefulWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onRefresh;
+  final bool showArtist;
 
   const AlbumListScreen({
     required this.albums,
     required this.title,
     this.subtitle,
     this.onRefresh,
+    this.showArtist = true,
     super.key,
   });
 
@@ -94,7 +96,10 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 148),
                       itemCount: filtered.length,
-                      itemBuilder: (_, i) => AlbumRowTile(album: filtered[i]),
+                      itemBuilder: (_, i) => AlbumRowTile(
+                        album: filtered[i],
+                        showArtist: widget.showArtist,
+                      ),
                     ),
             ),
           ],

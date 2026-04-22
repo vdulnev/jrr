@@ -291,7 +291,7 @@ class McwsClient {
     if (fileKey > 0) {
       return _request(
         () => _api.searchByFileKey(fileKey: fileKey),
-        (track) => right(track),
+        (tracks) => right(tracks.firstOrNull),
       );
     } else {
       return right(null);

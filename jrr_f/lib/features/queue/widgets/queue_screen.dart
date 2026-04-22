@@ -146,7 +146,17 @@ class QueueScreen extends ConsumerWidget {
                                           ),
                                           const SizedBox(height: 1),
                                           Text(
-                                            track.artist,
+                                            [
+                                              [
+                                                track.dateReadable,
+                                                track.album
+                                              ]
+                                                  .where((s) => s.isNotEmpty)
+                                                  .join(' - '),
+                                              track.artist,
+                                            ].where((s) => s.isNotEmpty).join(
+                                              ' \u00b7 ',
+                                            ),
                                             style: AppTextStyles.itemSubtitle,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,

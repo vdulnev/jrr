@@ -129,10 +129,10 @@ class _GroupedTrackList extends ConsumerWidget {
 
   String _albumLabel(Track track) {
     final parts = <String>[
-      if (track.album.isNotEmpty) track.album,
       if (track.dateReadable.isNotEmpty) track.dateReadable,
+      if (track.album.isNotEmpty) track.album,
     ];
-    return parts.join(' · ');
+    return parts.join(' - ');
   }
 }
 

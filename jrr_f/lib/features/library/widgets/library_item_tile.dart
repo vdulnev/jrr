@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/injection.dart';
@@ -50,29 +51,34 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: _expanded || !widget.collapsedByDefault
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  [
-                    item.artist,
-                    item.album,
-                    item.dateReadable,
-                  ].where((s) => s.isNotEmpty).join(' \u00b7 '),
-                ),
-                if (_expanded && item.filePath.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      item.filePath,
-                      style: AppTextStyles.monoLabel,
-                    ),
-                  ),
-              ],
-            )
-          : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            [
+              [item.dateReadable, item.album]
+                  .where((s) => s.isNotEmpty)
+                  .join(' - '),
+              item.artist,
+            ].where((s) => s.isNotEmpty).join(' \u00b7 '),
+            style: AppTextStyles.itemSubtitle,
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 4),
+            Text(
+              item.folderPath,
+              style: AppTextStyles.monoLabel,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.filePath,
+              style: AppTextStyles.monoLabel.copyWith(fontSize: 10),
+            ),
+          ],
+        ],
+      ),
       onTap: () => setState(() => _expanded = !_expanded),
+      onLongPress: () => _showPathSheet(context),
       trailing: PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
         padding: EdgeInsets.zero,
@@ -106,6 +112,50 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPathSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'FILE PATH',
+                style: AppTextStyles.sectionLabel,
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                widget.item.filePath,
+                style: AppTextStyles.monoLabel,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: widget.item.filePath));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Path copied to clipboard'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('Copy Path'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
