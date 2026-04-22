@@ -69,7 +69,11 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build macos --release
+      - run: flutter build macos --release --no-codesign
+      - name: Archive Release
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../JRiverRemote-macOS.zip *.app
       - name: Archive Release
         run: |
           cd build/macos/Build/Products/Release
@@ -94,7 +98,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev liblzma-dev libstdc++-12-dev pkg-config
+          sudo apt-get install -y libgtk-3-dev liblzma-dev libstdc++-12-dev pkg-config libsecret-1-dev
       - run: flutter pub get
       - run: flutter build linux --release
       - name: Archive Release
