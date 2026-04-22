@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
 class SubScreenHeader extends StatelessWidget {
-  final String title;
+  final String? title;
+  final Widget? titleWidget;
   final String? subtitle;
   final VoidCallback onBack;
   final Widget? trailing;
+  final Widget? content;
 
   const SubScreenHeader({
-    required this.title,
+    this.title,
+    this.titleWidget,
     this.subtitle,
     required this.onBack,
     this.trailing,
+    this.content,
     super.key,
-  });
+  }) : assert(title != null || titleWidget != null, 'Either title or titleWidget must be provided');
 
   @override
   Widget build(BuildContext context) {
@@ -50,13 +54,17 @@ class SubScreenHeader extends StatelessWidget {
                           style: AppTextStyles.sectionLabel,
                         ),
                       ),
-                    Text(title, style: AppTextStyles.subScreenTitle),
+                    titleWidget ?? Text(title!, style: AppTextStyles.subScreenTitle),
                   ],
                 ),
               ),
               ?trailing,
             ],
           ),
+          if (content != null) ...[
+            const SizedBox(height: 8),
+            content!,
+          ],
         ],
       ),
     );

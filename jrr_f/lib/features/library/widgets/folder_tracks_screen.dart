@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../data/models/track.dart';
 import '../providers/library_providers.dart';
 import 'track_list_scaffold.dart';
@@ -56,25 +57,21 @@ class _FolderTracksScreenState extends ConsumerState<FolderTracksScreen> {
     final tracksState = ref.watch(folderTracksProvider(_currentPath));
 
     return TrackListScaffold(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      subtitle: 'Folder',
+      title: Text(_currentPath, style: AppTextStyles.subScreenTitle),
+      headerContent: Row(
         children: [
-          Text(_currentPath, style: Theme.of(context).textTheme.bodySmall),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_downward, size: 20),
-                tooltip: 'Back to child folder',
-                visualDensity: VisualDensity.compact,
-                onPressed: _canGoBack ? _goBack : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_upward, size: 20),
-                tooltip: 'Go to parent folder',
-                visualDensity: VisualDensity.compact,
-                onPressed: _canGoUp ? _goUp : null,
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.arrow_downward, size: 20),
+            tooltip: 'Back to child folder',
+            visualDensity: VisualDensity.compact,
+            onPressed: _canGoBack ? _goBack : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_upward, size: 20),
+            tooltip: 'Go to parent folder',
+            visualDensity: VisualDensity.compact,
+            onPressed: _canGoUp ? _goUp : null,
           ),
         ],
       ),

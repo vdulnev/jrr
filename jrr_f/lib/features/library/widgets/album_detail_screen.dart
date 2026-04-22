@@ -15,6 +15,7 @@ class AlbumDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return TrackListScaffold(
+      subtitle: album.artist,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

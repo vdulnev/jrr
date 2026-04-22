@@ -6,6 +6,7 @@ import '../../../core/router/navigation_notifier.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/sub_screen_header.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
@@ -14,17 +15,21 @@ import 'library_item_tile.dart';
 
 class TrackListScaffold extends ConsumerWidget {
   final Widget title;
+  final String? subtitle;
   final AsyncValue<List<Track>> tracksState;
   final VoidCallback onRetry;
   final String actionSheetTitle;
   final String addedSnackbarLabel;
+  final Widget? headerContent;
 
   const TrackListScaffold({
     required this.title,
+    this.subtitle,
     required this.tracksState,
     required this.onRetry,
     required this.actionSheetTitle,
     required this.addedSnackbarLabel,
+    this.headerContent,
     super.key,
   });
 
@@ -35,31 +40,20 @@ class TrackListScaffold extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: back button row
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => ref.read(navigationProvider.notifier).pop(),
-                ),
-                const Spacer(),
-                ...tracksState.maybeWhen(
-                  data: (tracks) => tracks.isNotEmpty
-                      ? [
-                          _TracksPopupMenu(
-                            tracks: tracks,
-                            label: addedSnackbarLabel,
-                          ),
-                        ]
-                      : <Widget>[],
-                  orElse: () => <Widget>[],
-                ),
-              ],
-            ),
-            // Title — full width, no truncation
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: title,
+            SubScreenHeader(
+              titleWidget: title,
+              subtitle: subtitle,
+              onBack: () => ref.read(navigationProvider.notifier).pop(),
+              content: headerContent,
+              trailing: tracksState.maybeWhen(
+                data: (tracks) => tracks.isNotEmpty
+                    ? _TracksPopupMenu(
+                        tracks: tracks,
+                        label: addedSnackbarLabel,
+                      )
+                    : null,
+                orElse: () => null,
+              ),
             ),
             // Content
             Expanded(
