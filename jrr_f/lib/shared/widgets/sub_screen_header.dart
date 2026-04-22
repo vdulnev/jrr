@@ -18,7 +18,10 @@ class SubScreenHeader extends StatelessWidget {
     this.trailing,
     this.content,
     super.key,
-  }) : assert(title != null || titleWidget != null, 'Either title or titleWidget must be provided');
+  }) : assert(
+         title != null || titleWidget != null,
+         'Either title or titleWidget must be provided',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -54,17 +57,15 @@ class SubScreenHeader extends StatelessWidget {
                           style: AppTextStyles.sectionLabel,
                         ),
                       ),
-                    titleWidget ?? Text(title!, style: AppTextStyles.subScreenTitle),
+                    titleWidget ??
+                        Text(title!, style: AppTextStyles.subScreenTitle),
                   ],
                 ),
               ),
               ?trailing,
             ],
           ),
-          if (content != null) ...[
-            const SizedBox(height: 8),
-            content!,
-          ],
+          if (content != null) ...[const SizedBox(height: 8), content!],
         ],
       ),
     );

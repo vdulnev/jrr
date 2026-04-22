@@ -128,7 +128,11 @@ class NowPlayingScreen extends ConsumerWidget {
 
                   // Track info + controls
                   Padding(
-                    padding: const EdgeInsets.only(top: 16, left: 24, right: 24),
+                    padding: const EdgeInsets.only(
+                      top: 16,
+                      left: 24,
+                      right: 24,
+                    ),
                     child: Column(
                       children: [
                         // Track info
@@ -153,7 +157,7 @@ class NowPlayingScreen extends ConsumerWidget {
                                     [
                                       status.album,
                                       track?.dateReadable ?? '',
-                                    ].where((s) => s.isNotEmpty).join(' - ')
+                                    ].where((s) => s.isNotEmpty).join(' - '),
                                   ].where((s) => s.isNotEmpty).join(' - '),
                                   style: AppTextStyles.nowPlayingArtist,
                                   maxLines: 1,

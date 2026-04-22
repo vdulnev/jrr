@@ -84,11 +84,7 @@ class LibraryScreen extends ConsumerWidget {
             Expanded(
               child: IndexedStack(
                 index: tabIndex,
-                children: const [
-                  _ArtistsTab(),
-                  _RandomTab(),
-                  _BrowseTab(),
-                ],
+                children: const [_ArtistsTab(), _RandomTab(), _BrowseTab()],
               ),
             ),
           ],

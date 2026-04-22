@@ -141,9 +141,7 @@ abstract class McwsApi {
   });
 
   @GET('File/GetInfo?Action=JSON&Fields=Calculated')
-  Future<List<Track>> searchByFileKey({
-    @Query('File') required int fileKey,
-  });
+  Future<List<Track>> searchByFileKey({@Query('File') required int fileKey});
 
   @GET('Browse/Children')
   Future<String> browseChildren({

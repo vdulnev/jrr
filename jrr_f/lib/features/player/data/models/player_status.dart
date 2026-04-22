@@ -39,7 +39,7 @@ abstract class PlayerStatus with _$PlayerStatus {
     @Default(0) int rating,
     @Default('') String status,
     String? linkedZones,
-    
+
     // Internal fields not in the requested list but useful for current UI
     @Default(false) bool isMuted,
     @Default(ShuffleMode.off) ShuffleMode shuffleMode,

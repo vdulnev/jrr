@@ -15,11 +15,7 @@ class AlbumRowTile extends ConsumerWidget {
   final Album album;
   final bool showArtist;
 
-  const AlbumRowTile({
-    required this.album,
-    this.showArtist = true,
-    super.key,
-  });
+  const AlbumRowTile({required this.album, this.showArtist = true, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +52,10 @@ class AlbumRowTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    [album.date, album.name].where((s) => s.isNotEmpty).join(' - '),
+                    [
+                      album.date,
+                      album.name,
+                    ].where((s) => s.isNotEmpty).join(' - '),
                     style: AppTextStyles.itemTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

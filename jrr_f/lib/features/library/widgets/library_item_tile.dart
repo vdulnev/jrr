@@ -56,19 +56,17 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         children: [
           Text(
             [
-              [item.dateReadable, item.album]
-                  .where((s) => s.isNotEmpty)
-                  .join(' - '),
+              [
+                item.dateReadable,
+                item.album,
+              ].where((s) => s.isNotEmpty).join(' - '),
               item.artist,
             ].where((s) => s.isNotEmpty).join(' \u00b7 '),
             style: AppTextStyles.itemSubtitle,
           ),
           if (_expanded) ...[
             const SizedBox(height: 4),
-            Text(
-              item.folderPath,
-              style: AppTextStyles.monoLabel,
-            ),
+            Text(item.folderPath, style: AppTextStyles.monoLabel),
             const SizedBox(height: 2),
             Text(
               item.filePath,
@@ -126,10 +124,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'FILE PATH',
-                style: AppTextStyles.sectionLabel,
-              ),
+              const Text('FILE PATH', style: AppTextStyles.sectionLabel),
               const SizedBox(height: 12),
               SelectableText(
                 widget.item.filePath,
@@ -140,7 +135,9 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: widget.item.filePath));
+                    Clipboard.setData(
+                      ClipboardData(text: widget.item.filePath),
+                    );
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

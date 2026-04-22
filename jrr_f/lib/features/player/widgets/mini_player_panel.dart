@@ -117,9 +117,8 @@ class MiniPlayerPanel extends ConsumerWidget {
                               ),
                               TransportButton(
                                 size: 36,
-                                onPressed: () => ref
-                                    .read(playerProvider.notifier)
-                                    .next(),
+                                onPressed: () =>
+                                    ref.read(playerProvider.notifier).next(),
                                 child: const Icon(
                                   Icons.skip_next_rounded,
                                   size: 20,
