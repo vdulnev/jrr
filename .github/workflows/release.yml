@@ -69,11 +69,10 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build macos --release --no-codesign
-      - name: Archive Release
-        run: |
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../JRiverRemote-macOS.zip *.app
+      - run: flutter build macos --release
+        env:
+          CODE_SIGNING_REQUIRED: NO
+          CODE_SIGNING_ALLOWED: NO
       - name: Archive Release
         run: |
           cd build/macos/Build/Products/Release
