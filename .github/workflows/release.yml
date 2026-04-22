@@ -13,7 +13,7 @@ jobs:
         working-directory: jrr_f
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v3                                                                                                                                                                                                           
+      - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -24,14 +24,16 @@ jobs:
       - run: flutter pub get
       - run: flutter build apk --release
       - run: flutter build appbundle --release
-      - name: Upload Artifacts
-        uses: softprops/action-gh-release@v1
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            jrr_f/build/app/outputs/flutter-apk/app-release.apk
-            jrr_f/build/app/outputs/bundle/release/app-release.aab
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: android-apk
+          path: jrr_f/build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: jrr_f/build/app/outputs/bundle/release/app-release.aab
 
   build-windows:
     runs-on: windows-latest
@@ -49,12 +51,11 @@ jobs:
       - name: Archive Release
         run: |
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath JRiverRemote-Windows.zip
-      - name: Upload Artifacts
-        uses: softprops/action-gh-release@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: jrr_f/JRiverRemote-Windows.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: windows
+          path: jrr_f/JRiverRemote-Windows.zip
 
   build-macos:
     runs-on: macos-latest
@@ -73,12 +74,11 @@ jobs:
         run: |
           cd build/macos/Build/Products/Release
           zip -r ../../../../JRiverRemote-macOS.zip *.app
-      - name: Upload Artifacts
-        uses: softprops/action-gh-release@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: jrr_f/JRiverRemote-macOS.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: macos
+          path: jrr_f/JRiverRemote-macOS.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -100,9 +100,30 @@ jobs:
       - name: Archive Release
         run: |
           tar -czvf JRiverRemote-Linux.tar.gz -C build/linux/x64/release/bundle .
-      - name: Upload Artifacts
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: jrr_f/JRiverRemote-Linux.tar.gz
+
+  release:
+    needs: [build-android, build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          files: jrr_f/JRiverRemote-Linux.tar.gz
+          files: |
+            artifacts/android-apk/app-release.apk
+            artifacts/android-aab/app-release.aab
+            artifacts/windows/JRiverRemote-Windows.zip
+            artifacts/macos/JRiverRemote-macOS.zip
+            artifacts/linux/JRiverRemote-Linux.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
