@@ -1,9 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/error/app_exception.dart';
-import '../../player/data/models/player_status.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../library/data/models/track.dart';
@@ -13,21 +13,16 @@ part 'queue_provider.g.dart';
 
 @riverpod
 class Queue extends _$Queue {
-  int? _lastChangeCounter;
-
   @override
   Future<List<Track>> build() async {
     final zone = ref.watch(activeZoneProvider);
     if (zone == null) return [];
 
-    // Invalidate self whenever the Playing Now change counter increments.
-    ref.listen<AsyncValue<PlayerStatus>>(playerProvider, (_, next) {
-      final counter = next.asData?.value.playingNowChangeCounter;
-      if (counter != null && counter != _lastChangeCounter) {
-        _lastChangeCounter = counter;
-        ref.invalidateSelf();
-      }
-    });
+    ref.watch(
+      playerProvider.select(
+        (status) => status.asData?.value.playingNowChangeCounter,
+      ),
+    );
 
     final result = await getIt<QueueRepository>().getQueue(zone.id);
     return result.getOrElse((e) => throw e);

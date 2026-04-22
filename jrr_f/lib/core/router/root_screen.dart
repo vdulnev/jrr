@@ -10,6 +10,9 @@ import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/queue/widgets/queue_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
+import '../layout/adaptive_layout.dart';
+import '../layout/sidebar.dart';
+import '../layout/two_panel_shell.dart';
 import '../theme/app_theme.dart';
 import 'app_router.dart';
 import 'navigation_notifier.dart';
@@ -39,6 +42,20 @@ class _AuthenticatedShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return AdaptiveLayoutBuilder(
+      narrowBuilder: (context) => _NarrowLayout(ref: ref),
+      wideBuilder: (context) => _WideLayout(ref: ref),
+    );
+  }
+}
+
+class _NarrowLayout extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _NarrowLayout({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
     final navStack = ref.watch(navigationProvider);
     final showMiniPlayer =
@@ -56,7 +73,6 @@ class _AuthenticatedShell extends ConsumerWidget {
           )
         : null;
 
-    // If we have sub-screens pushed, show them via declarative router
     if (navStack.isNotEmpty) {
       return Scaffold(
         body: Column(
@@ -66,7 +82,7 @@ class _AuthenticatedShell extends ConsumerWidget {
                 routes: (_) => [const NowPlayingRoute(), ...navStack],
               ),
             ),
-            ?miniPlayer,
+            ...miniPlayer != null ? [miniPlayer] : [],
           ],
         ),
         bottomNavigationBar: _TabBar(
@@ -76,7 +92,6 @@ class _AuthenticatedShell extends ConsumerWidget {
       );
     }
 
-    // Main tab content
     return Scaffold(
       body: Column(
         children: [
@@ -91,7 +106,7 @@ class _AuthenticatedShell extends ConsumerWidget {
               ],
             ),
           ),
-          ?miniPlayer,
+          ...miniPlayer != null ? [miniPlayer] : [],
         ],
       ),
       bottomNavigationBar: _TabBar(
@@ -99,6 +114,63 @@ class _AuthenticatedShell extends ConsumerWidget {
         onSelect: (tab) => ref.read(activeTabProvider.notifier).select(tab),
       ),
     );
+  }
+}
+
+class _WideLayout extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _WideLayout({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final navStack = ref.watch(navigationProvider);
+    final activeTab = ref.watch(activeTabProvider);
+
+    if (navStack.isNotEmpty) {
+      final showMiniPlayer = activeTab != AppTab.nowPlaying;
+
+      return Scaffold(
+        body: Material(
+          color: AppColors.bg1,
+          child: Row(
+            children: [
+              const Sidebar(),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: AutoRouter.declarative(
+                        routes: (_) => [const NowPlayingRoute(), ...navStack],
+                      ),
+                    ),
+                    if (showMiniPlayer)
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: AppColors.bg1,
+                          border: Border(
+                            top: BorderSide(color: AppColors.line),
+                          ),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        child: MiniPlayerPanel(
+                          onTap: () {
+                            ref
+                                .read(activeTabProvider.notifier)
+                                .select(AppTab.nowPlaying);
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const TwoPanelShell();
   }
 }
 
