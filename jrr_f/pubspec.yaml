@@ -1,7 +1,7 @@
 name: jrr_f
 description: JRiver Remote — control JRiver Media Center via MCWS.
 publish_to: 'none'
-version: 2.0.0
+version: 2.0.3
 
 environment:
   sdk: ^3.11.4
