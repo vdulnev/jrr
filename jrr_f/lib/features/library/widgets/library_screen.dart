@@ -13,21 +13,15 @@ import 'album_row_tile.dart';
 import 'browse_screen.dart';
 
 @RoutePage()
-class LibraryScreen extends ConsumerStatefulWidget {
+class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
-
-  @override
-  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
-}
-
-class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  int _tabIndex = 0;
-  String _artistFilter = '';
 
   static const _tabs = ['Artists', 'Random', 'Browse'];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tabIndex = ref.watch(libraryTabIndexProvider);
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -53,10 +47,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     ),
                     child: Row(
                       children: List.generate(_tabs.length, (i) {
-                        final isActive = _tabIndex == i;
+                        final isActive = tabIndex == i;
                         return Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _tabIndex = i),
+                            onTap: () => ref
+                                .read(libraryTabIndexProvider.notifier)
+                                .set(i),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               height: 32,
@@ -87,14 +83,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // Tab content
             Expanded(
               child: IndexedStack(
-                index: _tabIndex,
-                children: [
-                  _ArtistsTab(
-                    filter: _artistFilter,
-                    onFilterChanged: (v) => setState(() => _artistFilter = v),
-                  ),
-                  const _RandomTab(),
-                  const _BrowseTab(),
+                index: tabIndex,
+                children: const [
+                  _ArtistsTab(),
+                  _RandomTab(),
+                  _BrowseTab(),
                 ],
               ),
             ),
@@ -105,14 +98,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-class _ArtistsTab extends ConsumerWidget {
-  final String filter;
-  final ValueChanged<String> onFilterChanged;
-
-  const _ArtistsTab({required this.filter, required this.onFilterChanged});
+class _ArtistsTab extends ConsumerStatefulWidget {
+  const _ArtistsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ArtistsTab> createState() => _ArtistsTabState();
+}
+
+class _ArtistsTabState extends ConsumerState<_ArtistsTab> {
+  String _filter = '';
+
+  @override
+  Widget build(BuildContext context) {
     final artistsState = ref.watch(artistsProvider);
 
     return artistsState.when(
@@ -120,10 +117,10 @@ class _ArtistsTab extends ConsumerWidget {
       error: (e, _) =>
           ErrorView(error: e, onRetry: () => ref.invalidate(artistsProvider)),
       data: (artists) {
-        final filtered = filter.isEmpty
+        final filtered = _filter.isEmpty
             ? artists
             : artists
-                  .where((a) => a.toLowerCase().contains(filter.toLowerCase()))
+                  .where((a) => a.toLowerCase().contains(_filter.toLowerCase()))
                   .toList();
 
         return Column(
@@ -138,7 +135,7 @@ class _ArtistsTab extends ConsumerWidget {
                   isDense: true,
                 ),
                 style: AppTextStyles.labelLarge,
-                onChanged: onFilterChanged,
+                onChanged: (v) => setState(() => _filter = v),
               ),
             ),
             Expanded(

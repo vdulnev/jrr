@@ -39,7 +39,7 @@ Future<List<Track>> folderTracks(Ref ref, String folderPath) async {
   return result.getOrElse((e) => throw e);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<Album>> randomAlbums(Ref ref) async {
   final result = await getIt<LibraryRepository>().getRandomAlbums();
   return result.getOrElse((e) => throw e);
@@ -61,4 +61,12 @@ Future<List<Track>> browseFiles(Ref ref, String id) async {
 Future<Track?> searchByFileKey(Ref ref, int fileKey) async {
   final result = await getIt<LibraryRepository>().searchByFileKey(fileKey);
   return result.getOrElse((e) => throw e);
+}
+
+@Riverpod(keepAlive: true)
+class LibraryTabIndex extends _$LibraryTabIndex {
+  @override
+  int build() => 0;
+
+  void set(int index) => state = index;
 }

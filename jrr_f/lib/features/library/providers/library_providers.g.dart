@@ -365,7 +365,7 @@ final class RandomAlbumsProvider
         argument: null,
         retry: null,
         name: r'randomAlbumsProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -385,7 +385,7 @@ final class RandomAlbumsProvider
   }
 }
 
-String _$randomAlbumsHash() => r'c0d295839fc0060642bab9caa22555901315805c';
+String _$randomAlbumsHash() => r'9fb024d3589734258215778e645178282d6c6cbd';
 
 @ProviderFor(browseChildren)
 final browseChildrenProvider = BrowseChildrenFamily._();
@@ -604,4 +604,56 @@ final class SearchByFileKeyFamily extends $Family
 
   @override
   String toString() => r'searchByFileKeyProvider';
+}
+
+@ProviderFor(LibraryTabIndex)
+final libraryTabIndexProvider = LibraryTabIndexProvider._();
+
+final class LibraryTabIndexProvider
+    extends $NotifierProvider<LibraryTabIndex, int> {
+  LibraryTabIndexProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'libraryTabIndexProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$libraryTabIndexHash();
+
+  @$internal
+  @override
+  LibraryTabIndex create() => LibraryTabIndex();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$libraryTabIndexHash() => r'8a946ac2756b6c88bf6b2678c25d0682064a9e5c';
+
+abstract class _$LibraryTabIndex extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
 }
