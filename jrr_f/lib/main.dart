@@ -3,10 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talker/talker.dart';
+import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
 import 'app.dart';
 import 'core/di/injection.dart';
-import 'core/logging/riverpod_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +30,6 @@ void main() async {
   };
 
   runApp(
-    ProviderScope(observers: [AppRiverpodObserver(talker)], child: const App()),
+    ProviderScope(observers: [TalkerRiverpodObserver()], child: const App()),
   );
 }

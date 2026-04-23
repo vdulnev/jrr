@@ -525,15 +525,381 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
   }
 }
 
+class $FavoritesTable extends Favorites
+    with TableInfo<$FavoritesTable, Favorite> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FavoritesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _identifierMeta = const VerificationMeta(
+    'identifier',
+  );
+  @override
+  late final GeneratedColumn<String> identifier = GeneratedColumn<String>(
+    'identifier',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<int> addedAt = GeneratedColumn<int>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    type,
+    identifier,
+    displayName,
+    addedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'favorites';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Favorite> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('identifier')) {
+      context.handle(
+        _identifierMeta,
+        identifier.isAcceptableOrUnknown(data['identifier']!, _identifierMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_identifierMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Favorite map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Favorite(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      identifier: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}identifier'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FavoritesTable createAlias(String alias) {
+    return $FavoritesTable(attachedDatabase, alias);
+  }
+}
+
+class Favorite extends DataClass implements Insertable<Favorite> {
+  final int id;
+
+  /// Type: always 'browse_item'
+  final String type;
+
+  /// Browse item node id (String)
+  final String identifier;
+
+  /// Display name for the browse item
+  final String displayName;
+
+  /// Timestamp when the favorite was added (unix ms)
+  final int addedAt;
+  const Favorite({
+    required this.id,
+    required this.type,
+    required this.identifier,
+    required this.displayName,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['type'] = Variable<String>(type);
+    map['identifier'] = Variable<String>(identifier);
+    map['display_name'] = Variable<String>(displayName);
+    map['added_at'] = Variable<int>(addedAt);
+    return map;
+  }
+
+  FavoritesCompanion toCompanion(bool nullToAbsent) {
+    return FavoritesCompanion(
+      id: Value(id),
+      type: Value(type),
+      identifier: Value(identifier),
+      displayName: Value(displayName),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory Favorite.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Favorite(
+      id: serializer.fromJson<int>(json['id']),
+      type: serializer.fromJson<String>(json['type']),
+      identifier: serializer.fromJson<String>(json['identifier']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      addedAt: serializer.fromJson<int>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'type': serializer.toJson<String>(type),
+      'identifier': serializer.toJson<String>(identifier),
+      'displayName': serializer.toJson<String>(displayName),
+      'addedAt': serializer.toJson<int>(addedAt),
+    };
+  }
+
+  Favorite copyWith({
+    int? id,
+    String? type,
+    String? identifier,
+    String? displayName,
+    int? addedAt,
+  }) => Favorite(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    identifier: identifier ?? this.identifier,
+    displayName: displayName ?? this.displayName,
+    addedAt: addedAt ?? this.addedAt,
+  );
+  Favorite copyWithCompanion(FavoritesCompanion data) {
+    return Favorite(
+      id: data.id.present ? data.id.value : this.id,
+      type: data.type.present ? data.type.value : this.type,
+      identifier: data.identifier.present
+          ? data.identifier.value
+          : this.identifier,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Favorite(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('identifier: $identifier, ')
+          ..write('displayName: $displayName, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, type, identifier, displayName, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Favorite &&
+          other.id == this.id &&
+          other.type == this.type &&
+          other.identifier == this.identifier &&
+          other.displayName == this.displayName &&
+          other.addedAt == this.addedAt);
+}
+
+class FavoritesCompanion extends UpdateCompanion<Favorite> {
+  final Value<int> id;
+  final Value<String> type;
+  final Value<String> identifier;
+  final Value<String> displayName;
+  final Value<int> addedAt;
+  const FavoritesCompanion({
+    this.id = const Value.absent(),
+    this.type = const Value.absent(),
+    this.identifier = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.addedAt = const Value.absent(),
+  });
+  FavoritesCompanion.insert({
+    this.id = const Value.absent(),
+    required String type,
+    required String identifier,
+    required String displayName,
+    required int addedAt,
+  }) : type = Value(type),
+       identifier = Value(identifier),
+       displayName = Value(displayName),
+       addedAt = Value(addedAt);
+  static Insertable<Favorite> custom({
+    Expression<int>? id,
+    Expression<String>? type,
+    Expression<String>? identifier,
+    Expression<String>? displayName,
+    Expression<int>? addedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (type != null) 'type': type,
+      if (identifier != null) 'identifier': identifier,
+      if (displayName != null) 'display_name': displayName,
+      if (addedAt != null) 'added_at': addedAt,
+    });
+  }
+
+  FavoritesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? type,
+    Value<String>? identifier,
+    Value<String>? displayName,
+    Value<int>? addedAt,
+  }) {
+    return FavoritesCompanion(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      identifier: identifier ?? this.identifier,
+      displayName: displayName ?? this.displayName,
+      addedAt: addedAt ?? this.addedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (identifier.present) {
+      map['identifier'] = Variable<String>(identifier.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<int>(addedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FavoritesCompanion(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('identifier: $identifier, ')
+          ..write('displayName: $displayName, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SavedServersTable savedServers = $SavedServersTable(this);
+  late final $FavoritesTable favorites = $FavoritesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [savedServers];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [savedServers, favorites];
 }
 
 typedef $$SavedServersTableCreateCompanionBuilder =
@@ -793,10 +1159,204 @@ typedef $$SavedServersTableProcessedTableManager =
       SavedServer,
       PrefetchHooks Function()
     >;
+typedef $$FavoritesTableCreateCompanionBuilder =
+    FavoritesCompanion Function({
+      Value<int> id,
+      required String type,
+      required String identifier,
+      required String displayName,
+      required int addedAt,
+    });
+typedef $$FavoritesTableUpdateCompanionBuilder =
+    FavoritesCompanion Function({
+      Value<int> id,
+      Value<String> type,
+      Value<String> identifier,
+      Value<String> displayName,
+      Value<int> addedAt,
+    });
+
+class $$FavoritesTableFilterComposer
+    extends Composer<_$AppDatabase, $FavoritesTable> {
+  $$FavoritesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get identifier => $composableBuilder(
+    column: $table.identifier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FavoritesTableOrderingComposer
+    extends Composer<_$AppDatabase, $FavoritesTable> {
+  $$FavoritesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get identifier => $composableBuilder(
+    column: $table.identifier,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FavoritesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FavoritesTable> {
+  $$FavoritesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get identifier => $composableBuilder(
+    column: $table.identifier,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$FavoritesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FavoritesTable,
+          Favorite,
+          $$FavoritesTableFilterComposer,
+          $$FavoritesTableOrderingComposer,
+          $$FavoritesTableAnnotationComposer,
+          $$FavoritesTableCreateCompanionBuilder,
+          $$FavoritesTableUpdateCompanionBuilder,
+          (Favorite, BaseReferences<_$AppDatabase, $FavoritesTable, Favorite>),
+          Favorite,
+          PrefetchHooks Function()
+        > {
+  $$FavoritesTableTableManager(_$AppDatabase db, $FavoritesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FavoritesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FavoritesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FavoritesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> identifier = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<int> addedAt = const Value.absent(),
+              }) => FavoritesCompanion(
+                id: id,
+                type: type,
+                identifier: identifier,
+                displayName: displayName,
+                addedAt: addedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String type,
+                required String identifier,
+                required String displayName,
+                required int addedAt,
+              }) => FavoritesCompanion.insert(
+                id: id,
+                type: type,
+                identifier: identifier,
+                displayName: displayName,
+                addedAt: addedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FavoritesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FavoritesTable,
+      Favorite,
+      $$FavoritesTableFilterComposer,
+      $$FavoritesTableOrderingComposer,
+      $$FavoritesTableAnnotationComposer,
+      $$FavoritesTableCreateCompanionBuilder,
+      $$FavoritesTableUpdateCompanionBuilder,
+      (Favorite, BaseReferences<_$AppDatabase, $FavoritesTable, Favorite>),
+      Favorite,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$SavedServersTableTableManager get savedServers =>
       $$SavedServersTableTableManager(_db, _db.savedServers);
+  $$FavoritesTableTableManager get favorites =>
+      $$FavoritesTableTableManager(_db, _db.favorites);
 }

@@ -8,6 +8,8 @@ import '../db/app_database.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/connection/data/repositories/connection_repository_impl.dart';
+import '../../features/favorites/data/repositories/favorites_repository.dart';
+import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/player/data/repositories/player_repository.dart';
@@ -55,4 +57,7 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<ZoneRepository>(ZoneRepositoryImpl());
   getIt.registerSingleton<QueueRepository>(QueueRepositoryImpl());
   getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
+
+  // Favorites repository — manages favorite items from browse screen
+  getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
 }

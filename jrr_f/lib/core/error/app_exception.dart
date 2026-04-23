@@ -13,6 +13,8 @@ sealed class AppException with _$AppException implements Exception {
       ParseErrorException;
   const factory AppException.timeout({required String address}) =
       AppTimeoutException;
+  const factory AppException.database({required String error}) =
+      DatabaseException;
   const factory AppException.unknown({required Object error}) =
       UnknownException;
 }

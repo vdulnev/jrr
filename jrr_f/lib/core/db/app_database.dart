@@ -25,12 +25,44 @@ class SavedServers extends Table {
   TextColumn get authToken => text().nullable()();
 }
 
-@DriftDatabase(tables: [SavedServers])
+/// Favorite items from the browse screen.
+/// Can only be browse items (folders/nodes).
+class Favorites extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Type: always 'browse_item'
+  TextColumn get type => text()();
+
+  /// Browse item node id (String)
+  TextColumn get identifier => text()();
+
+  /// Display name for the browse item
+  TextColumn get displayName => text()();
+
+  /// Timestamp when the favorite was added (unix ms)
+  IntColumn get addedAt => integer()();
+}
+
+@DriftDatabase(tables: [SavedServers, Favorites])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from == 1 && to == 2) {
+          await m.createTable(favorites);
+        }
+      },
+    );
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'jrr');

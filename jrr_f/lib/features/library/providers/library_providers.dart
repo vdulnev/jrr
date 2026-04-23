@@ -70,3 +70,38 @@ class LibraryTabIndex extends _$LibraryTabIndex {
 
   void set(int index) => state = index;
 }
+
+enum BrowseScope { browse, favorites }
+
+@Riverpod(keepAlive: true)
+class BrowseNavigationStack extends _$BrowseNavigationStack {
+  @override
+  List<BrowseItem> build(BrowseScope scope) {
+    return switch (scope) {
+      BrowseScope.browse => [const BrowseItem(id: '-1', name: 'Browse')],
+      BrowseScope.favorites => [],
+    };
+  }
+
+  void push(BrowseItem level) {
+    state = [...state, level];
+  }
+
+  void pop() {
+    if (state.isNotEmpty) {
+      state = state.sublist(0, state.length - 1);
+    }
+  }
+
+  void reset() {
+    state = [];
+  }
+
+  void navigateToBreadcrumb(int index) {
+    if (index == -1) {
+      state = [];
+    } else if (index >= 0 && index < state.length - 1) {
+      state = state.sublist(0, index + 1);
+    }
+  }
+}

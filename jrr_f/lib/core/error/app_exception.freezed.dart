@@ -55,7 +55,7 @@ extension AppExceptionPatterns on AppException {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ConnectionRefusedException value)?  connectionRefused,TResult Function( UnauthorizedException value)?  unauthorized,TResult Function( ServerFailureException value)?  serverFailure,TResult Function( ParseErrorException value)?  parseError,TResult Function( AppTimeoutException value)?  timeout,TResult Function( UnknownException value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ConnectionRefusedException value)?  connectionRefused,TResult Function( UnauthorizedException value)?  unauthorized,TResult Function( ServerFailureException value)?  serverFailure,TResult Function( ParseErrorException value)?  parseError,TResult Function( AppTimeoutException value)?  timeout,TResult Function( DatabaseException value)?  database,TResult Function( UnknownException value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ConnectionRefusedException() when connectionRefused != null:
@@ -63,7 +63,8 @@ return connectionRefused(_that);case UnauthorizedException() when unauthorized !
 return unauthorized(_that);case ServerFailureException() when serverFailure != null:
 return serverFailure(_that);case ParseErrorException() when parseError != null:
 return parseError(_that);case AppTimeoutException() when timeout != null:
-return timeout(_that);case UnknownException() when unknown != null:
+return timeout(_that);case DatabaseException() when database != null:
+return database(_that);case UnknownException() when unknown != null:
 return unknown(_that);case _:
   return orElse();
 
@@ -82,7 +83,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ConnectionRefusedException value)  connectionRefused,required TResult Function( UnauthorizedException value)  unauthorized,required TResult Function( ServerFailureException value)  serverFailure,required TResult Function( ParseErrorException value)  parseError,required TResult Function( AppTimeoutException value)  timeout,required TResult Function( UnknownException value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ConnectionRefusedException value)  connectionRefused,required TResult Function( UnauthorizedException value)  unauthorized,required TResult Function( ServerFailureException value)  serverFailure,required TResult Function( ParseErrorException value)  parseError,required TResult Function( AppTimeoutException value)  timeout,required TResult Function( DatabaseException value)  database,required TResult Function( UnknownException value)  unknown,}){
 final _that = this;
 switch (_that) {
 case ConnectionRefusedException():
@@ -90,7 +91,8 @@ return connectionRefused(_that);case UnauthorizedException():
 return unauthorized(_that);case ServerFailureException():
 return serverFailure(_that);case ParseErrorException():
 return parseError(_that);case AppTimeoutException():
-return timeout(_that);case UnknownException():
+return timeout(_that);case DatabaseException():
+return database(_that);case UnknownException():
 return unknown(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -105,7 +107,7 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ConnectionRefusedException value)?  connectionRefused,TResult? Function( UnauthorizedException value)?  unauthorized,TResult? Function( ServerFailureException value)?  serverFailure,TResult? Function( ParseErrorException value)?  parseError,TResult? Function( AppTimeoutException value)?  timeout,TResult? Function( UnknownException value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ConnectionRefusedException value)?  connectionRefused,TResult? Function( UnauthorizedException value)?  unauthorized,TResult? Function( ServerFailureException value)?  serverFailure,TResult? Function( ParseErrorException value)?  parseError,TResult? Function( AppTimeoutException value)?  timeout,TResult? Function( DatabaseException value)?  database,TResult? Function( UnknownException value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case ConnectionRefusedException() when connectionRefused != null:
@@ -113,7 +115,8 @@ return connectionRefused(_that);case UnauthorizedException() when unauthorized !
 return unauthorized(_that);case ServerFailureException() when serverFailure != null:
 return serverFailure(_that);case ParseErrorException() when parseError != null:
 return parseError(_that);case AppTimeoutException() when timeout != null:
-return timeout(_that);case UnknownException() when unknown != null:
+return timeout(_that);case DatabaseException() when database != null:
+return database(_that);case UnknownException() when unknown != null:
 return unknown(_that);case _:
   return null;
 
@@ -131,14 +134,15 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String address)?  connectionRefused,TResult Function()?  unauthorized,TResult Function( String message)?  serverFailure,TResult Function( String details)?  parseError,TResult Function( String address)?  timeout,TResult Function( Object error)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String address)?  connectionRefused,TResult Function()?  unauthorized,TResult Function( String message)?  serverFailure,TResult Function( String details)?  parseError,TResult Function( String address)?  timeout,TResult Function( String error)?  database,TResult Function( Object error)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ConnectionRefusedException() when connectionRefused != null:
 return connectionRefused(_that.address);case UnauthorizedException() when unauthorized != null:
 return unauthorized();case ServerFailureException() when serverFailure != null:
 return serverFailure(_that.message);case ParseErrorException() when parseError != null:
 return parseError(_that.details);case AppTimeoutException() when timeout != null:
-return timeout(_that.address);case UnknownException() when unknown != null:
+return timeout(_that.address);case DatabaseException() when database != null:
+return database(_that.error);case UnknownException() when unknown != null:
 return unknown(_that.error);case _:
   return orElse();
 
@@ -157,14 +161,15 @@ return unknown(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String address)  connectionRefused,required TResult Function()  unauthorized,required TResult Function( String message)  serverFailure,required TResult Function( String details)  parseError,required TResult Function( String address)  timeout,required TResult Function( Object error)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String address)  connectionRefused,required TResult Function()  unauthorized,required TResult Function( String message)  serverFailure,required TResult Function( String details)  parseError,required TResult Function( String address)  timeout,required TResult Function( String error)  database,required TResult Function( Object error)  unknown,}) {final _that = this;
 switch (_that) {
 case ConnectionRefusedException():
 return connectionRefused(_that.address);case UnauthorizedException():
 return unauthorized();case ServerFailureException():
 return serverFailure(_that.message);case ParseErrorException():
 return parseError(_that.details);case AppTimeoutException():
-return timeout(_that.address);case UnknownException():
+return timeout(_that.address);case DatabaseException():
+return database(_that.error);case UnknownException():
 return unknown(_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -179,14 +184,15 @@ return unknown(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String address)?  connectionRefused,TResult? Function()?  unauthorized,TResult? Function( String message)?  serverFailure,TResult? Function( String details)?  parseError,TResult? Function( String address)?  timeout,TResult? Function( Object error)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String address)?  connectionRefused,TResult? Function()?  unauthorized,TResult? Function( String message)?  serverFailure,TResult? Function( String details)?  parseError,TResult? Function( String address)?  timeout,TResult? Function( String error)?  database,TResult? Function( Object error)?  unknown,}) {final _that = this;
 switch (_that) {
 case ConnectionRefusedException() when connectionRefused != null:
 return connectionRefused(_that.address);case UnauthorizedException() when unauthorized != null:
 return unauthorized();case ServerFailureException() when serverFailure != null:
 return serverFailure(_that.message);case ParseErrorException() when parseError != null:
 return parseError(_that.details);case AppTimeoutException() when timeout != null:
-return timeout(_that.address);case UnknownException() when unknown != null:
+return timeout(_that.address);case DatabaseException() when database != null:
+return database(_that.error);case UnknownException() when unknown != null:
 return unknown(_that.error);case _:
   return null;
 
@@ -484,6 +490,72 @@ class _$AppTimeoutExceptionCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? address = null,}) {
   return _then(AppTimeoutException(
 address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class DatabaseException implements AppException {
+  const DatabaseException({required this.error});
+  
+
+ final  String error;
+
+/// Create a copy of AppException
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DatabaseExceptionCopyWith<DatabaseException> get copyWith => _$DatabaseExceptionCopyWithImpl<DatabaseException>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DatabaseException&&(identical(other.error, error) || other.error == error));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,error);
+
+@override
+String toString() {
+  return 'AppException.database(error: $error)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DatabaseExceptionCopyWith<$Res> implements $AppExceptionCopyWith<$Res> {
+  factory $DatabaseExceptionCopyWith(DatabaseException value, $Res Function(DatabaseException) _then) = _$DatabaseExceptionCopyWithImpl;
+@useResult
+$Res call({
+ String error
+});
+
+
+
+
+}
+/// @nodoc
+class _$DatabaseExceptionCopyWithImpl<$Res>
+    implements $DatabaseExceptionCopyWith<$Res> {
+  _$DatabaseExceptionCopyWithImpl(this._self, this._then);
+
+  final DatabaseException _self;
+  final $Res Function(DatabaseException) _then;
+
+/// Create a copy of AppException
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+  return _then(DatabaseException(
+error: null == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

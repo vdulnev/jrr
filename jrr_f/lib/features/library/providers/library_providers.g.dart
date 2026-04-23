@@ -657,3 +657,101 @@ abstract class _$LibraryTabIndex extends $Notifier<int> {
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(BrowseNavigationStack)
+final browseNavigationStackProvider = BrowseNavigationStackFamily._();
+
+final class BrowseNavigationStackProvider
+    extends $NotifierProvider<BrowseNavigationStack, List<BrowseItem>> {
+  BrowseNavigationStackProvider._({
+    required BrowseNavigationStackFamily super.from,
+    required BrowseScope super.argument,
+  }) : super(
+         retry: null,
+         name: r'browseNavigationStackProvider',
+         isAutoDispose: false,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$browseNavigationStackHash();
+
+  @override
+  String toString() {
+    return r'browseNavigationStackProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  BrowseNavigationStack create() => BrowseNavigationStack();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<BrowseItem> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<BrowseItem>>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BrowseNavigationStackProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$browseNavigationStackHash() =>
+    r'8ba330ad1ae268245f60339ca1c521a21ba7efc8';
+
+final class BrowseNavigationStackFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          BrowseNavigationStack,
+          List<BrowseItem>,
+          List<BrowseItem>,
+          List<BrowseItem>,
+          BrowseScope
+        > {
+  BrowseNavigationStackFamily._()
+    : super(
+        retry: null,
+        name: r'browseNavigationStackProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  BrowseNavigationStackProvider call(BrowseScope scope) =>
+      BrowseNavigationStackProvider._(argument: scope, from: this);
+
+  @override
+  String toString() => r'browseNavigationStackProvider';
+}
+
+abstract class _$BrowseNavigationStack extends $Notifier<List<BrowseItem>> {
+  late final _$args = ref.$arg as BrowseScope;
+  BrowseScope get scope => _$args;
+
+  List<BrowseItem> build(BrowseScope scope);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<List<BrowseItem>, List<BrowseItem>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<List<BrowseItem>, List<BrowseItem>>,
+              List<BrowseItem>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
+  }
+}

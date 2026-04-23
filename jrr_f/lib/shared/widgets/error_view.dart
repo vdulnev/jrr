@@ -21,6 +21,7 @@ class ErrorView extends StatelessWidget {
           'Unexpected response from server ($details).',
         AppTimeoutException(:final address) =>
           'Connection to $address timed out.',
+        DatabaseException(:final error) => 'Database error: $error',
         UnknownException(:final error) => 'Unexpected error: $error',
       };
     }

@@ -7,6 +7,7 @@ import '../../../core/router/navigation_notifier.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../favorites/widgets/favorites_screen.dart';
 import '../data/models/album.dart';
 import '../providers/library_providers.dart';
 import 'album_row_tile.dart';
@@ -16,7 +17,7 @@ import 'browse_screen.dart';
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
 
-  static const _tabs = ['Artists', 'Random', 'Browse'];
+  static const _tabs = ['Artists', 'Random', 'Browse', 'Favorites'];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,7 +85,12 @@ class LibraryScreen extends ConsumerWidget {
             Expanded(
               child: IndexedStack(
                 index: tabIndex,
-                children: const [_ArtistsTab(), _RandomTab(), _BrowseTab()],
+                children: const [
+                  _ArtistsTab(),
+                  _RandomTab(),
+                  _BrowseTab(),
+                  _FavoritesTab(),
+                ],
               ),
             ),
           ],
@@ -258,6 +264,15 @@ class _BrowseTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const BrowseTreeView();
+  }
+}
+
+class _FavoritesTab extends StatelessWidget {
+  const _FavoritesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const FavoritesScreen();
   }
 }
 
