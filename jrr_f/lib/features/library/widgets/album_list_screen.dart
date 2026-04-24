@@ -51,7 +51,8 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
             SubScreenHeader(
               title: widget.title,
               subtitle: widget.subtitle,
-              onBack: widget.onBack ??
+              onBack:
+                  widget.onBack ??
                   () => ref.read(navigationProvider.notifier).pop(),
               trailing: widget.onRefresh != null
                   ? GestureDetector(

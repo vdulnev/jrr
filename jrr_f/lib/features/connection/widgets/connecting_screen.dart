@@ -20,10 +20,7 @@ class ConnectingScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Connecting to',
-              style: AppTextStyles.itemSubtitle,
-            ),
+            const Text('Connecting to', style: AppTextStyles.itemSubtitle),
             const SizedBox(height: 8),
             if (address != null)
               Text(
@@ -34,10 +31,7 @@ class ConnectingScreen extends StatelessWidget {
                 ),
               )
             else
-              const Text(
-                'server…',
-                style: AppTextStyles.monoLabel,
-              ),
+              const Text('server…', style: AppTextStyles.monoLabel),
           ],
         ),
       ),

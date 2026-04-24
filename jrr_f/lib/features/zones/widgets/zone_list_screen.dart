@@ -82,8 +82,9 @@ class _ZoneTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState =
-        isActive ? ref.watch(playerProvider).asData?.value.state : null;
+    final playerState = isActive
+        ? ref.watch(playerProvider).asData?.value.state
+        : null;
     final isPlaying = playerState == PlaybackState.playing;
     final isPaused = playerState == PlaybackState.paused;
 
@@ -127,8 +128,9 @@ class _ZoneTile extends ConsumerWidget {
                         child: Text(
                           zone.name,
                           style: AppTextStyles.itemTitle.copyWith(
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

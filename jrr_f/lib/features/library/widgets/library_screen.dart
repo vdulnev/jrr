@@ -15,10 +15,7 @@ class LibraryScreen extends ConsumerWidget {
     final navStack = ref.watch(libraryNavProvider);
 
     return AutoRouter.declarative(
-      routes: (_) => [
-        const LibraryRootRoute(),
-        ...navStack,
-      ],
+      routes: (_) => [const LibraryRootRoute(), ...navStack],
     );
   }
 }

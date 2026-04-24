@@ -42,14 +42,12 @@ class TrackListScaffold extends ConsumerWidget {
             SubScreenHeader(
               titleWidget: title,
               subtitle: subtitle,
-              onBack: onBack ?? () => ref.read(navigationProvider.notifier).pop(),
+              onBack:
+                  onBack ?? () => ref.read(navigationProvider.notifier).pop(),
               content: headerContent,
               trailing: tracksState.maybeWhen(
                 data: (tracks) => tracks.isNotEmpty
-                    ? TracksPopupMenu(
-                        tracks: tracks,
-                        label: addedSnackbarLabel,
-                      )
+                    ? TracksPopupMenu(tracks: tracks, label: addedSnackbarLabel)
                     : null,
                 orElse: () => null,
               ),

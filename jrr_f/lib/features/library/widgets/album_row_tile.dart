@@ -73,7 +73,10 @@ class AlbumRowTile extends ConsumerWidget {
                           ),
                         ),
                         if (album.trackCount > 0)
-                          const Text('  \u00b7  ', style: AppTextStyles.itemSubtitle),
+                          const Text(
+                            '  \u00b7  ',
+                            style: AppTextStyles.itemSubtitle,
+                          ),
                       ],
                       if (album.trackCount > 0)
                         Text(
