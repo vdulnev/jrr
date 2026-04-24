@@ -198,6 +198,22 @@ class FolderTracksRouteArgs {
 }
 
 /// generated route for
+/// [LibraryRootScreen]
+class LibraryRootRoute extends PageRouteInfo<void> {
+  const LibraryRootRoute({List<PageRouteInfo>? children})
+    : super(LibraryRootRoute.name, initialChildren: children);
+
+  static const String name = 'LibraryRootRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const LibraryRootScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [LibraryScreen]
 class LibraryRoute extends PageRouteInfo<void> {
   const LibraryRoute({List<PageRouteInfo>? children})

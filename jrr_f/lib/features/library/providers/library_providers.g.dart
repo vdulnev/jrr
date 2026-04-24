@@ -658,6 +658,63 @@ abstract class _$LibraryTabIndex extends $Notifier<int> {
   }
 }
 
+@ProviderFor(LibraryNav)
+final libraryNavProvider = LibraryNavProvider._();
+
+final class LibraryNavProvider
+    extends $NotifierProvider<LibraryNav, List<PageRouteInfo<Object?>>> {
+  LibraryNavProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'libraryNavProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$libraryNavHash();
+
+  @$internal
+  @override
+  LibraryNav create() => LibraryNav();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<PageRouteInfo<Object?>> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<PageRouteInfo<Object?>>>(value),
+    );
+  }
+}
+
+String _$libraryNavHash() => r'259fb70cdad071040b0eb987474f5687f3508936';
+
+abstract class _$LibraryNav extends $Notifier<List<PageRouteInfo<Object?>>> {
+  List<PageRouteInfo<Object?>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref
+            as $Ref<List<PageRouteInfo<Object?>>, List<PageRouteInfo<Object?>>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                List<PageRouteInfo<Object?>>,
+                List<PageRouteInfo<Object?>>
+              >,
+              List<PageRouteInfo<Object?>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(BrowseNavigationStack)
 final browseNavigationStackProvider = BrowseNavigationStackFamily._();
 

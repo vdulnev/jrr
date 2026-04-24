@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
@@ -69,6 +70,21 @@ class LibraryTabIndex extends _$LibraryTabIndex {
   int build() => 0;
 
   void set(int index) => state = index;
+}
+
+@riverpod
+class LibraryNav extends _$LibraryNav {
+  @override
+  List<PageRouteInfo> build() => [];
+
+  void push(PageRouteInfo route) => state = [...state, route];
+
+  void pop() {
+    if (state.isEmpty) return;
+    state = state.sublist(0, state.length - 1);
+  }
+
+  void clear() => state = [];
 }
 
 enum BrowseScope { browse, favorites }

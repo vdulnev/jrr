@@ -12,6 +12,7 @@ class AlbumListScreen extends ConsumerStatefulWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onRefresh;
+  final VoidCallback? onBack;
   final bool showArtist;
 
   const AlbumListScreen({
@@ -19,6 +20,7 @@ class AlbumListScreen extends ConsumerStatefulWidget {
     required this.title,
     this.subtitle,
     this.onRefresh,
+    this.onBack,
     this.showArtist = true,
     super.key,
   });
@@ -49,7 +51,8 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
             SubScreenHeader(
               title: widget.title,
               subtitle: widget.subtitle,
-              onBack: () => ref.read(navigationProvider.notifier).pop(),
+              onBack: widget.onBack ??
+                  () => ref.read(navigationProvider.notifier).pop(),
               trailing: widget.onRefresh != null
                   ? GestureDetector(
                       onTap: widget.onRefresh,

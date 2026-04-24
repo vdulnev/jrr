@@ -21,6 +21,7 @@ class TrackListScaffold extends ConsumerWidget {
   final String actionSheetTitle;
   final String addedSnackbarLabel;
   final Widget? headerContent;
+  final VoidCallback? onBack;
 
   const TrackListScaffold({
     required this.title,
@@ -30,6 +31,7 @@ class TrackListScaffold extends ConsumerWidget {
     required this.actionSheetTitle,
     required this.addedSnackbarLabel,
     this.headerContent,
+    this.onBack,
     super.key,
   });
 
@@ -43,7 +45,7 @@ class TrackListScaffold extends ConsumerWidget {
             SubScreenHeader(
               titleWidget: title,
               subtitle: subtitle,
-              onBack: () => ref.read(navigationProvider.notifier).pop(),
+              onBack: onBack ?? () => ref.read(navigationProvider.notifier).pop(),
               content: headerContent,
               trailing: tracksState.maybeWhen(
                 data: (tracks) => tracks.isNotEmpty

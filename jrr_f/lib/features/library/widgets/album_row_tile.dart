@@ -22,7 +22,7 @@ class AlbumRowTile extends ConsumerWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => ref
-          .read(navigationProvider.notifier)
+          .read(libraryNavProvider.notifier)
           .push(AlbumDetailRoute(album: album)),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
