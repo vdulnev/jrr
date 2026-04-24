@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/router/navigation_notifier.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
@@ -149,7 +148,7 @@ class AlbumRowTile extends ConsumerWidget {
   ) async {
     if (action == 'folder') {
       ref
-          .read(navigationProvider.notifier)
+          .read(libraryNavProvider.notifier)
           .push(FolderTracksRoute(folderPath: album.folderPath));
       return;
     }
