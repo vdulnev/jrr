@@ -25,6 +25,7 @@ abstract class Track with _$Track {
     @JsonKey(name: 'Bit Depth') @Default(0) int bitDepth,
     @JsonKey(name: 'Sample Rate') @Default(0) int sampleRate,
     @JsonKey(name: 'Channels') @Default(0) int channels,
+    @JsonKey(name: 'Total Tracks') @Default(0) int totalTracks,
     @JsonKey(name: 'Filename') @Default('') String filePath,
     @JsonKey(name: 'Date (readable)')
     @ForceStringConverter()

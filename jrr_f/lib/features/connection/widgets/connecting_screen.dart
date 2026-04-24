@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
-import '../../../shared/widgets/loading_view.dart';
+import '../../../core/theme/app_theme.dart';
 
 @RoutePage()
 class ConnectingScreen extends StatelessWidget {
@@ -11,9 +11,36 @@ class ConnectingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final message = address != null
-        ? 'Connecting to $address…'
-        : 'Connecting to server…';
-    return Scaffold(body: LoadingView(message: message));
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Connecting to',
+              style: AppTextStyles.itemSubtitle,
+            ),
+            const SizedBox(height: 8),
+            if (address != null)
+              Text(
+                address!,
+                style: AppTextStyles.monoLabel.copyWith(
+                  fontSize: 14,
+                  color: AppColors.text,
+                ),
+              )
+            else
+              const Text(
+                'server…',
+                style: AppTextStyles.monoLabel,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -12,6 +12,7 @@ abstract class Album with _$Album {
     required String albumArtist,
     required String folderPath,
     @Default('') String date,
+    @Default(0) int trackCount,
   }) = _Album;
 
   factory Album.fromTrack(Track track) {
@@ -25,6 +26,7 @@ abstract class Album with _$Album {
       albumArtist: track.albumArtist,
       folderPath: folderPath,
       date: date,
+      trackCount: track.totalTracks,
     );
   }
 }

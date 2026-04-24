@@ -7,7 +7,6 @@ import '../../features/library/data/models/track.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/player/providers/player_provider.dart';
 import '../../features/zones/providers/active_zone_provider.dart';
-import 'action_chip_button.dart';
 
 class TrackRow extends ConsumerStatefulWidget {
   final Track track;
@@ -98,32 +97,52 @@ class _TrackRowState extends ConsumerState<TrackRow> {
                       ),
                   ],
                 ),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: AppColors.text3,
+                  ),
+                  padding: EdgeInsets.zero,
+                  onSelected: (action) {
+                    if (action == 'play') _play(track);
+                    if (action == 'playNext') _playNext(track);
+                    if (action == 'add') _addToQueue(track);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'play',
+                      child: ListTile(
+                        leading: Icon(Icons.play_arrow_outlined),
+                        title: Text('Play'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'playNext',
+                      child: ListTile(
+                        leading: Icon(Icons.queue_play_next),
+                        title: Text('Play next'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'add',
+                      child: ListTile(
+                        leading: Icon(Icons.add_circle_outline),
+                        title: Text('Add to playing now'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
-        if (_expanded)
-          Container(
-            padding: const EdgeInsets.fromLTRB(58, 0, 20, 10),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                ActionChipButton(
-                  label: '\u25b6 Play',
-                  onTap: () => _play(track),
-                ),
-                ActionChipButton(
-                  label: 'Play Next',
-                  onTap: () => _playNext(track),
-                ),
-                ActionChipButton(
-                  label: '+ Add to Playing Now',
-                  onTap: () => _addToQueue(track),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }

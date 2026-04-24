@@ -70,6 +70,7 @@ class NowPlayingScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
                           child: Column(
@@ -88,6 +89,11 @@ class NowPlayingScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        if (status.playingNowTracks > 0)
+                          Text(
+                            '${status.playingNowPosition + 1} / ${status.playingNowTracks}',
+                            style: AppTextStyles.monoLabel,
+                          ),
                       ],
                     ),
                   ),
@@ -152,14 +158,18 @@ class NowPlayingScreen extends ConsumerWidget {
                               if (status.fileKey >= 0) ...[
                                 const SizedBox(height: 3),
                                 Text(
-                                  [
-                                    status.artist,
-                                    [
-                                      status.album,
-                                      track?.dateReadable ?? '',
-                                    ].where((s) => s.isNotEmpty).join(' - '),
-                                  ].where((s) => s.isNotEmpty).join(' - '),
+                                  status.artist,
                                   style: AppTextStyles.nowPlayingArtist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  [
+                                    status.album,
+                                    track?.dateReadable ?? '',
+                                  ].where((s) => s.isNotEmpty).join(' \u00b7 '),
+                                  style: AppTextStyles.monoLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

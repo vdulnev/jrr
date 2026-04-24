@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../player/data/models/playback_state.dart';
+import '../../player/providers/player_provider.dart';
 import '../data/models/zone.dart';
 import '../providers/active_zone_provider.dart';
 import '../providers/zone_provider.dart';
@@ -67,7 +69,7 @@ class ZoneListScreen extends ConsumerWidget {
   }
 }
 
-class _ZoneTile extends StatelessWidget {
+class _ZoneTile extends ConsumerWidget {
   final Zone zone;
   final bool isActive;
   final VoidCallback onTap;
@@ -79,7 +81,12 @@ class _ZoneTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playerState =
+        isActive ? ref.watch(playerProvider).asData?.value.state : null;
+    final isPlaying = playerState == PlaybackState.playing;
+    final isPaused = playerState == PlaybackState.paused;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -114,11 +121,30 @@ class _ZoneTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    zone.name,
-                    style: AppTextStyles.itemTitle.copyWith(
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          zone.name,
+                          style: AppTextStyles.itemTitle.copyWith(
+                            fontWeight:
+                                isActive ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isPlaying || isPaused) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          isPlaying
+                              ? Icons.play_arrow_rounded
+                              : Icons.pause_rounded,
+                          size: 14,
+                          color: AppColors.accent,
+                        ),
+                      ],
+                    ],
                   ),
                   if (zone.isDLNA)
                     const Padding(

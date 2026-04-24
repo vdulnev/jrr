@@ -30,6 +30,7 @@ _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   bitDepth: (json['Bit Depth'] as num?)?.toInt() ?? 0,
   sampleRate: (json['Sample Rate'] as num?)?.toInt() ?? 0,
   channels: (json['Channels'] as num?)?.toInt() ?? 0,
+  totalTracks: (json['Total Tracks'] as num?)?.toInt() ?? 0,
   filePath: json['Filename'] as String? ?? '',
   dateReadable: json['Date (readable)'] == null
       ? ''
@@ -52,6 +53,7 @@ Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
   'Bit Depth': instance.bitDepth,
   'Sample Rate': instance.sampleRate,
   'Channels': instance.channels,
+  'Total Tracks': instance.totalTracks,
   'Filename': instance.filePath,
   'Date (readable)': const ForceStringConverter().toJson(instance.dateReadable),
 };

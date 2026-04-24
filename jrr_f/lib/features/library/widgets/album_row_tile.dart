@@ -60,15 +60,28 @@ class AlbumRowTile extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (showArtist) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      album.artist,
-                      style: AppTextStyles.itemSubtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      if (showArtist) ...[
+                        Flexible(
+                          child: Text(
+                            album.artist,
+                            style: AppTextStyles.itemSubtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (album.trackCount > 0)
+                          const Text('  \u00b7  ', style: AppTextStyles.itemSubtitle),
+                      ],
+                      if (album.trackCount > 0)
+                        Text(
+                          '${album.trackCount} tracks',
+                          style: AppTextStyles.monoLabel,
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
