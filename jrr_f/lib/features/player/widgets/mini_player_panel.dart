@@ -6,7 +6,7 @@ import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
 import '../data/models/playback_state.dart';
 import '../providers/player_provider.dart';
-import 'artwork_widget.dart';
+import '../../../shared/widgets/artwork_widget.dart';
 
 class MiniPlayerPanel extends ConsumerWidget {
   final VoidCallback? onTap;

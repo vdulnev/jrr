@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
-import '../../connection/data/repositories/connection_repository.dart';
-import '../../connection/providers/session_provider.dart';
-import '../../connection/providers/session_state.dart';
+import '../../core/di/injection.dart';
+import '../../features/connection/data/repositories/connection_repository.dart';
+import '../../features/connection/providers/session_provider.dart';
+import '../../features/connection/providers/session_state.dart';
 
 class ArtworkWidget extends ConsumerWidget {
   final String? imageUrl;

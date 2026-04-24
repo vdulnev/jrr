@@ -18,7 +18,7 @@ import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../providers/player_provider.dart';
 import '../providers/polling_provider.dart';
-import 'artwork_widget.dart';
+import '../../../shared/widgets/artwork_widget.dart';
 
 @RoutePage()
 class NowPlayingScreen extends ConsumerWidget {

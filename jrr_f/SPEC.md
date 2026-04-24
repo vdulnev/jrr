@@ -474,7 +474,7 @@ Pre-commit checklist (matches the global Dart rules):
   - All playable items use `PopupMenuButton<String>` with consistent menu items: Play, Play next, Add to playing now
   - Uniform icon: `Icons.more_vert` (18px, `AppColors.text3`)
   - Menu items use `ListTile` with `contentPadding: EdgeInsets.zero` and `VisualDensity.compact`
-  - Applied across: `LibraryItemTile` (individual tracks), `AlbumRowTile` (albums + optional "Open folder"), `TrackListScaffold._TracksPopupMenu` (bulk track actions), `BrowseFilesView._BrowseTracksPopupMenu` (browse leaf actions per artist/album group)
+  - Applied across: `LibraryItemTile` (individual tracks), `AlbumRowTile` (albums + optional "Open folder"), `TrackListScaffold._TracksPopupMenu` (bulk track actions), `BrowseFilesView` (via shared `TracksPopupMenu` for browse leaf actions per artist/album group)
 - **Bottom tab navigation:**
   - 4 tabs: Playing, Queue, Library, Zones
   - Custom `_TabBar` with uppercase mono labels, accent color for active tab
