@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
+import '../../features/connection/widgets/server_manager_screen.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
@@ -103,6 +104,7 @@ class _NarrowLayout extends StatelessWidget {
                 QueueScreen(),
                 LibraryScreen(),
                 ZoneListScreen(),
+                ServerManagerScreen(),
               ],
             ),
           ),
@@ -215,6 +217,12 @@ class _TabBar extends StatelessWidget {
               label: 'Zones',
               isActive: active == AppTab.zones,
               onTap: () => onSelect(AppTab.zones),
+            ),
+            _TabItem(
+              icon: (c) => Icon(Icons.settings_outlined, color: c),
+              label: 'Settings',
+              isActive: active == AppTab.settings,
+              onTap: () => onSelect(AppTab.settings),
             ),
           ],
         ),

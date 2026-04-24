@@ -81,6 +81,13 @@ class _NavigationItems extends ConsumerWidget {
           onTap: () =>
               ref.read(activeTabProvider.notifier).select(AppTab.zones),
         ),
+        _NavItem(
+          icon: Icons.settings_outlined,
+          label: 'Settings',
+          isActive: activeTab == AppTab.settings,
+          onTap: () =>
+              ref.read(activeTabProvider.notifier).select(AppTab.settings),
+        ),
       ],
     );
   }

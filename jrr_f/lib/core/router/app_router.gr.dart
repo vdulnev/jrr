@@ -294,6 +294,22 @@ class RootRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ServerManagerScreen]
+class ServerManagerRoute extends PageRouteInfo<void> {
+  const ServerManagerRoute({List<PageRouteInfo>? children})
+    : super(ServerManagerRoute.name, initialChildren: children);
+
+  static const String name = 'ServerManagerRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ServerManagerScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [ServerSetupScreen]
 class ServerSetupRoute extends PageRouteInfo<void> {
   const ServerSetupRoute({List<PageRouteInfo>? children})

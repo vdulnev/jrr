@@ -5,6 +5,7 @@ import '../router/navigation_notifier.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/queue/widgets/queue_screen.dart';
+import '../../features/connection/widgets/server_manager_screen.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import 'sidebar.dart';
@@ -78,6 +79,9 @@ class _ContentArea extends StatelessWidget {
         break;
       case AppTab.zones:
         content = const ZoneListScreen();
+        break;
+      case AppTab.settings:
+        content = const ServerManagerScreen();
         break;
     }
 
