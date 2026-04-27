@@ -29,9 +29,7 @@ class Player extends _$Player {
       }
     });
 
-    final zone = ref.watch(
-      activeZoneProvider.notifier.select((zone) => zone.value),
-    );
+    final zone = ref.watch(activeZoneProvider);
     if (zone == null) {
       return null;
     }

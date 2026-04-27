@@ -48,9 +48,9 @@ class ZoneListScreen extends ConsumerWidget {
                 ),
                 data: (zones) => ListView.builder(
                   padding: const EdgeInsets.only(bottom: 148),
-                  itemCount: zones.length,
+                  itemCount: zones.zones.length,
                   itemBuilder: (_, i) {
-                    final zone = zones[i];
+                    final zone = zones.zones[i];
                     final isActive = activeZone?.id == zone.id;
                     return _ZoneTile(
                       zone: zone,

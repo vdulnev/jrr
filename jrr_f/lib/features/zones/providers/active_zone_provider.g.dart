@@ -40,7 +40,7 @@ final class ActiveZoneProvider extends $NotifierProvider<ActiveZone, Zone?> {
   }
 }
 
-String _$activeZoneHash() => r'460ff36936a5a337ff33456a8ebc00e3705dd098';
+String _$activeZoneHash() => r'e6e84bd802b4aa4a344cf9feffb38019c5682cbb';
 
 abstract class _$ActiveZone extends $Notifier<Zone?> {
   Zone? build();

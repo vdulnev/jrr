@@ -12,8 +12,7 @@ part of 'zone_provider.dart';
 @ProviderFor(ZoneList)
 final zoneListProvider = ZoneListProvider._();
 
-final class ZoneListProvider
-    extends $AsyncNotifierProvider<ZoneList, List<Zone>> {
+final class ZoneListProvider extends $AsyncNotifierProvider<ZoneList, Zones> {
   ZoneListProvider._()
     : super(
         from: null,
@@ -33,19 +32,19 @@ final class ZoneListProvider
   ZoneList create() => ZoneList();
 }
 
-String _$zoneListHash() => r'2aa38558231a619d0b68c4948824d165d03f5c01';
+String _$zoneListHash() => r'066494d0944fcad0fb8d08e3546a1ba51997a069';
 
-abstract class _$ZoneList extends $AsyncNotifier<List<Zone>> {
-  FutureOr<List<Zone>> build();
+abstract class _$ZoneList extends $AsyncNotifier<Zones> {
+  FutureOr<Zones> build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<List<Zone>>, List<Zone>>;
+    final ref = this.ref as $Ref<AsyncValue<Zones>, Zones>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<Zone>>, List<Zone>>,
-              AsyncValue<List<Zone>>,
+              AnyNotifier<AsyncValue<Zones>, Zones>,
+              AsyncValue<Zones>,
               Object?,
               Object?
             >;
