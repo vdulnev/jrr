@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/injection.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/track.dart';
-import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/player/providers/player_provider.dart';
-import '../../features/zones/providers/active_zone_provider.dart';
 
 class TrackRow extends ConsumerStatefulWidget {
   final Track track;
@@ -158,23 +155,14 @@ class _TrackRowState extends ConsumerState<TrackRow> {
   }
 
   void _play(Track track) {
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-    getIt<LibraryRepository>().playNow(zone.id, [track.fileKey]);
-    ref.read(playerProvider.notifier).refresh();
+    ref.read(playerProvider.notifier).playNow([track]);
   }
 
   void _playNext(Track track) {
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-    getIt<LibraryRepository>().playNext(zone.id, [track.fileKey]);
-    ref.read(playerProvider.notifier).refresh();
+    ref.read(playerProvider.notifier).playNext([track]);
   }
 
   void _addToQueue(Track track) {
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-    getIt<LibraryRepository>().addToQueue(zone.id, [track.fileKey]);
-    ref.read(playerProvider.notifier).refresh();
+    ref.read(playerProvider.notifier).addToQueue([track]);
   }
 }

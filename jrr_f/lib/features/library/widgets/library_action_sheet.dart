@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
-import '../data/repositories/library_repository.dart';
-import '../../../core/di/injection.dart';
 import '../../player/providers/player_provider.dart';
 
 Future<void> showLibraryActionSheet(
   BuildContext context,
   WidgetRef ref, {
-  required List<Track> items,
+  required List<Track> tracks,
   String? title,
 }) async {
-  final zone = ref.read(activeZoneProvider);
-  if (zone == null) return;
-  final keys = items.map((i) => i.fileKey).toList();
-
   await showModalBottomSheet<void>(
     context: context,
-    builder: (_) =>
-        _LibraryActionSheet(title: title, zoneId: zone.id, fileKeys: keys),
+    builder: (_) => _LibraryActionSheet(title: title, tracks: tracks, ref: ref),
   );
 
   // Refresh player state after any queue action.
@@ -30,19 +22,18 @@ Future<void> showLibraryActionSheet(
 }
 
 class _LibraryActionSheet extends StatelessWidget {
+  final WidgetRef ref;
   final String? title;
-  final String zoneId;
-  final List<int> fileKeys;
+  final List<Track> tracks;
 
   const _LibraryActionSheet({
+    required this.ref,
     this.title,
-    required this.zoneId,
-    required this.fileKeys,
+    required this.tracks,
   });
 
   @override
   Widget build(BuildContext context) {
-    final repo = getIt<LibraryRepository>();
     final currentTitle = title;
 
     return SafeArea(
@@ -64,7 +55,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.play_circle_outline),
             title: const Text('Play now'),
             onTap: () {
-              repo.playNow(zoneId, fileKeys);
+              ref.read(playerProvider.notifier).playNow(tracks);
               Navigator.of(context).pop();
             },
           ),
@@ -72,7 +63,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.queue_play_next),
             title: const Text('Play next'),
             onTap: () {
-              repo.playNext(zoneId, fileKeys);
+              ref.read(playerProvider.notifier).playNext(tracks);
               Navigator.of(context).pop();
             },
           ),
@@ -80,7 +71,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.add_to_queue),
             title: const Text('Add to queue'),
             onTap: () {
-              repo.addToQueue(zoneId, fileKeys);
+              ref.read(playerProvider.notifier).addToQueue(tracks);
               Navigator.of(context).pop();
             },
           ),

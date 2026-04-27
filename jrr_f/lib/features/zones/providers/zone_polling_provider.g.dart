@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'active_zone_provider.dart';
+part of 'zone_polling_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,50 +9,50 @@ part of 'active_zone_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(ActiveZone)
-final activeZoneProvider = ActiveZoneProvider._();
+@ProviderFor(ZonePolling)
+final zonePollingProvider = ZonePollingProvider._();
 
-final class ActiveZoneProvider extends $NotifierProvider<ActiveZone, Zone?> {
-  ActiveZoneProvider._()
+final class ZonePollingProvider extends $NotifierProvider<ZonePolling, void> {
+  ZonePollingProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'activeZoneProvider',
+        name: r'zonePollingProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$activeZoneHash();
+  String debugGetCreateSourceHash() => _$zonePollingHash();
 
   @$internal
   @override
-  ActiveZone create() => ActiveZone();
+  ZonePolling create() => ZonePolling();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Zone? value) {
+  Override overrideWithValue(void value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Zone?>(value),
+      providerOverride: $SyncValueProvider<void>(value),
     );
   }
 }
 
-String _$activeZoneHash() => r'460ff36936a5a337ff33456a8ebc00e3705dd098';
+String _$zonePollingHash() => r'd884eacf04bcc55a1a1daa0e12522b437056c713';
 
-abstract class _$ActiveZone extends $Notifier<Zone?> {
-  Zone? build();
+abstract class _$ZonePolling extends $Notifier<void> {
+  void build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<Zone?, Zone?>;
+    final ref = this.ref as $Ref<void, void>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<Zone?, Zone?>,
-              Zone?,
+              AnyNotifier<void, void>,
+              void,
               Object?,
               Object?
             >;

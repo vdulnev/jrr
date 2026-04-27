@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../player/providers/player_provider.dart';
-import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
-import '../data/repositories/library_repository.dart';
 
 class LibraryItemTile extends ConsumerStatefulWidget {
   final Track item;
@@ -119,17 +116,13 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
   }
 
   void _handleAction(String action, Track item) {
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-    final repo = getIt<LibraryRepository>();
-
     switch (action) {
       case 'play':
-        repo.playNow(zone.id, [item.fileKey]);
+        ref.read(playerProvider.notifier).playNow([item]);
       case 'playNext':
-        repo.playNext(zone.id, [item.fileKey]);
+        ref.read(playerProvider.notifier).playNext([item]);
       case 'add':
-        repo.addToQueue(zone.id, [item.fileKey]);
+        ref.read(playerProvider.notifier).addToQueue([item]);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -139,6 +132,5 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
           );
         }
     }
-    ref.read(playerProvider.notifier).refresh();
   }
 }

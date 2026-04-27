@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'polling_provider.dart';
+part of 'player_polling_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,27 +9,28 @@ part of 'polling_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(Polling)
-final pollingProvider = PollingProvider._();
+@ProviderFor(PlayerPolling)
+final playerPollingProvider = PlayerPollingProvider._();
 
-final class PollingProvider extends $NotifierProvider<Polling, void> {
-  PollingProvider._()
+final class PlayerPollingProvider
+    extends $NotifierProvider<PlayerPolling, void> {
+  PlayerPollingProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'pollingProvider',
+        name: r'playerPollingProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$pollingHash();
+  String debugGetCreateSourceHash() => _$playerPollingHash();
 
   @$internal
   @override
-  Polling create() => Polling();
+  PlayerPolling create() => PlayerPolling();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(void value) {
@@ -40,9 +41,9 @@ final class PollingProvider extends $NotifierProvider<Polling, void> {
   }
 }
 
-String _$pollingHash() => r'989cdfb6e73a535c22203333b7152b6df8fb09aa';
+String _$playerPollingHash() => r'b2972db2234de87b5e9212e3bc6d51e3fa626230';
 
-abstract class _$Polling extends $Notifier<void> {
+abstract class _$PlayerPolling extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override

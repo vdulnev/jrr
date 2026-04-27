@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import '../db/app_database.dart';
@@ -14,6 +15,9 @@ import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
+import '../../features/player/services/local_player_service.dart';
+import '../../features/queue/data/repositories/local_queue_repository.dart';
+import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
@@ -56,7 +60,21 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<PlayerRepository>(PlayerRepositoryImpl());
   getIt.registerSingleton<ZoneRepository>(ZoneRepositoryImpl());
   getIt.registerSingleton<QueueRepository>(QueueRepositoryImpl());
+  getIt.registerSingleton<LocalQueueRepository>(
+    LocalQueueRepositoryImpl(getIt<AppDatabase>()),
+  );
   getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
+
+  // Audio Player for local playback
+  final player = AudioPlayer();
+  getIt.registerSingleton<AudioPlayer>(player);
+
+  final localPlayerService = LocalPlayerService(
+    player: player,
+    talker: getIt<Talker>(),
+  );
+  await localPlayerService.init();
+  getIt.registerSingleton<LocalPlayerService>(localPlayerService);
 
   // Favorites repository — manages favorite items from browse screen
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());

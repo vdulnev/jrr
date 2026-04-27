@@ -17,7 +17,7 @@ import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../providers/player_provider.dart';
-import '../providers/polling_provider.dart';
+import '../providers/player_polling_provider.dart';
 import '../../../shared/widgets/artwork_widget.dart';
 
 @RoutePage()
@@ -26,7 +26,7 @@ class NowPlayingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(pollingProvider);
+    ref.watch(playerPollingProvider);
     ref.watch(zoneListProvider);
     ref.watch(queueProvider);
 
@@ -39,7 +39,7 @@ class NowPlayingScreen extends ConsumerWidget {
 
     // Optimized: Only re-read fileKey when it actually changes
     final fileKey = ref.watch(
-      playerProvider.select((s) => s.asData?.value.fileKey ?? -1),
+      playerProvider.select((s) => s.asData?.value?.fileKey ?? -1),
     );
 
     return Scaffold(
@@ -48,6 +48,7 @@ class NowPlayingScreen extends ConsumerWidget {
         error: (e, _) =>
             ErrorView(error: e, onRetry: () => ref.invalidate(playerProvider)),
         data: (status) {
+          if (status == null) return const SizedBox.shrink();
           final progress = status.durationMs > 0
               ? status.positionMs / status.durationMs
               : 0.0;

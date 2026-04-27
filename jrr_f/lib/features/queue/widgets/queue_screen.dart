@@ -17,7 +17,7 @@ class QueueScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final queueState = ref.watch(queueProvider);
     final currentIndex = ref.watch(
-      playerProvider.select((s) => s.asData?.value.playingNowPosition ?? -1),
+      playerProvider.select((s) => s.asData?.value?.playingNowPosition ?? -1),
     );
 
     return Scaffold(

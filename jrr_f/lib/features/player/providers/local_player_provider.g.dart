@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'active_zone_provider.dart';
+part of 'local_player_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,50 +9,51 @@ part of 'active_zone_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(ActiveZone)
-final activeZoneProvider = ActiveZoneProvider._();
+@ProviderFor(LocalPlayer)
+final localPlayerProvider = LocalPlayerProvider._();
 
-final class ActiveZoneProvider extends $NotifierProvider<ActiveZone, Zone?> {
-  ActiveZoneProvider._()
+final class LocalPlayerProvider
+    extends $NotifierProvider<LocalPlayer, LocalPlaybackState> {
+  LocalPlayerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'activeZoneProvider',
+        name: r'localPlayerProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$activeZoneHash();
+  String debugGetCreateSourceHash() => _$localPlayerHash();
 
   @$internal
   @override
-  ActiveZone create() => ActiveZone();
+  LocalPlayer create() => LocalPlayer();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Zone? value) {
+  Override overrideWithValue(LocalPlaybackState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Zone?>(value),
+      providerOverride: $SyncValueProvider<LocalPlaybackState>(value),
     );
   }
 }
 
-String _$activeZoneHash() => r'460ff36936a5a337ff33456a8ebc00e3705dd098';
+String _$localPlayerHash() => r'10e1ce71faddf12775591283b7ff488c3c98f59c';
 
-abstract class _$ActiveZone extends $Notifier<Zone?> {
-  Zone? build();
+abstract class _$LocalPlayer extends $Notifier<LocalPlaybackState> {
+  LocalPlaybackState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<Zone?, Zone?>;
+    final ref = this.ref as $Ref<LocalPlaybackState, LocalPlaybackState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<Zone?, Zone?>,
-              Zone?,
+              AnyNotifier<LocalPlaybackState, LocalPlaybackState>,
+              LocalPlaybackState,
               Object?,
               Object?
             >;

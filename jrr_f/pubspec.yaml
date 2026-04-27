@@ -44,6 +44,8 @@ dependencies:
   # Prefs / secure storage
   shared_preferences: ^2.5.5
   flutter_secure_storage: ^10.0.0
+  just_audio: ^0.10.5
+  audio_session: ^0.2.3
 
 dev_dependencies:
   flutter_test:

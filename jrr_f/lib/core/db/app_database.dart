@@ -43,12 +43,20 @@ class Favorites extends Table {
   IntColumn get addedAt => integer()();
 }
 
-@DriftDatabase(tables: [SavedServers, Favorites])
+/// Tracks in the local zone queue.
+class LocalQueueTracks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get fileKey => integer()();
+  TextColumn get trackJson => text()(); // Serialized Track object
+  IntColumn get position => integer()(); // Position in the queue
+}
+
+@DriftDatabase(tables: [SavedServers, Favorites, LocalQueueTracks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -59,6 +67,9 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1 && to == 2) {
           await m.createTable(favorites);
+        }
+        if (from < 3 && to >= 3) {
+          await m.createTable(localQueueTracks);
         }
       },
     );

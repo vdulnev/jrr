@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../player/providers/player_provider.dart';
-import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
-import '../data/repositories/library_repository.dart';
 import '../providers/library_providers.dart';
 
 class AlbumRowTile extends ConsumerWidget {
@@ -154,19 +151,14 @@ class AlbumRowTile extends ConsumerWidget {
     }
 
     final tracks = await ref.read(albumTracksProvider(album).future);
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-
-    final keys = tracks.map((t) => t.fileKey).toList();
-    final repo = getIt<LibraryRepository>();
 
     switch (action) {
       case 'play':
-        repo.playNow(zone.id, keys);
+        ref.read(playerProvider.notifier).playNow(tracks);
       case 'playNext':
-        repo.playNext(zone.id, keys);
+        ref.read(playerProvider.notifier).playNext(tracks);
       case 'add':
-        repo.addToQueue(zone.id, keys);
+        ref.read(playerProvider.notifier).addToQueue(tracks);
     }
     ref.read(playerProvider.notifier).refresh();
   }

@@ -1,59 +1,55 @@
 import 'dart:async';
 
+import 'package:jrr_f/features/zones/providers/active_zone_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../connection/providers/session_provider.dart';
 import '../../connection/providers/session_state.dart';
-import '../../zones/providers/zone_provider.dart';
 import '../data/models/playback_state.dart';
 import 'player_provider.dart';
 
-part 'polling_provider.g.dart';
+part 'player_polling_provider.g.dart';
 
 @Riverpod(keepAlive: true)
-class Polling extends _$Polling {
-  Timer? _playerTimer;
-  Timer? _zoneTimer;
+class PlayerPolling extends _$PlayerPolling {
+  Timer? _timer;
 
   Talker get _talker => getIt<Talker>();
 
   @override
   void build() {
     ref.onDispose(() {
-      _playerTimer?.cancel();
-      _zoneTimer?.cancel();
+      _timer?.cancel();
     });
 
     final session = ref.watch(sessionProvider);
-    if (session is Authenticated) {
-      _talker.debug('[Polling] Session authenticated — starting polling');
+    final activeZone = ref.watch(activeZoneProvider);
+
+    if (session is Authenticated && !(activeZone?.isLocal == true)) {
+      _talker.debug(
+        '[PlayerPolling] Session authenticated & zone is remote — starting player polling',
+      );
       _start();
     } else {
-      _talker.debug('[Polling] Session unauthenticated — stopping polling');
+      _talker.debug(
+        '[PlayerPolling] Session unauthenticated or zone is local — stopping player polling',
+      );
       _stop();
     }
   }
 
   void _start() {
-    _playerTimer?.cancel();
-    _zoneTimer?.cancel();
-
-    _playerTimer = Timer(Duration.zero, _tickPlayer);
-
-    _zoneTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _talker.debug('[Polling] Refreshing zone list');
-      ref.read(zoneListProvider.notifier).refresh();
-    });
+    _timer?.cancel();
+    _timer = Timer(Duration.zero, _tick);
   }
 
   void _stop() {
-    _playerTimer?.cancel();
-    _zoneTimer?.cancel();
+    _timer?.cancel();
   }
 
-  Future<void> _tickPlayer() async {
+  Future<void> _tick() async {
     if (ref.read(sessionProvider) is! Authenticated) return;
     await ref.read(playerProvider.notifier).refresh();
 
@@ -61,33 +57,32 @@ class Polling extends _$Polling {
     final playerState = ref.read(playerProvider);
     if (playerState is AsyncError) {
       _talker.warning(
-        '[Polling] Player refresh error',
+        '[PlayerPolling] Player refresh error',
         playerState.error,
         playerState.stackTrace,
       );
     }
 
-    _scheduleNextPlayerPoll();
+    _scheduleNext();
   }
 
-  void _scheduleNextPlayerPoll() {
-    _playerTimer?.cancel();
+  void _scheduleNext() {
+    _timer?.cancel();
     final interval =
-        ref.read(playerProvider).asData?.value.state == PlaybackState.playing
+        ref.read(playerProvider).asData?.value?.state == PlaybackState.playing
         ? const Duration(seconds: 1)
         : const Duration(seconds: 5);
-    _playerTimer = Timer(interval, _tickPlayer);
+    _timer = Timer(interval, _tick);
   }
 
   void pause() {
-    _talker.debug('[Polling] Paused');
-    _playerTimer?.cancel();
-    _zoneTimer?.cancel();
+    _talker.debug('[PlayerPolling] Paused');
+    _timer?.cancel();
   }
 
   void resume() {
     if (ref.read(sessionProvider) is Authenticated) {
-      _talker.debug('[Polling] Resumed');
+      _talker.debug('[PlayerPolling] Resumed');
       _start();
     }
   }

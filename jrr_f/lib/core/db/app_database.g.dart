@@ -890,16 +890,323 @@ class FavoritesCompanion extends UpdateCompanion<Favorite> {
   }
 }
 
+class $LocalQueueTracksTable extends LocalQueueTracks
+    with TableInfo<$LocalQueueTracksTable, LocalQueueTrack> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalQueueTracksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _fileKeyMeta = const VerificationMeta(
+    'fileKey',
+  );
+  @override
+  late final GeneratedColumn<int> fileKey = GeneratedColumn<int>(
+    'file_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _trackJsonMeta = const VerificationMeta(
+    'trackJson',
+  );
+  @override
+  late final GeneratedColumn<String> trackJson = GeneratedColumn<String>(
+    'track_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, fileKey, trackJson, position];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_queue_tracks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalQueueTrack> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_key')) {
+      context.handle(
+        _fileKeyMeta,
+        fileKey.isAcceptableOrUnknown(data['file_key']!, _fileKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileKeyMeta);
+    }
+    if (data.containsKey('track_json')) {
+      context.handle(
+        _trackJsonMeta,
+        trackJson.isAcceptableOrUnknown(data['track_json']!, _trackJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trackJsonMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalQueueTrack map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalQueueTrack(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      fileKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_key'],
+      )!,
+      trackJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}track_json'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalQueueTracksTable createAlias(String alias) {
+    return $LocalQueueTracksTable(attachedDatabase, alias);
+  }
+}
+
+class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
+  final int id;
+  final int fileKey;
+  final String trackJson;
+  final int position;
+  const LocalQueueTrack({
+    required this.id,
+    required this.fileKey,
+    required this.trackJson,
+    required this.position,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_key'] = Variable<int>(fileKey);
+    map['track_json'] = Variable<String>(trackJson);
+    map['position'] = Variable<int>(position);
+    return map;
+  }
+
+  LocalQueueTracksCompanion toCompanion(bool nullToAbsent) {
+    return LocalQueueTracksCompanion(
+      id: Value(id),
+      fileKey: Value(fileKey),
+      trackJson: Value(trackJson),
+      position: Value(position),
+    );
+  }
+
+  factory LocalQueueTrack.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalQueueTrack(
+      id: serializer.fromJson<int>(json['id']),
+      fileKey: serializer.fromJson<int>(json['fileKey']),
+      trackJson: serializer.fromJson<String>(json['trackJson']),
+      position: serializer.fromJson<int>(json['position']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fileKey': serializer.toJson<int>(fileKey),
+      'trackJson': serializer.toJson<String>(trackJson),
+      'position': serializer.toJson<int>(position),
+    };
+  }
+
+  LocalQueueTrack copyWith({
+    int? id,
+    int? fileKey,
+    String? trackJson,
+    int? position,
+  }) => LocalQueueTrack(
+    id: id ?? this.id,
+    fileKey: fileKey ?? this.fileKey,
+    trackJson: trackJson ?? this.trackJson,
+    position: position ?? this.position,
+  );
+  LocalQueueTrack copyWithCompanion(LocalQueueTracksCompanion data) {
+    return LocalQueueTrack(
+      id: data.id.present ? data.id.value : this.id,
+      fileKey: data.fileKey.present ? data.fileKey.value : this.fileKey,
+      trackJson: data.trackJson.present ? data.trackJson.value : this.trackJson,
+      position: data.position.present ? data.position.value : this.position,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalQueueTrack(')
+          ..write('id: $id, ')
+          ..write('fileKey: $fileKey, ')
+          ..write('trackJson: $trackJson, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, fileKey, trackJson, position);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalQueueTrack &&
+          other.id == this.id &&
+          other.fileKey == this.fileKey &&
+          other.trackJson == this.trackJson &&
+          other.position == this.position);
+}
+
+class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
+  final Value<int> id;
+  final Value<int> fileKey;
+  final Value<String> trackJson;
+  final Value<int> position;
+  const LocalQueueTracksCompanion({
+    this.id = const Value.absent(),
+    this.fileKey = const Value.absent(),
+    this.trackJson = const Value.absent(),
+    this.position = const Value.absent(),
+  });
+  LocalQueueTracksCompanion.insert({
+    this.id = const Value.absent(),
+    required int fileKey,
+    required String trackJson,
+    required int position,
+  }) : fileKey = Value(fileKey),
+       trackJson = Value(trackJson),
+       position = Value(position);
+  static Insertable<LocalQueueTrack> custom({
+    Expression<int>? id,
+    Expression<int>? fileKey,
+    Expression<String>? trackJson,
+    Expression<int>? position,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fileKey != null) 'file_key': fileKey,
+      if (trackJson != null) 'track_json': trackJson,
+      if (position != null) 'position': position,
+    });
+  }
+
+  LocalQueueTracksCompanion copyWith({
+    Value<int>? id,
+    Value<int>? fileKey,
+    Value<String>? trackJson,
+    Value<int>? position,
+  }) {
+    return LocalQueueTracksCompanion(
+      id: id ?? this.id,
+      fileKey: fileKey ?? this.fileKey,
+      trackJson: trackJson ?? this.trackJson,
+      position: position ?? this.position,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fileKey.present) {
+      map['file_key'] = Variable<int>(fileKey.value);
+    }
+    if (trackJson.present) {
+      map['track_json'] = Variable<String>(trackJson.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalQueueTracksCompanion(')
+          ..write('id: $id, ')
+          ..write('fileKey: $fileKey, ')
+          ..write('trackJson: $trackJson, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SavedServersTable savedServers = $SavedServersTable(this);
   late final $FavoritesTable favorites = $FavoritesTable(this);
+  late final $LocalQueueTracksTable localQueueTracks = $LocalQueueTracksTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [savedServers, favorites];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    savedServers,
+    favorites,
+    localQueueTracks,
+  ];
 }
 
 typedef $$SavedServersTableCreateCompanionBuilder =
@@ -1351,6 +1658,187 @@ typedef $$FavoritesTableProcessedTableManager =
       Favorite,
       PrefetchHooks Function()
     >;
+typedef $$LocalQueueTracksTableCreateCompanionBuilder =
+    LocalQueueTracksCompanion Function({
+      Value<int> id,
+      required int fileKey,
+      required String trackJson,
+      required int position,
+    });
+typedef $$LocalQueueTracksTableUpdateCompanionBuilder =
+    LocalQueueTracksCompanion Function({
+      Value<int> id,
+      Value<int> fileKey,
+      Value<String> trackJson,
+      Value<int> position,
+    });
+
+class $$LocalQueueTracksTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalQueueTracksTable> {
+  $$LocalQueueTracksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileKey => $composableBuilder(
+    column: $table.fileKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trackJson => $composableBuilder(
+    column: $table.trackJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalQueueTracksTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalQueueTracksTable> {
+  $$LocalQueueTracksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileKey => $composableBuilder(
+    column: $table.fileKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get trackJson => $composableBuilder(
+    column: $table.trackJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalQueueTracksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalQueueTracksTable> {
+  $$LocalQueueTracksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get fileKey =>
+      $composableBuilder(column: $table.fileKey, builder: (column) => column);
+
+  GeneratedColumn<String> get trackJson =>
+      $composableBuilder(column: $table.trackJson, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+}
+
+class $$LocalQueueTracksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalQueueTracksTable,
+          LocalQueueTrack,
+          $$LocalQueueTracksTableFilterComposer,
+          $$LocalQueueTracksTableOrderingComposer,
+          $$LocalQueueTracksTableAnnotationComposer,
+          $$LocalQueueTracksTableCreateCompanionBuilder,
+          $$LocalQueueTracksTableUpdateCompanionBuilder,
+          (
+            LocalQueueTrack,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalQueueTracksTable,
+              LocalQueueTrack
+            >,
+          ),
+          LocalQueueTrack,
+          PrefetchHooks Function()
+        > {
+  $$LocalQueueTracksTableTableManager(
+    _$AppDatabase db,
+    $LocalQueueTracksTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalQueueTracksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalQueueTracksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalQueueTracksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> fileKey = const Value.absent(),
+                Value<String> trackJson = const Value.absent(),
+                Value<int> position = const Value.absent(),
+              }) => LocalQueueTracksCompanion(
+                id: id,
+                fileKey: fileKey,
+                trackJson: trackJson,
+                position: position,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int fileKey,
+                required String trackJson,
+                required int position,
+              }) => LocalQueueTracksCompanion.insert(
+                id: id,
+                fileKey: fileKey,
+                trackJson: trackJson,
+                position: position,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalQueueTracksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalQueueTracksTable,
+      LocalQueueTrack,
+      $$LocalQueueTracksTableFilterComposer,
+      $$LocalQueueTracksTableOrderingComposer,
+      $$LocalQueueTracksTableAnnotationComposer,
+      $$LocalQueueTracksTableCreateCompanionBuilder,
+      $$LocalQueueTracksTableUpdateCompanionBuilder,
+      (
+        LocalQueueTrack,
+        BaseReferences<_$AppDatabase, $LocalQueueTracksTable, LocalQueueTrack>,
+      ),
+      LocalQueueTrack,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1359,4 +1847,6 @@ class $AppDatabaseManager {
       $$SavedServersTableTableManager(_db, _db.savedServers);
   $$FavoritesTableTableManager get favorites =>
       $$FavoritesTableTableManager(_db, _db.favorites);
+  $$LocalQueueTracksTableTableManager get localQueueTracks =>
+      $$LocalQueueTracksTableTableManager(_db, _db.localQueueTracks);
 }

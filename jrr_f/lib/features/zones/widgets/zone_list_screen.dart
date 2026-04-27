@@ -83,7 +83,7 @@ class _ZoneTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playerState = isActive
-        ? ref.watch(playerProvider).asData?.value.state
+        ? ref.watch(playerProvider).asData?.value?.state
         : null;
     final isPlaying = playerState == PlaybackState.playing;
     final isPaused = playerState == PlaybackState.paused;
@@ -111,7 +111,11 @@ class _ZoneTile extends ConsumerWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                zone.isDLNA ? Icons.cast_rounded : Icons.speaker_rounded,
+                zone.isLocal
+                    ? Icons.smartphone_rounded
+                    : (zone.isDLNA
+                          ? Icons.cast_rounded
+                          : Icons.speaker_rounded),
                 size: 20,
                 color: isActive ? AppColors.accent : AppColors.text3,
               ),
@@ -148,10 +152,13 @@ class _ZoneTile extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  if (zone.isDLNA)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2),
-                      child: Text('DLNA', style: AppTextStyles.monoLabel),
+                  if (zone.isDLNA || zone.isLocal)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        zone.isLocal ? 'LOCAL' : 'DLNA',
+                        style: AppTextStyles.monoLabel,
+                      ),
                     ),
                 ],
               ),

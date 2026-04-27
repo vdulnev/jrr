@@ -18,7 +18,9 @@ class MiniPlayerPanel extends ConsumerWidget {
     final playerState = ref.watch(playerProvider);
     return playerState.maybeWhen(
       data: (status) {
-        if (status.fileKey < 0) return const SizedBox.shrink();
+        if (status == null || status.fileKey < 0) {
+          return const SizedBox.shrink();
+        }
         final isPlaying = status.state == PlaybackState.playing;
         final progress = status.durationMs > 0
             ? (status.positionMs / status.durationMs).clamp(0.0, 1.0)

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/injection.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/player/providers/player_provider.dart';
-import '../../features/zones/providers/active_zone_provider.dart';
 import '../../features/library/data/models/track.dart';
-import '../../features/library/data/repositories/library_repository.dart';
 
 class TracksPopupMenu extends ConsumerWidget {
   final List<Track> tracks;
@@ -53,18 +50,13 @@ class TracksPopupMenu extends ConsumerWidget {
   }
 
   void _handleAction(BuildContext context, WidgetRef ref, String action) {
-    final zone = ref.read(activeZoneProvider);
-    if (zone == null) return;
-    final keys = tracks.map((t) => t.fileKey).toList();
-    final repo = getIt<LibraryRepository>();
-
     switch (action) {
       case 'play':
-        repo.playNow(zone.id, keys);
+        ref.read(playerProvider.notifier).playNow(tracks);
       case 'playNext':
-        repo.playNext(zone.id, keys);
+        ref.read(playerProvider.notifier).playNext(tracks);
       case 'add':
-        repo.addToQueue(zone.id, keys);
+        ref.read(playerProvider.notifier).addToQueue(tracks);
         if (label != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
