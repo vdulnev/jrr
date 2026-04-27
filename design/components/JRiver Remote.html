@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JRiver Remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="jrr-data.js"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="jrr-shared.jsx"></script>
+<script type="text/babel" src="jrr-connection.jsx"></script>
+<script type="text/babel" src="jrr-library.jsx"></script>
+<script type="text/babel" src="jrr-player.jsx"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #080809; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; }
+  body { overflow: hidden; }
+  ::-webkit-scrollbar { width: 0; }
+  @keyframes spin    { from { transform: rotate(0deg); }    to { transform: rotate(360deg); } }
+  @keyframes fadeIn  { from { opacity: 0; }                 to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(16px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+  @keyframes barAnim { 0%,100% { height: 6px; } 50% { height: 20px; } }
+  input { caret-color: #C8922A; }
+  input::placeholder { color: rgba(240,237,232,0.2); }
+</style>
+</head>
+<body>
+<script type="text/babel">
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "#C8922A",
+  "showVUMeter": true
+}/*EDITMODE-END*/;
+
+// ─── TWEAKS PANEL ────────────────────────────────────────────
+function TweaksPanel({ tweaks, setTweaks, visible }) {
+  if (!visible) return null;
+  const Toggle = ({ value, onChange }) => (
+    <div onClick={() => onChange(!value)} style={{
+      width:36, height:20, borderRadius:10, cursor:'pointer',
+      background: value ? T.accent : '#333', transition:'background 0.2s', position:'relative',
+    }}>
+      <div style={{ position:'absolute', top:3, left:value?17:3, width:14, height:14, borderRadius:'50%', background:'#fff', transition:'left 0.2s' }}/>
+    </div>
+  );
+  const Row = ({ label, children }) => (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+      <span style={{ fontSize:12, color:'#999' }}>{label}</span>
+      {children}
+    </div>
+  );
+  return (
+    <div style={{ position:'fixed', bottom:20, right:20, width:220, background:'#1a1a1a',
+      border:'1px solid #333', borderRadius:14, padding:16, zIndex:9999, boxShadow:'0 8px 40px rgba(0,0,0,0.8)' }}>
+      <div style={{ fontSize:13, fontWeight:600, color:'#fff', marginBottom:16 }}>Tweaks</div>
+      <Row label="Accent Color">
+        <div style={{ display:'flex', gap:6 }}>
+          {['#C8922A','#4A9EFF','#4ADE80','#F43F5E'].map(c => (
+            <div key={c} onClick={() => setTweaks(t=>({...t, accentColor:c}))} style={{
+              width:20, height:20, borderRadius:'50%', background:c, cursor:'pointer',
+              border: tweaks.accentColor===c ? '2px solid #fff' : '2px solid transparent',
+            }}/>
+          ))}
+        </div>
+      </Row>
+      <Row label="VU Meter">
+        <Toggle value={tweaks.showVUMeter} onChange={v => setTweaks(t=>({...t, showVUMeter:v}))}/>
+      </Row>
+      <div style={{ height:1, background:'#333', marginBottom:12 }}/>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROOT APP
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  // ── Connection phase ──────────────────────────────────────
+  const [appPhase, setAppPhase] = React.useState(() => {
+    try { return localStorage.getItem('jrr_phase') || 'setup'; } catch { return 'setup'; }
+  });
+  const [connectingHost, setConnectingHost] = React.useState('');
+
+  // ── Main tab ──────────────────────────────────────────────
+  const [screen, setScreen] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('jrr_tab')) || 'now'; } catch { return 'now'; }
+  });
+
+  // ── Library nav — fully internal to LibraryScreen now ──
+  // App just needs to know the active tab for mini-player tap to clear correctly
+  const [libNavs, setLibNavs] = React.useState({ Artists:[], Random:[], Browse:[], Favorites:[] });
+  const [libTab, setLibTab] = React.useState('Artists');
+
+  // ── Shared playing state ──────────────────────────────────
+  const [playing, setPlaying] = React.useState(true);
+
+  // ── Tweaks ────────────────────────────────────────────────
+  const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+  const [tweaksVisible, setTweaksVisible] = React.useState(false);
+
+  React.useEffect(() => { localStorage.setItem('jrr_tab', JSON.stringify(screen)); }, [screen]);
+  React.useEffect(() => { localStorage.setItem('jrr_phase', appPhase); }, [appPhase]);
+
+  // Apply accent color to T object at runtime
+  React.useEffect(() => { T.accent = tweaks.accentColor; T.accentDim = tweaks.accentColor + '22'; }, [tweaks.accentColor]);
+
+  // Tweaks protocol
+  React.useEffect(() => {
+    const handler = e => {
+      if (e.data?.type === '__activate_edit_mode')   setTweaksVisible(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksVisible(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const setTweaksAndPersist = fn => {
+    setTweaks(prev => {
+      const next = typeof fn === 'function' ? fn(prev) : fn;
+      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*');
+      return next;
+    });
+  };
+
+  // ── Screen map ────────────────────────────────────────────
+  const screenMap = {
+    now:     <NowPlayingScreen tweaks={tweaks} playing={playing} setPlaying={setPlaying}/>,
+    queue:   <QueueScreen/>,
+    library: <LibraryScreen libNavs={libNavs} setLibNavs={setLibNavs} libTab={libTab} setLibTab={setLibTab}/>,
+    zones:   <ZonesScreen/>,
+  };
+
+  // ── Connection screens ────────────────────────────────────
+  const renderPhase = () => {
+    if (appPhase === 'setup') return (
+      <ServerSetupScreen onConnect={({host,port}) => {
+        setConnectingHost(`${host}:${port}`);
+        setAppPhase('connecting');
+      }}/>
+    );
+    if (appPhase === 'connecting') return (
+      <ConnectingScreen
+        host={connectingHost}
+        onSuccess={() => setAppPhase('app')}
+        onCancel={() => setAppPhase('setup')}
+      />
+    );
+    return null;
+  };
+
+  const isApp = appPhase === 'app';
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#080809', gap:24 }}>
+      <IOSDevice dark={true} width={390} height={844}>
+        <div style={{ position:'relative', width:'100%', height:'100%', background:T.bg1, overflow:'hidden' }}>
+          {/* Ambient glow */}
+          <div style={{ position:'absolute', top:-60, left:'50%', transform:'translateX(-50%)',
+            width:300, height:200, borderRadius:'50%',
+            background:`radial-gradient(ellipse, ${tweaks.accentColor}18 0%, transparent 70%)`,
+            pointerEvents:'none', zIndex:0 }}/>
+
+          <div style={{ position:'relative', zIndex:1, height:'100%', display:'flex', flexDirection:'column' }}>
+            {!isApp ? renderPhase() : (
+              <>
+                <div style={{ flex:1, position:'relative', overflow:'hidden', minHeight:0 }}>
+                  {screenMap[screen]}
+                  {screen !== 'now' && (
+                    <MiniPlayer onTap={()=>{setScreen('now');setLibNav([]);}} playing={playing} setPlaying={setPlaying}/>
+                  )}
+                </div>
+                <TabBar active={screen} onChange={s=>setScreen(s)}/>
+              </>
+            )}
+          </div>
+        </div>
+      </IOSDevice>
+
+      {/* Phase switcher — dev helper outside phone */}
+      <div style={{ display:'flex', flexDirection:'column', gap:8, opacity:0.5 }}>
+        {['setup','connecting','app'].map(p => (
+          <button key={p} onClick={()=>{setAppPhase(p);if(p==='connecting')setConnectingHost('192.168.1.10:52199');}} style={{
+            background: appPhase===p ? '#2a2a2a' : 'transparent',
+            border:`1px solid ${appPhase===p?'#555':'#222'}`, borderRadius:8,
+            color: appPhase===p?'#aaa':'#444', fontSize:11, fontFamily:'monospace',
+            cursor:'pointer', padding:'6px 12px', width:110,
+          }}>{p}</button>
+        ))}
+      </div>
+
+      <TweaksPanel tweaks={tweaks} setTweaks={setTweaksAndPersist} visible={tweaksVisible}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<div id="root"></div>
+</body>
+</html>

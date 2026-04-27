@@ -50,10 +50,7 @@ class NowPlayingScreen extends ConsumerWidget {
             ErrorView(error: e, onRetry: () => ref.invalidate(playerProvider)),
         data: (status) {
           if (status == null || status.fileKey < 0) {
-            return _NowPlayingEmptyState(
-              zone: activeZone,
-              status: status,
-            );
+            return _NowPlayingEmptyState(zone: activeZone, status: status);
           }
 
           final progress = status.durationMs > 0
@@ -314,10 +311,7 @@ class _NowPlayingEmptyState extends ConsumerWidget {
   final Zone zone;
   final PlayerStatus? status;
 
-  const _NowPlayingEmptyState({
-    required this.zone,
-    required this.status,
-  });
+  const _NowPlayingEmptyState({required this.zone, required this.status});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

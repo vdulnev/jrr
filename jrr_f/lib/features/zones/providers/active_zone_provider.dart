@@ -27,7 +27,7 @@ class ActiveZone extends _$ActiveZone {
         };
         getIt<Talker>().debug(
           '[activeZoneProvider] zoneListProvider changed: prevValue=$prevValue, newValue=$value',
-         );
+        );
         if (prevValue != value) {
           _restoreZone(value);
         } else {
