@@ -12,6 +12,7 @@ import '../../../shared/widgets/volume_slider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../zones/providers/zone_provider.dart';
 import '../../queue/providers/queue_provider.dart';
+import '../../zones/data/models/zone.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
@@ -48,7 +49,13 @@ class NowPlayingScreen extends ConsumerWidget {
         error: (e, _) =>
             ErrorView(error: e, onRetry: () => ref.invalidate(playerProvider)),
         data: (status) {
-          if (status == null) return const SizedBox.shrink();
+          if (status == null || status.fileKey < 0) {
+            return _NowPlayingEmptyState(
+              zone: activeZone,
+              status: status,
+            );
+          }
+
           final progress = status.durationMs > 0
               ? status.positionMs / status.durationMs
               : 0.0;
@@ -300,5 +307,84 @@ class NowPlayingScreen extends ConsumerWidget {
     }
     if (status.bitrate > 0) return ' \u00b7 ${status.bitrate} kbps';
     return '';
+  }
+}
+
+class _NowPlayingEmptyState extends ConsumerWidget {
+  final Zone zone;
+  final PlayerStatus? status;
+
+  const _NowPlayingEmptyState({
+    required this.zone,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 88),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'NOW PLAYING',
+                      style: AppTextStyles.sectionLabel,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(zone.name, style: AppTextStyles.itemSubtitle),
+                  ],
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.music_note_outlined,
+                      size: 64,
+                      color: AppColors.text3.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Nothing playing',
+                      style: AppTextStyles.nowPlayingArtist,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Select a track from the library',
+                      style: AppTextStyles.monoLabel.copyWith(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Volume control still useful even if nothing playing
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: VolumeSlider(
+                value: status?.volume ?? 0,
+                isMuted: status?.isMuted ?? false,
+                onChanged: (v) =>
+                    ref.read(playerProvider.notifier).setVolume(v),
+                onMuteToggle: () =>
+                    ref.read(playerProvider.notifier).toggleMute(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
