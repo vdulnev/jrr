@@ -3,7 +3,6 @@ import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/error/app_exception.dart';
-import '../../../core/router/navigation_notifier.dart';
 import '../data/repositories/connection_repository.dart';
 import 'session_state.dart';
 
@@ -95,6 +94,5 @@ class Session extends _$Session {
     _talker.info('[Session] Logout');
     await getIt<ConnectionRepository>().clearSession();
     state = const SessionState.unauthenticated();
-    ref.read(navigationProvider.notifier).clear();
   }
 }

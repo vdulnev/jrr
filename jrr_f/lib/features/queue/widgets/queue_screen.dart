@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,7 +8,6 @@ import '../../../shared/widgets/vu_meter.dart';
 import '../../player/providers/player_provider.dart';
 import '../providers/queue_provider.dart';
 
-@RoutePage()
 class QueueScreen extends ConsumerWidget {
   const QueueScreen({super.key});
 

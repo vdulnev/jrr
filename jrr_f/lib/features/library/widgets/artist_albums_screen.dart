@@ -26,7 +26,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
               SubScreenHeader(
                 title: artist,
                 subtitle: 'Artist',
-                onBack: () => ref.read(libraryNavProvider.notifier).pop(),
+                onBack: () => context.router.maybePop(),
               ),
               const Expanded(child: LoadingView()),
             ],
@@ -41,7 +41,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
               SubScreenHeader(
                 title: artist,
                 subtitle: 'Artist',
-                onBack: () => ref.read(libraryNavProvider.notifier).pop(),
+                onBack: () => context.router.maybePop(),
               ),
               Expanded(
                 child: ErrorView(
@@ -58,7 +58,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
         title: artist,
         subtitle: 'Artist',
         showArtist: false,
-        onBack: () => ref.read(libraryNavProvider.notifier).pop(),
+        onBack: () => context.router.maybePop(),
         onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
       ),
     );

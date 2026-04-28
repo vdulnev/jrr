@@ -1,14 +1,10 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/router/navigation_notifier.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/sub_screen_header.dart';
 import '../providers/session_provider.dart';
 import '../providers/session_state.dart';
 
-@RoutePage()
 class ServerManagerScreen extends ConsumerWidget {
   const ServerManagerScreen({super.key});
 
@@ -19,11 +15,18 @@ class ServerManagerScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SubScreenHeader(
-              title: 'Server Manager',
-              subtitle: 'CONNECTION',
-              onBack: () => ref.read(navigationProvider.notifier).pop(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('CONNECTION', style: AppTextStyles.sectionLabel),
+                  SizedBox(height: 6),
+                  Text('Server Manager', style: AppTextStyles.screenTitle),
+                ],
+              ),
             ),
             Expanded(
               child: session.maybeWhen(

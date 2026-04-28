@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../library/providers/library_providers.dart';
@@ -21,7 +20,6 @@ import '../providers/player_provider.dart';
 import '../providers/player_polling_provider.dart';
 import '../../../shared/widgets/artwork_widget.dart';
 
-@RoutePage()
 class NowPlayingScreen extends ConsumerWidget {
   const NowPlayingScreen({super.key});
 

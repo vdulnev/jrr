@@ -9,66 +9,6 @@ part of 'navigation_notifier.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(NavigationNotifier)
-final navigationProvider = NavigationNotifierProvider._();
-
-final class NavigationNotifierProvider
-    extends
-        $NotifierProvider<NavigationNotifier, List<PageRouteInfo<Object?>>> {
-  NavigationNotifierProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'navigationProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$navigationNotifierHash();
-
-  @$internal
-  @override
-  NavigationNotifier create() => NavigationNotifier();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<PageRouteInfo<Object?>> value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<List<PageRouteInfo<Object?>>>(value),
-    );
-  }
-}
-
-String _$navigationNotifierHash() =>
-    r'727eee99e9a1bb4acd70c3517a50f1cb05e26d47';
-
-abstract class _$NavigationNotifier
-    extends $Notifier<List<PageRouteInfo<Object?>>> {
-  List<PageRouteInfo<Object?>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref =
-        this.ref
-            as $Ref<List<PageRouteInfo<Object?>>, List<PageRouteInfo<Object?>>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<
-                List<PageRouteInfo<Object?>>,
-                List<PageRouteInfo<Object?>>
-              >,
-              List<PageRouteInfo<Object?>>,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, build);
-  }
-}
-
 @ProviderFor(ActiveTab)
 final activeTabProvider = ActiveTabProvider._();
 
@@ -100,7 +40,7 @@ final class ActiveTabProvider extends $NotifierProvider<ActiveTab, AppTab> {
   }
 }
 
-String _$activeTabHash() => r'bed30a98366ad65b53769190ed60ee3baaf81f09';
+String _$activeTabHash() => r'2f1d87c54f7df6977b1b8c70b4301f62ba2434a2';
 
 abstract class _$ActiveTab extends $Notifier<AppTab> {
   AppTab build();

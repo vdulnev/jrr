@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,9 +18,7 @@ class AlbumRowTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => ref
-          .read(libraryNavProvider.notifier)
-          .push(AlbumDetailRoute(album: album)),
+      onTap: () => context.router.push(AlbumDetailRoute(album: album)),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: const BoxDecoration(
@@ -144,9 +143,7 @@ class AlbumRowTile extends ConsumerWidget {
     String action,
   ) async {
     if (action == 'folder') {
-      ref
-          .read(libraryNavProvider.notifier)
-          .push(FolderTracksRoute(folderPath: album.folderPath));
+      context.router.push(FolderTracksRoute(folderPath: album.folderPath));
       return;
     }
 

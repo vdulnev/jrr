@@ -20,14 +20,14 @@ class BrowseItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isFav = ref.watch(favoritesProvider.notifier).isFavorite(item);
+    final favorites = ref.watch(favoritesProvider);
 
-    return switch (isFav) {
+    return switch (favorites) {
       AsyncData(:final value) => _Tile(
         onTap: onTap,
         item: item,
         showFavoriteToggle: showFavoriteToggle,
-        isFav: value,
+        isFav: value.any((fav) => fav.id == item.id),
         onPressed: () =>
             ref.read(favoritesProvider.notifier).toggleFavorite(item),
       ),

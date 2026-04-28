@@ -1,9 +1,11 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import 'browse_screen.dart';
 
-class BrowseTab extends StatelessWidget {
-  const BrowseTab({super.key});
+@RoutePage()
+class BrowseTabScreen extends StatelessWidget {
+  const BrowseTabScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

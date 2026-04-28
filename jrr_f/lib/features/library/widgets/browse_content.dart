@@ -45,6 +45,7 @@ class BrowseContent extends ConsumerWidget {
 
     final current = stack.last;
     final childrenState = ref.watch(browseChildrenProvider(current.id));
+    final showBreadcrumb = breadcrumbPrefix != null || stack.length > 1;
 
     return Column(
       children: [
@@ -53,11 +54,12 @@ class BrowseContent extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Text(headerTitle!, style: AppTextStyles.screenTitle),
           ),
-        BrowseBreadcrumb(
-          stack: stack,
-          onTap: onTapBreadcrumb,
-          prefix: breadcrumbPrefix,
-        ),
+        if (showBreadcrumb)
+          BrowseBreadcrumb(
+            stack: stack,
+            onTap: onTapBreadcrumb,
+            prefix: breadcrumbPrefix,
+          ),
         Expanded(
           child: childrenState.when(
             loading: () => const LoadingView(),

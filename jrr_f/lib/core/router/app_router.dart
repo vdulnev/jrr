@@ -2,18 +2,16 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/connection/widgets/connecting_screen.dart';
-import '../../features/connection/widgets/server_manager_screen.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../features/library/data/models/album.dart';
 import '../../features/library/widgets/album_detail_screen.dart';
 import '../../features/library/widgets/artist_albums_screen.dart';
+import '../../features/library/widgets/artists_tab.dart';
+import '../../features/library/widgets/browse_tab.dart';
+import '../../features/library/widgets/favorites_tab.dart';
 import '../../features/library/widgets/folder_tracks_screen.dart';
-import '../../features/library/widgets/library_screen.dart';
-import '../../features/library/widgets/library_root_screen.dart';
-import '../../features/library/widgets/random_albums_screen.dart';
-import '../../features/player/widgets/now_playing_screen.dart';
-import '../../features/queue/widgets/queue_screen.dart';
-import '../../features/zones/widgets/zone_list_screen.dart';
+import '../../features/library/widgets/library_tab_routers.dart';
+import '../../features/library/widgets/random_tab.dart';
 import 'root_screen.dart';
 
 part 'app_router.gr.dart';
@@ -30,19 +28,30 @@ class AppRouter extends RootStackRouter {
       initial: true,
       children: [
         AutoRoute(page: ServerSetupRoute.page, initial: true),
-        AutoRoute(page: NowPlayingRoute.page),
-        AutoRoute(page: ZoneListRoute.page),
-        AutoRoute(page: QueueRoute.page),
         AutoRoute(
-          page: LibraryRoute.page,
+          page: ArtistsTabRouterRoute.page,
           children: [
-            AutoRoute(page: LibraryRootRoute.page, initial: true),
+            AutoRoute(page: ArtistsTabRoute.page, initial: true),
             AutoRoute(page: ArtistAlbumsRoute.page),
-            AutoRoute(page: RandomAlbumsRoute.page),
             AutoRoute(page: AlbumDetailRoute.page),
             AutoRoute(page: FolderTracksRoute.page),
-            AutoRoute(page: ServerManagerRoute.page),
           ],
+        ),
+        AutoRoute(
+          page: RandomTabRouterRoute.page,
+          children: [
+            AutoRoute(page: RandomTabRoute.page, initial: true),
+            AutoRoute(page: AlbumDetailRoute.page),
+            AutoRoute(page: FolderTracksRoute.page),
+          ],
+        ),
+        AutoRoute(
+          page: BrowseTabRouterRoute.page,
+          children: [AutoRoute(page: BrowseTabRoute.page, initial: true)],
+        ),
+        AutoRoute(
+          page: FavoritesTabRouterRoute.page,
+          children: [AutoRoute(page: FavoritesTabRoute.page, initial: true)],
         ),
         AutoRoute(page: ConnectingRoute.page),
       ],

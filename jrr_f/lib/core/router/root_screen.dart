@@ -13,7 +13,6 @@ import '../../features/zones/providers/zone_polling_provider.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../layout/adaptive_layout.dart';
-import '../layout/sidebar.dart';
 import '../layout/two_panel_shell.dart';
 import '../theme/app_theme.dart';
 import 'app_router.dart';
@@ -61,40 +60,7 @@ class _NarrowLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
-    final navStack = ref.watch(navigationProvider);
-    final showMiniPlayer =
-        activeTab != AppTab.nowPlaying || navStack.isNotEmpty;
-
-    final miniPlayer = showMiniPlayer
-        ? Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-            child: MiniPlayerPanel(
-              onTap: () {
-                ref.read(navigationProvider.notifier).clear();
-                ref.read(activeTabProvider.notifier).select(AppTab.nowPlaying);
-              },
-            ),
-          )
-        : null;
-
-    if (navStack.isNotEmpty) {
-      return Scaffold(
-        body: Column(
-          children: [
-            Expanded(
-              child: AutoRouter.declarative(
-                routes: (_) => [const NowPlayingRoute(), ...navStack],
-              ),
-            ),
-            ...miniPlayer != null ? [miniPlayer] : [],
-          ],
-        ),
-        bottomNavigationBar: _TabBar(
-          active: activeTab,
-          onSelect: (tab) => ref.read(activeTabProvider.notifier).select(tab),
-        ),
-      );
-    }
+    final showMiniPlayer = activeTab != AppTab.nowPlaying;
 
     return Scaffold(
       body: Column(
@@ -111,7 +77,15 @@ class _NarrowLayout extends StatelessWidget {
               ],
             ),
           ),
-          ...miniPlayer != null ? [miniPlayer] : [],
+          if (showMiniPlayer)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+              child: MiniPlayerPanel(
+                onTap: () => ref
+                    .read(activeTabProvider.notifier)
+                    .select(AppTab.nowPlaying),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: _TabBar(
@@ -129,52 +103,6 @@ class _WideLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final navStack = ref.watch(navigationProvider);
-    final activeTab = ref.watch(activeTabProvider);
-
-    if (navStack.isNotEmpty) {
-      final showMiniPlayer = activeTab != AppTab.nowPlaying;
-
-      return Scaffold(
-        body: Material(
-          color: AppColors.bg1,
-          child: Row(
-            children: [
-              const Sidebar(),
-              Expanded(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: AutoRouter.declarative(
-                        routes: (_) => [const NowPlayingRoute(), ...navStack],
-                      ),
-                    ),
-                    if (showMiniPlayer)
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: AppColors.bg1,
-                          border: Border(
-                            top: BorderSide(color: AppColors.line),
-                          ),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                        child: MiniPlayerPanel(
-                          onTap: () {
-                            ref
-                                .read(activeTabProvider.notifier)
-                                .select(AppTab.nowPlaying);
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return const TwoPanelShell();
   }
 }

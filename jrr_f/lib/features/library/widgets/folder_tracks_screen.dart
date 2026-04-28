@@ -58,7 +58,7 @@ class _FolderTracksScreenState extends ConsumerState<FolderTracksScreen> {
 
     return TrackListScaffold(
       subtitle: 'Folder',
-      onBack: () => ref.read(libraryNavProvider.notifier).pop(),
+      onBack: () => context.router.maybePop(),
       title: Text(_currentPath, style: AppTextStyles.subScreenTitle),
       headerContent: Row(
         children: [

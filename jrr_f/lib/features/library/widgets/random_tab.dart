@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,8 +8,9 @@ import '../../../shared/widgets/loading_view.dart';
 import '../providers/library_providers.dart';
 import 'album_list_view.dart';
 
-class RandomTab extends ConsumerWidget {
-  const RandomTab({super.key});
+@RoutePage()
+class RandomTabScreen extends ConsumerWidget {
+  const RandomTabScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -105,6 +105,70 @@ class ArtistAlbumsRouteArgs {
 }
 
 /// generated route for
+/// [ArtistsTabRouterScreen]
+class ArtistsTabRouterRoute extends PageRouteInfo<void> {
+  const ArtistsTabRouterRoute({List<PageRouteInfo>? children})
+    : super(ArtistsTabRouterRoute.name, initialChildren: children);
+
+  static const String name = 'ArtistsTabRouterRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ArtistsTabRouterScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [ArtistsTabScreen]
+class ArtistsTabRoute extends PageRouteInfo<void> {
+  const ArtistsTabRoute({List<PageRouteInfo>? children})
+    : super(ArtistsTabRoute.name, initialChildren: children);
+
+  static const String name = 'ArtistsTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ArtistsTabScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [BrowseTabRouterScreen]
+class BrowseTabRouterRoute extends PageRouteInfo<void> {
+  const BrowseTabRouterRoute({List<PageRouteInfo>? children})
+    : super(BrowseTabRouterRoute.name, initialChildren: children);
+
+  static const String name = 'BrowseTabRouterRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const BrowseTabRouterScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [BrowseTabScreen]
+class BrowseTabRoute extends PageRouteInfo<void> {
+  const BrowseTabRoute({List<PageRouteInfo>? children})
+    : super(BrowseTabRoute.name, initialChildren: children);
+
+  static const String name = 'BrowseTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const BrowseTabScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [ConnectingScreen]
 class ConnectingRoute extends PageRouteInfo<ConnectingRouteArgs> {
   ConnectingRoute({Key? key, String? address, List<PageRouteInfo>? children})
@@ -148,6 +212,38 @@ class ConnectingRouteArgs {
 
   @override
   int get hashCode => key.hashCode ^ address.hashCode;
+}
+
+/// generated route for
+/// [FavoritesTabRouterScreen]
+class FavoritesTabRouterRoute extends PageRouteInfo<void> {
+  const FavoritesTabRouterRoute({List<PageRouteInfo>? children})
+    : super(FavoritesTabRouterRoute.name, initialChildren: children);
+
+  static const String name = 'FavoritesTabRouterRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const FavoritesTabRouterScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [FavoritesTabScreen]
+class FavoritesTabRoute extends PageRouteInfo<void> {
+  const FavoritesTabRoute({List<PageRouteInfo>? children})
+    : super(FavoritesTabRoute.name, initialChildren: children);
+
+  static const String name = 'FavoritesTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const FavoritesTabScreen();
+    },
+  );
 }
 
 /// generated route for
@@ -198,81 +294,33 @@ class FolderTracksRouteArgs {
 }
 
 /// generated route for
-/// [LibraryRootScreen]
-class LibraryRootRoute extends PageRouteInfo<void> {
-  const LibraryRootRoute({List<PageRouteInfo>? children})
-    : super(LibraryRootRoute.name, initialChildren: children);
+/// [RandomTabRouterScreen]
+class RandomTabRouterRoute extends PageRouteInfo<void> {
+  const RandomTabRouterRoute({List<PageRouteInfo>? children})
+    : super(RandomTabRouterRoute.name, initialChildren: children);
 
-  static const String name = 'LibraryRootRoute';
+  static const String name = 'RandomTabRouterRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return const LibraryRootScreen();
+      return const RandomTabRouterScreen();
     },
   );
 }
 
 /// generated route for
-/// [LibraryScreen]
-class LibraryRoute extends PageRouteInfo<void> {
-  const LibraryRoute({List<PageRouteInfo>? children})
-    : super(LibraryRoute.name, initialChildren: children);
+/// [RandomTabScreen]
+class RandomTabRoute extends PageRouteInfo<void> {
+  const RandomTabRoute({List<PageRouteInfo>? children})
+    : super(RandomTabRoute.name, initialChildren: children);
 
-  static const String name = 'LibraryRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const LibraryScreen();
-    },
-  );
-}
-
-/// generated route for
-/// [NowPlayingScreen]
-class NowPlayingRoute extends PageRouteInfo<void> {
-  const NowPlayingRoute({List<PageRouteInfo>? children})
-    : super(NowPlayingRoute.name, initialChildren: children);
-
-  static const String name = 'NowPlayingRoute';
+  static const String name = 'RandomTabRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return const NowPlayingScreen();
-    },
-  );
-}
-
-/// generated route for
-/// [QueueScreen]
-class QueueRoute extends PageRouteInfo<void> {
-  const QueueRoute({List<PageRouteInfo>? children})
-    : super(QueueRoute.name, initialChildren: children);
-
-  static const String name = 'QueueRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const QueueScreen();
-    },
-  );
-}
-
-/// generated route for
-/// [RandomAlbumsScreen]
-class RandomAlbumsRoute extends PageRouteInfo<void> {
-  const RandomAlbumsRoute({List<PageRouteInfo>? children})
-    : super(RandomAlbumsRoute.name, initialChildren: children);
-
-  static const String name = 'RandomAlbumsRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const RandomAlbumsScreen();
+      return const RandomTabScreen();
     },
   );
 }
@@ -294,22 +342,6 @@ class RootRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [ServerManagerScreen]
-class ServerManagerRoute extends PageRouteInfo<void> {
-  const ServerManagerRoute({List<PageRouteInfo>? children})
-    : super(ServerManagerRoute.name, initialChildren: children);
-
-  static const String name = 'ServerManagerRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const ServerManagerScreen();
-    },
-  );
-}
-
-/// generated route for
 /// [ServerSetupScreen]
 class ServerSetupRoute extends PageRouteInfo<void> {
   const ServerSetupRoute({List<PageRouteInfo>? children})
@@ -321,22 +353,6 @@ class ServerSetupRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return const ServerSetupScreen();
-    },
-  );
-}
-
-/// generated route for
-/// [ZoneListScreen]
-class ZoneListRoute extends PageRouteInfo<void> {
-  const ZoneListRoute({List<PageRouteInfo>? children})
-    : super(ZoneListRoute.name, initialChildren: children);
-
-  static const String name = 'ZoneListRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const ZoneListScreen();
     },
   );
 }

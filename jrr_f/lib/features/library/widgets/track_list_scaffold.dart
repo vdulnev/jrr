@@ -1,7 +1,7 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/router/navigation_notifier.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/sub_screen_header.dart';
@@ -42,8 +42,7 @@ class TrackListScaffold extends ConsumerWidget {
             SubScreenHeader(
               titleWidget: title,
               subtitle: subtitle,
-              onBack:
-                  onBack ?? () => ref.read(navigationProvider.notifier).pop(),
+              onBack: onBack ?? () => context.router.maybePop(),
               content: headerContent,
               trailing: tracksState.maybeWhen(
                 data: (tracks) => tracks.isNotEmpty

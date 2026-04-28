@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,14 +8,15 @@ import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../providers/library_providers.dart';
 
-class ArtistsTab extends ConsumerStatefulWidget {
-  const ArtistsTab({super.key});
+@RoutePage()
+class ArtistsTabScreen extends ConsumerStatefulWidget {
+  const ArtistsTabScreen({super.key});
 
   @override
-  ConsumerState<ArtistsTab> createState() => _ArtistsTabState();
+  ConsumerState<ArtistsTabScreen> createState() => _ArtistsTabScreenState();
 }
 
-class _ArtistsTabState extends ConsumerState<ArtistsTab> {
+class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
   String _filter = '';
 
   @override
@@ -61,9 +63,9 @@ class _ArtistsTabState extends ConsumerState<ArtistsTab> {
                       itemBuilder: (_, i) {
                         final artist = filtered[i];
                         return GestureDetector(
-                          onTap: () => ref
-                              .read(libraryNavProvider.notifier)
-                              .push(ArtistAlbumsRoute(artist: artist)),
+                          onTap: () => context.router.push(
+                            ArtistAlbumsRoute(artist: artist),
+                          ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
