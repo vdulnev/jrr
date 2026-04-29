@@ -1,9 +1,9 @@
 import 'dart:async' hide Zone;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:jrr_f/features/library/data/repositories/library_repository.dart';
 import 'package:jrr_f/features/player/data/models/local_palyback_state.dart';
 import 'package:jrr_f/features/player/data/models/playback_state.dart';
+import 'package:jrr_f/features/queue/data/repositories/local_queue_repository.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -44,11 +44,11 @@ class Player extends _$Player {
     return result.getOrElse((e) => throw e);
   }
 
-  PlayerStatus _calculateStatus(LocalPlaybackState localPlaybackState) {
+  Future<PlayerStatus> _calculateStatus(LocalPlaybackState localPlaybackState) async {
     final seqState = localPlaybackState.sequenceState;
-    final currentSource = seqState.currentSource;
-    final currentIndex = seqState.currentIndex;
-    final sequence = seqState.sequence;
+    final currentSource = seqState?.currentSource;
+    final currentIndex = (await getIt<LocalQueueRepository>().getCurrentIndex()).getOrElse((e) => 0);
+    final sequence = seqState?.sequence ?? [];
 
     final currentTrack = currentSource?.tag as Track?;
 
@@ -78,13 +78,13 @@ class Player extends _$Player {
       positionMs: localPlaybackState.position.inMilliseconds,
       durationMs: localPlaybackState.duration?.inMilliseconds ?? 0,
       positionDisplay: _formatDuration(localPlaybackState.position),
-      playingNowPosition: currentIndex ?? -1,
+      playingNowPosition: currentIndex,
       playingNowTracks: sequence.length,
-      playingNowPositionDisplay: currentIndex != null
+      playingNowPositionDisplay: currentIndex > -1
           ? '${currentIndex + 1} of ${sequence.length}'
           : '',
       playingNowChangeCounter: 0,
-      volume: localPlaybackState.volume * 100,
+      volume: localPlaybackState.volume,
       volumeDisplay: '${(localPlaybackState.volume * 100).toInt()}%',
       isMuted: localPlaybackState.volume == 0,
       name: currentTrack?.name ?? '',
@@ -206,7 +206,13 @@ class Player extends _$Player {
         tracks.map((t) => t.fileKey).toList(),
       );
     },
-    local: () => ref.read(localPlayerProvider.notifier).playNow(tracks),
+    local: () async {
+      var provider = ref.read(localPlayerProvider.notifier);
+      await provider.setTracks(tracks);
+      if (tracks.isNotEmpty) {
+        await provider.playNow(tracks.first);
+      }
+    },
   );
 
   /// Inserts [fileKeys] immediately after the current track.

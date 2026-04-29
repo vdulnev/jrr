@@ -1,3 +1,4 @@
+import 'package:jrr_f/core/db/app_database.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
@@ -22,7 +23,7 @@ class Session extends _$Session {
   Future<void> _attemptSilentReconnect() async {
     _talker.info('[Session] Attempting silent reconnect');
     final repo = getIt<ConnectionRepository>();
-    final server = await repo.getLastServerWithToken();
+    final server = await getServerInfo();
 
     if (server == null) {
       _talker.debug('[Session] No saved server with token — showing login');
@@ -30,7 +31,7 @@ class Session extends _$Session {
       return;
     }
 
-    final password = await repo.getPassword(server.passwordKey);
+    final password = await getPassword();
     if (password == null) {
       _talker.debug('[Session] Saved server has no password — showing login');
       state = const SessionState.unauthenticated();
@@ -58,6 +59,19 @@ class Session extends _$Session {
         state = SessionState.authenticated(serverInfo: info);
       },
     );
+  }
+
+  Future<String?> getPassword() async {
+    final repo = getIt<ConnectionRepository>();
+    final server = await getServerInfo();
+    if (server == null) return null;
+    final password = await repo.getPassword(server.passwordKey);
+    return password;
+  }
+
+  Future<SavedServer?> getServerInfo() async {
+    final repo = getIt<ConnectionRepository>();
+    return await repo.getLastServerWithToken();
   }
 
   /// Attempts a manual connect. Returns null on success, [AppException] on failure.

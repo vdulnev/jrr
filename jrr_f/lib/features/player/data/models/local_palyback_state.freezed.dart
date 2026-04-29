@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LocalPlaybackState {
 
- SequenceState get sequenceState; ProcessingState get processingState; bool get playing; Duration get position; Duration? get duration; double get volume; bool get shuffleModeEnabled; LoopMode get loopMode;
+ SequenceState? get sequenceState; ProcessingState get processingState; bool get playing; Duration get position; Duration? get duration; double get volume; bool get shuffleModeEnabled; LoopMode get loopMode;
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,10 +32,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,sequenceState,processingState,playing,position,duration,volume,shuffleModeEnabled,loopMode);
 
-@override
-String toString() {
-  return 'LocalPlaybackState(sequenceState: $sequenceState, processingState: $processingState, playing: $playing, position: $position, duration: $duration, volume: $volume, shuffleModeEnabled: $shuffleModeEnabled, loopMode: $loopMode)';
-}
 
 
 }
@@ -45,7 +41,7 @@ abstract mixin class $LocalPlaybackStateCopyWith<$Res>  {
   factory $LocalPlaybackStateCopyWith(LocalPlaybackState value, $Res Function(LocalPlaybackState) _then) = _$LocalPlaybackStateCopyWithImpl;
 @useResult
 $Res call({
- SequenceState sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
+ SequenceState? sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
 });
 
 
@@ -62,10 +58,10 @@ class _$LocalPlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sequenceState = null,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sequenceState = freezed,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
   return _then(_self.copyWith(
-sequenceState: null == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
-as SequenceState,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
+sequenceState: freezed == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
+as SequenceState?,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
 as ProcessingState,playing: null == playing ? _self.playing : playing // ignore: cast_nullable_to_non_nullable
 as bool,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
@@ -157,7 +153,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SequenceState sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState() when $default != null:
 return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
@@ -178,7 +174,7 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SequenceState sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)  $default,) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState():
 return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
@@ -198,7 +194,7 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SequenceState sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState() when $default != null:
 return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
@@ -212,11 +208,11 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 /// @nodoc
 
 
-class _LocalPlaybackState implements LocalPlaybackState {
-  const _LocalPlaybackState({required this.sequenceState, required this.processingState, required this.playing, required this.position, this.duration, required this.volume, required this.shuffleModeEnabled, required this.loopMode});
+class _LocalPlaybackState extends LocalPlaybackState {
+  const _LocalPlaybackState({this.sequenceState, required this.processingState, required this.playing, required this.position, this.duration, required this.volume, required this.shuffleModeEnabled, required this.loopMode}): super._();
   
 
-@override final  SequenceState sequenceState;
+@override final  SequenceState? sequenceState;
 @override final  ProcessingState processingState;
 @override final  bool playing;
 @override final  Duration position;
@@ -242,10 +238,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,sequenceState,processingState,playing,position,duration,volume,shuffleModeEnabled,loopMode);
 
-@override
-String toString() {
-  return 'LocalPlaybackState(sequenceState: $sequenceState, processingState: $processingState, playing: $playing, position: $position, duration: $duration, volume: $volume, shuffleModeEnabled: $shuffleModeEnabled, loopMode: $loopMode)';
-}
 
 
 }
@@ -255,7 +247,7 @@ abstract mixin class _$LocalPlaybackStateCopyWith<$Res> implements $LocalPlaybac
   factory _$LocalPlaybackStateCopyWith(_LocalPlaybackState value, $Res Function(_LocalPlaybackState) _then) = __$LocalPlaybackStateCopyWithImpl;
 @override @useResult
 $Res call({
- SequenceState sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
+ SequenceState? sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
 });
 
 
@@ -272,10 +264,10 @@ class __$LocalPlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sequenceState = null,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sequenceState = freezed,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
   return _then(_LocalPlaybackState(
-sequenceState: null == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
-as SequenceState,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
+sequenceState: freezed == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
+as SequenceState?,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
 as ProcessingState,playing: null == playing ? _self.playing : playing // ignore: cast_nullable_to_non_nullable
 as bool,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable

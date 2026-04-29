@@ -12,10 +12,6 @@ class QueueRepositoryImpl implements QueueRepository {
       getIt<McwsClient>().getPlayingNow(zoneId);
 
   @override
-  Future<Either<AppException, Unit>> playByIndex(String zoneId, int index) =>
-      getIt<McwsClient>().playByIndex(zoneId, index);
-
-  @override
   Future<Either<AppException, Unit>> removeItem(String zoneId, int index) =>
       getIt<McwsClient>().removeFromQueue(zoneId, index);
 

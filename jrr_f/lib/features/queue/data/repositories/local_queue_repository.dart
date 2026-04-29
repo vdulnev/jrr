@@ -12,6 +12,9 @@ abstract interface class LocalQueueRepository {
   /// Clears the local queue and adds these tracks.
   Future<Either<AppException, Unit>> setTracks(List<Track> tracks);
 
+  /// Inserts tracks at a specific index in the local queue.
+  Future<Either<AppException, Unit>> insertTracksAt(int index, List<Track> tracks);
+
   /// Removes a track at a specific index.
   Future<Either<AppException, Unit>> removeTrack(int index);
 
@@ -20,4 +23,10 @@ abstract interface class LocalQueueRepository {
 
   /// Clears all tracks from the local queue.
   Future<Either<AppException, Unit>> clear();
+
+  /// Gets the current track index in the local queue.
+  Future<Either<AppException, int>> getCurrentIndex();
+
+  /// Sets the current track index in the local queue.
+  Future<Either<AppException, Unit>> setCurrentIndex(int index);
 }
