@@ -41,7 +41,17 @@ abstract class LocalPlaybackState with _$LocalPlaybackState {
            '  track: $trackName, FileKey: ${track?.fileKey}\n'
            '  index: ${ss?.currentIndex}, queue: ${ss?.sequence.length}\n'
            '  sequence: ${ss?.sequence.map((e) => (e.tag as Track?)?.fileKey ?? 'None').toList()}\n'
-           '  uris: ${ss?.sequence.map((e) => (e as UriAudioSource).uri.toString()).toList()}\n'
+           '  uris: ${ss?.sequence.map((e) => _getUri(e)).toList()}\n'
            ')';
+  }
+
+  String _getUri(AudioSource audioSource) {
+    if (audioSource is UriAudioSource) {
+      return audioSource.uri.toString();
+    } else if (audioSource is ClippingAudioSource) {
+      final child = audioSource.child;
+      return child.uri.toString();
+        }
+    return 'Unknown uri';
   }
 }

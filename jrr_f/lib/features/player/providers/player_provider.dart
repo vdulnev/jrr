@@ -3,7 +3,6 @@ import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:jrr_f/features/library/data/repositories/library_repository.dart';
 import 'package:jrr_f/features/player/data/models/local_palyback_state.dart';
 import 'package:jrr_f/features/player/data/models/playback_state.dart';
-import 'package:jrr_f/features/queue/data/repositories/local_queue_repository.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -47,7 +46,7 @@ class Player extends _$Player {
   Future<PlayerStatus> _calculateStatus(LocalPlaybackState localPlaybackState) async {
     final seqState = localPlaybackState.sequenceState;
     final currentSource = seqState?.currentSource;
-    final currentIndex = (await getIt<LocalQueueRepository>().getCurrentIndex()).getOrElse((e) => 0);
+    final currentIndex = seqState?.currentIndex ?? -1;
     final sequence = seqState?.sequence ?? [];
 
     final currentTrack = currentSource?.tag as Track?;
@@ -208,10 +207,7 @@ class Player extends _$Player {
     },
     local: () async {
       var provider = ref.read(localPlayerProvider.notifier);
-      await provider.setTracks(tracks);
-      if (tracks.isNotEmpty) {
-        await provider.playNow(tracks.first);
-      }
+      await provider.playNow(tracks);
     },
   );
 

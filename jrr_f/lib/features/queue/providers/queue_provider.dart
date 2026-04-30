@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:jrr_f/features/queue/data/repositories/local_queue_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
@@ -21,8 +20,7 @@ class Queue extends _$Queue {
     if (zone == null) return [];
 
     if (zone.isLocal) {
-      final localQueue = (await getIt<LocalQueueRepository>().getTracks())
-          .getOrElse((e) => throw e);
+      final localQueue = ref.watch(localPlayerProvider.select((s) => s.sequenceState?.sequence.map((e) => e.tag as Track).toList() ?? []));
       return localQueue;
     }
 

@@ -17,7 +17,6 @@ part 'local_player_provider.g.dart';
 @Riverpod(keepAlive: true)
 class LocalPlayer extends _$LocalPlayer {
   late LocalPlayerService _service;
-  late LocalQueueRepository _queueRepo;
   late Talker _talker;
 
   StreamSubscription<Duration>? _posSub;
@@ -32,7 +31,6 @@ class LocalPlayer extends _$LocalPlayer {
     _talker = getIt<Talker>();
     _talker.debug('[localPlayerProvider] Initializing provider');
     _service = getIt<LocalPlayerService>();
-    _queueRepo = getIt<LocalQueueRepository>();
 
     _posSub = _service.positionStream.listen((pos) {
       _talker.debug(
@@ -54,6 +52,7 @@ class LocalPlayer extends _$LocalPlayer {
     _seqSub = _service.sequenceStateStream.listen((sequenceState) {
       _talker.sequenceState(sequenceState);
       state = state.copyWith(sequenceState: sequenceState);
+      _saveQueue();
     });
 
     _volumeSub = _service.volumeStream.listen((volume) {
@@ -69,7 +68,9 @@ class LocalPlayer extends _$LocalPlayer {
     });
 
     _eventSub = _service.playbackEventStream.listen(
-      (event) {},
+      (event) {
+        _talker.debug('[localPlayerProvider] Playback event: $event');
+      },
       onError: (Object e, StackTrace st) {
         _talker.error('[localPlayerProvider] Playback error stream', e, st);
       },
@@ -109,6 +110,18 @@ class LocalPlayer extends _$LocalPlayer {
     );
   }
 
+  Future<void> _saveQueue() async {
+    final localQueueRepo = getIt<LocalQueueRepository>();
+    final queue = state.sequenceState?.sequence.map((e) => e.tag as Track).toList() ?? [];
+    _talker.debug(
+      '[localPlayerProvider] Saving queue has ${queue.length} tracks',
+    );
+    localQueueRepo.setTracks(queue);
+    _talker.debug(
+      '[localPlayerProvider] Queue saved tracks: ${queue.length}',
+    );
+  }
+
   // Transport delegates
   Future<void> playPause() {
     _talker.debug('[localPlayerProvider] Command: playPause (current playing=${_service.playing})');
@@ -122,34 +135,12 @@ class LocalPlayer extends _$LocalPlayer {
 
   Future<void> next() async {
     _talker.debug('[localPlayerProvider] Command: next');
-    final currentIndex = (await getIt<LocalQueueRepository>().getCurrentIndex()).getOrElse((e) => throw e);
-    if (currentIndex > -1) {
-      final queue = (await _queueRepo.getTracks()).getOrElse((e) => throw e);
-      final nextIndex = currentIndex + 1;
-      if (nextIndex >= 0 && nextIndex < queue.length) {
-        final track = (await _queueRepo.getTracks()).getOrElse(
-          (e) => throw e,
-        )[nextIndex];
-        _queueRepo.setCurrentIndex(nextIndex);
-        _service.playNow(track);
-      }
-    }
+    _service.next();
   }
 
   Future<void> previous() async {
     _talker.debug('[localPlayerProvider] Command: previous');
-    final currentIndex = (await getIt<LocalQueueRepository>().getCurrentIndex()).getOrElse((e) => throw e);
-    if (currentIndex > -1) {
-      final queue = (await _queueRepo.getTracks()).getOrElse((e) => throw e);
-      final previousIndex = currentIndex - 1;
-      if (previousIndex >= 0 && previousIndex < queue.length) {
-        final track = (await _queueRepo.getTracks()).getOrElse(
-          (e) => throw e,
-        )[previousIndex];
-        _queueRepo.setCurrentIndex(previousIndex);
-        _service.playNow(track);
-      }
-    }
+    _service.previous();
   }
 
   Future<void> seekTo(int positionMs) {
@@ -179,40 +170,29 @@ class LocalPlayer extends _$LocalPlayer {
 
   Future<void> playByIndex(int index) async {
     _talker.debug('[localPlayerProvider] Command: playByIndex ($index)');
-    final queue = (await getIt<LocalQueueRepository>().getTracks()).getOrElse((e) => throw e);
-    if (index >= 0 && index < queue.length) {
-      _talker.debug('[localPlayerProvider] Seeking to track at index $index');
-      final track = queue[index];
-      return _service.playNow(track);
-    } else {
-      _talker.warning('[localPlayerProvider] playByIndex: index $index out of bounds (len=${queue.length})');
-    }
+    await _service.playByIndex(index: index);
   }
 
-  Future<void> playNow(Track track) async {
-    _talker.info('[localPlayerProvider] Command: playNow (${track.name})');
-    await _service.playNow(track);
+  Future<void> setTracks(List<Track> tracks) async {
+    _talker.info('[localPlayerProvider] Command: setTracks (${tracks.length} tracks)');
+    await _service.setTracks(tracks);
+  }
+
+  Future<void> playNow(List<Track> tracks) async {
+    _talker.info('[localPlayerProvider] Command: playNow (${tracks.length} tracks)');
+    await _service.playNow(tracks);
   }
 
   Future<void> playNext(List<Track> tracks) async {
     _talker.info(
       '[localPlayerProvider] Command: playNext (${tracks.length} tracks)',
     );
-    final currentIndex = (await getIt<LocalQueueRepository>().getCurrentIndex()).getOrElse((e) => throw e);
-    if (currentIndex > -1) {
-      _queueRepo.insertTracksAt(currentIndex, tracks);
-    }
+    _service.insertTracksAt(tracks);
   }
 
   Future<void> addToQueue(List<Track> tracks) async {
     _talker.info('[localPlayerProvider] Command: addToQueue (${tracks.length} tracks)');
-    await _queueRepo.addTracks(tracks);
-  }
-
-  Future<void> setTracks(List<Track> tracks) async {
-    _talker.info('[localPlayerProvider] Command: setTracks (${tracks.length} tracks)');
-    await _queueRepo.setTracks(tracks);
-    await _queueRepo.setCurrentIndex(0);
+    await _service.addToQueue(tracks);
   }
 
   Future<void> moveTrack(int source, int target) async {

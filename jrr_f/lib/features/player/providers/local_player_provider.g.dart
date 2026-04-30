@@ -41,7 +41,7 @@ final class LocalPlayerProvider
   }
 }
 
-String _$localPlayerHash() => r'fed495c422afe365f64ca1cad7d8c1afdc3c7d0d';
+String _$localPlayerHash() => r'671f2980b6296858cb78aa8e97aae8e2cfc226de';
 
 abstract class _$LocalPlayer extends $Notifier<LocalPlaybackState> {
   LocalPlaybackState build();
