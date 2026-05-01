@@ -49,7 +49,7 @@ class _MainPanel extends ConsumerWidget {
             ),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: MiniPlayerPanel(
-              onTap: () {
+              onItemTap: () {
                 ref.read(activeTabProvider.notifier).select(AppTab.nowPlaying);
               },
             ),

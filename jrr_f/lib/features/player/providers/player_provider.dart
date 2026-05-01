@@ -43,7 +43,7 @@ class Player extends _$Player {
     return result.getOrElse((e) => throw e);
   }
 
-  Future<PlayerStatus> _calculateStatus(LocalPlaybackState localPlaybackState) async {
+  PlayerStatus _calculateStatus(LocalPlaybackState localPlaybackState) {
     final seqState = localPlaybackState.sequenceState;
     final currentSource = seqState?.currentSource;
     final currentIndex = seqState?.currentIndex ?? -1;

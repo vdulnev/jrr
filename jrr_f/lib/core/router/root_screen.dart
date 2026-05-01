@@ -81,7 +81,7 @@ class _NarrowLayout extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
               child: MiniPlayerPanel(
-                onTap: () => ref
+                onItemTap: () => ref
                     .read(activeTabProvider.notifier)
                     .select(AppTab.nowPlaying),
               ),
