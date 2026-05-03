@@ -140,6 +140,7 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
 class LocalPlayer extends _$LocalPlayer {
   static const _kIndexKey = 'local_player_index';
   static const _kPositionMsKey = 'local_player_position_ms';
+  static const _kVolumeKey = 'local_player_volume';
 
   late final LocalPlayerService _service;
   late final SharedPreferences _prefs;
@@ -175,6 +176,12 @@ class LocalPlayer extends _$LocalPlayer {
       _talker.debug('[LocalPlayer] Position saved: $pos');
     });
     ref.onDispose(posSub.cancel);
+
+    final volSub = _service.volumeStream.listen((vol) {
+      _prefs.setDouble(_kVolumeKey, vol);
+      _talker.debug('[LocalPlayer] Volume saved: $vol');
+    });
+    ref.onDispose(volSub.cancel);
 
     ref.listen(localPlayerSequenceProvider.select((seq) => seq?.sequence), (
       prev,
@@ -259,6 +266,12 @@ class LocalPlayer extends _$LocalPlayer {
         '[LocalPlayer] Restoring position: index=$savedIndex, posMs=$savedPosMs',
       );
       await _service.seekTo(savedPosMs, index: savedIndex);
+    }
+
+    final savedVolume = _prefs.getDouble(_kVolumeKey);
+    if (savedVolume != null) {
+      _talker.debug('[LocalPlayer] Restoring volume: $savedVolume');
+      await _service.setVolume(savedVolume);
     }
   }
 
