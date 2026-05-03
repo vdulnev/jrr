@@ -57,17 +57,7 @@ class AlbumRowTile extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (album.trackCount > 0)
-                          const Text(
-                            '  \u00b7  ',
-                            style: AppTextStyles.itemSubtitle,
-                          ),
                       ],
-                      if (album.trackCount > 0)
-                        Text(
-                          '${album.trackCount} tracks',
-                          style: AppTextStyles.monoLabel,
-                        ),
                     ],
                   ),
                 ],

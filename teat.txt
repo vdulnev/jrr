@@ -1,0 +1,4 @@
+[Media Type]="Audio" [Artist]=[a/-ha] [Album]=[East Of The Sun West Of The Moon],[East Of The Sun, West Of The Moon] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]
+
+
+[Media Type]="Audio" [Artist]=[a/-ha] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]

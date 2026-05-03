@@ -12,7 +12,6 @@ abstract class Album with _$Album {
     required String albumArtist,
     required String folderPath,
     @Default('') String date,
-    @Default(0) int trackCount,
     @Default(-1) int artworkFileKey,
   }) = _Album;
 
@@ -27,7 +26,6 @@ abstract class Album with _$Album {
       albumArtist: track.albumArtist,
       folderPath: folderPath,
       date: date,
-      trackCount: track.totalTracks,
       artworkFileKey: track.fileKey,
     );
   }
