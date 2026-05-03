@@ -106,7 +106,7 @@ class _Data extends StatelessWidget {
                           ),
                           TransportButton(
                             size: 36,
-                            onPressed: () => onPlayPauseTap,
+                            onPressed: onPlayPauseTap,
                             child: const _PlayIcon(),
                           ),
                           TransportButton(
@@ -156,7 +156,7 @@ class _Volume extends ConsumerWidget {
       value: volume,
       isMuted: isMuted,
       onChanged: onSetVolumeTap,
-      onMuteToggle: () => onMuteToggleTap,
+      onMuteToggle: onMuteToggleTap,
     );
   }
 }
