@@ -144,23 +144,24 @@ class LocalPlayer extends _$LocalPlayer {
   late final LocalPlayerService _service;
   late final SharedPreferences _prefs;
   late final Talker _talker;
-  bool _restored = false;
 
   @override
-  void build() {
+  Future<void> build() async {
     _service = getIt<LocalPlayerService>();
     _prefs = getIt<SharedPreferences>();
     _talker = getIt<Talker>();
     final queueRepo = getIt<LocalQueueRepository>();
 
-    _loadQueue();
+    // Restore queue + position synchronously before any persistence listeners
+    // exist, so the zero values the player emits during init can't overwrite
+    // the saved state.
+    await _loadQueue();
 
-    // Persist currentIndex on changes
+    // From here on, listeners are safe to register.
     ref.listen(localPlayerSequenceProvider.select((seq) => seq?.currentIndex), (
       prev,
       next,
     ) {
-      if (!_restored) return;
       if (prev != next && next != null) {
         _talker.debug('[LocalPlayer] Current index changed: $next');
         queueRepo.setCurrentIndex(next);
@@ -169,18 +170,12 @@ class LocalPlayer extends _$LocalPlayer {
       }
     });
 
-    // Track latest position; persist periodically so restart can resume.
     final posSub = _service.positionStream.listen((pos) {
-      if (!_restored) return;
       _prefs.setInt(_kPositionMsKey, pos.inMilliseconds);
       _talker.debug('[LocalPlayer] Position saved: $pos');
     });
+    ref.onDispose(posSub.cancel);
 
-    ref.onDispose(() {
-      posSub.cancel();
-    });
-
-    // Persist queue changes
     ref.listen(localPlayerSequenceProvider.select((seq) => seq?.sequence), (
       prev,
       next,
@@ -194,7 +189,6 @@ class LocalPlayer extends _$LocalPlayer {
     });
 
     final sub = _service.playbackEventStream.listen(
-      // Playback events
       (event) {
         final icy = event.icyMetadata;
         final info = icy?.info;
@@ -244,7 +238,7 @@ class LocalPlayer extends _$LocalPlayer {
         }
       },
     );
-    ref.onDispose(() => sub.cancel());
+    ref.onDispose(sub.cancel);
   }
 
   Future<void> _loadQueue() async {
@@ -253,7 +247,7 @@ class LocalPlayer extends _$LocalPlayer {
 
     await _service.setTracks(tracks);
     _talker.debug('[LocalPlayer] Loaded queue with ${tracks.length} tracks');
-    
+
     final savedIndex = _prefs.getInt(_kIndexKey) ?? -1;
     final savedPosMs = _prefs.getInt(_kPositionMsKey) ?? 0;
     _talker.debug(
@@ -266,7 +260,6 @@ class LocalPlayer extends _$LocalPlayer {
       );
       await _service.seekTo(savedPosMs, index: savedIndex);
     }
-    _restored = true;
   }
 
   Future<void> _saveQueue(Tracks tracks) async {

@@ -275,7 +275,8 @@ abstract class _$LocalPlayerDuration extends $Notifier<Duration?> {
 @ProviderFor(LocalPlayer)
 final localPlayerProvider = LocalPlayerProvider._();
 
-final class LocalPlayerProvider extends $NotifierProvider<LocalPlayer, void> {
+final class LocalPlayerProvider
+    extends $AsyncNotifierProvider<LocalPlayer, void> {
   LocalPlayerProvider._()
     : super(
         from: null,
@@ -293,29 +294,21 @@ final class LocalPlayerProvider extends $NotifierProvider<LocalPlayer, void> {
   @$internal
   @override
   LocalPlayer create() => LocalPlayer();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(void value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<void>(value),
-    );
-  }
 }
 
-String _$localPlayerHash() => r'd3cad609e8490c45feeca869f8af1a5654ea2006';
+String _$localPlayerHash() => r'add67d73b164bc162d3d00e0f4fc44634b6f07cd';
 
-abstract class _$LocalPlayer extends $Notifier<void> {
-  void build();
+abstract class _$LocalPlayer extends $AsyncNotifier<void> {
+  FutureOr<void> build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<void, void>;
+    final ref = this.ref as $Ref<AsyncValue<void>, void>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<void, void>,
-              void,
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
               Object?,
               Object?
             >;
