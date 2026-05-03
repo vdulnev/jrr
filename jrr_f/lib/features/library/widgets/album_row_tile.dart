@@ -46,19 +46,14 @@ class AlbumRowTile extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      if (showArtist) ...[
-                        Flexible(
-                          child: Text(
-                            album.albumArtist,
-                            style: AppTextStyles.itemSubtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    showArtist ? album.albumArtist : album.folderPath,
+                    style: AppTextStyles.itemSubtitle,
+                    maxLines: showArtist ? 1 : null,
+                    overflow: showArtist
+                        ? TextOverflow.ellipsis
+                        : TextOverflow.visible,
+                    softWrap: !showArtist,
                   ),
                 ],
               ),
