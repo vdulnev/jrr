@@ -303,7 +303,8 @@ class McwsClient {
 
   Future<Either<AppException, List<String>>> getArtists() => _request(
     () => _api.filesSearch(
-      query: '[Media Type]=Audio ~limit=-1,1,[Album Artist (auto)] ~sort=[Album Artist (auto)]',
+      query:
+          '[Media Type]=Audio ~limit=-1,1,[Album Artist (auto)] ~sort=[Album Artist (auto)]',
     ),
     (items) => right(
       items
@@ -339,13 +340,15 @@ class McwsClient {
     );
   }
 
-  Future<Either<AppException, Tracks>> getTracksByFolder(String folderPath) =>
-      _request(
-        () => _api.filesSearch(
-          query: '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}"',
-        ),
-        (tracks) => right(Tracks(tracks: tracks)),
-      );
+  Future<Either<AppException, Tracks>> getTracksByFolder(
+    String folderPath,
+  ) => _request(
+    () => _api.filesSearch(
+      query:
+          '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}" ~sort=[Filename (path)],[Track #]',
+    ),
+    (tracks) => right(Tracks(tracks: tracks)),
+  );
 
   Future<Either<AppException, List<Album>>> getRandomAlbums() => _request(
     () => _api.filesSearch(
