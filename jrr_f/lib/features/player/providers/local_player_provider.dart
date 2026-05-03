@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
@@ -137,16 +138,21 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
 
 @Riverpod(keepAlive: true)
 class LocalPlayer extends _$LocalPlayer {
-  late LocalPlayerService _service;
-  late Talker _talker;
+  static const _kIndexKey = 'local_player_index';
+  static const _kPositionMsKey = 'local_player_position_ms';
+
+  late final LocalPlayerService _service;
+  late final SharedPreferences _prefs;
+  late final Talker _talker;
+  bool _restored = false;
 
   @override
   void build() {
     _service = getIt<LocalPlayerService>();
+    _prefs = getIt<SharedPreferences>();
     _talker = getIt<Talker>();
     final queueRepo = getIt<LocalQueueRepository>();
 
-    // Initialization logic
     _loadQueue();
 
     // Persist currentIndex on changes
@@ -154,10 +160,24 @@ class LocalPlayer extends _$LocalPlayer {
       prev,
       next,
     ) {
+      if (!_restored) return;
       if (prev != next && next != null) {
         _talker.debug('[LocalPlayer] Current index changed: $next');
         queueRepo.setCurrentIndex(next);
+        _prefs.setInt(_kIndexKey, next);
+        _prefs.setInt(_kPositionMsKey, 0);
       }
+    });
+
+    // Track latest position; persist periodically so restart can resume.
+    final posSub = _service.positionStream.listen((pos) {
+      if (!_restored) return;
+      _prefs.setInt(_kPositionMsKey, pos.inMilliseconds);
+      _talker.debug('[LocalPlayer] Position saved: $pos');
+    });
+
+    ref.onDispose(() {
+      posSub.cancel();
     });
 
     // Persist queue changes
@@ -233,6 +253,20 @@ class LocalPlayer extends _$LocalPlayer {
 
     await _service.setTracks(tracks);
     _talker.debug('[LocalPlayer] Loaded queue with ${tracks.length} tracks');
+    
+    final savedIndex = _prefs.getInt(_kIndexKey) ?? -1;
+    final savedPosMs = _prefs.getInt(_kPositionMsKey) ?? 0;
+    _talker.debug(
+      '[LocalPlayer] Captured saved state: index=$savedIndex, posMs=$savedPosMs',
+    );
+
+    if (tracks.isNotEmpty && savedIndex >= 0 && savedIndex < tracks.length) {
+      _talker.debug(
+        '[LocalPlayer] Restoring position: index=$savedIndex, posMs=$savedPosMs',
+      );
+      await _service.seekTo(savedPosMs, index: savedIndex);
+    }
+    _restored = true;
   }
 
   Future<void> _saveQueue(Tracks tracks) async {
