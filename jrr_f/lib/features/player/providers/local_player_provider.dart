@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
@@ -171,6 +172,59 @@ class LocalPlayer extends _$LocalPlayer {
         _saveQueue(next);
       }
     });
+
+    final sub = _service.playbackEventStream.listen(
+      // Playback events
+      (event) {
+        final icy = event.icyMetadata;
+        final info = icy?.info;
+        final headers = icy?.headers;
+        _talker.debug(
+          '[LocalPlayer] Playback event details: '
+          'processingState: ${event.processingState}, '
+          'updatePosition: ${event.updatePosition}, '
+          'updateTime: ${event.updateTime}, '
+          'bufferedPosition: ${event.bufferedPosition}, '
+          'icy.info.title: ${info?.title}, '
+          'icy.info.url: ${info?.url}, '
+          'icy.headers.name: ${headers?.name}, '
+          'icy.headers.genre: ${headers?.genre}, '
+          'icy.headers.url: ${headers?.url}, '
+          'icy.headers.bitrate: ${headers?.bitrate}, '
+          'icy.headers.metadataInterval: ${headers?.metadataInterval}, '
+          'icy.headers.isPublic: ${headers?.isPublic}',
+        );
+      },
+      onError: (Object e, StackTrace st) {
+        final current = _service.sequence.isNotEmpty
+            ? _service.sequence
+                  .elementAtOrNull(_service.sequenceState?.currentIndex ?? -1)
+                  ?.tag
+            : null;
+        if (e is PlayerException) {
+          _talker.error(
+            '[LocalPlayer] PlayerException code=${e.code} '
+            'message=${e.message} currentTag=$current',
+            e,
+            st,
+          );
+        } else if (e is PlayerInterruptedException) {
+          _talker.error(
+            '[LocalPlayer] PlayerInterruptedException message=${e.message}',
+            e,
+            st,
+          );
+        } else {
+          _talker.error(
+            '[LocalPlayer] Unknown playback error type=${e.runtimeType} '
+            'currentTag=$current',
+            e,
+            st,
+          );
+        }
+      },
+    );
+    ref.onDispose(() => sub.cancel());
   }
 
   Future<void> _loadQueue() async {
