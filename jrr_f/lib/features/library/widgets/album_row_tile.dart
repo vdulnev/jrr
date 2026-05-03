@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/artwork_widget.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/album.dart';
 import '../providers/library_providers.dart';
@@ -26,20 +27,9 @@ class AlbumRowTile extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Album art placeholder
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.bg3,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                Icons.album,
-                size: 24,
-                color: AppColors.accent.withValues(alpha: 0.3),
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: ArtworkWidget(fileKey: album.artworkFileKey, size: 48),
             ),
             const SizedBox(width: 14),
             Expanded(

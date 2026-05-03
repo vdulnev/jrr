@@ -414,12 +414,12 @@ class _ArtworkConsumerWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final talker = getIt<Talker>();
 
-    final imageUrl = ref.watch(
-      playerProvider.select((status) => status.value?.imageUrl ?? ''),
+    final fileKey = ref.watch(
+      playerProvider.select((status) => status.value?.fileKey),
     );
 
-    talker.debug('[NowPlayingScreen]: Artwork updated: $imageUrl');
-    return ArtworkWidget(imageUrl: imageUrl, size: 280);
+    talker.debug('[NowPlayingScreen]: Artwork updated: fileKey=$fileKey');
+    return ArtworkWidget(fileKey: fileKey, size: 280);
   }
 }
 

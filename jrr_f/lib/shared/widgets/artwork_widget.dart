@@ -7,26 +7,23 @@ import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
 
 class ArtworkWidget extends ConsumerWidget {
-  final String? imageUrl;
+  final int? fileKey;
   final double size;
 
-  const ArtworkWidget({super.key, required this.imageUrl, this.size = 280});
+  const ArtworkWidget({super.key, required this.fileKey, this.size = 280});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final url = imageUrl;
-    if (url == null || url.isEmpty) {
-      return _placeholder(context);
-    }
+    final key = fileKey;
+    if (key == null || key < 0) return _placeholder(context);
 
     final session = ref.read(sessionProvider);
     if (session is! Authenticated) return _placeholder(context);
 
-    final baseAddress = session.serverInfo.address;
     final token = getIt<ConnectionRepository>().currentToken;
-    final separator = url.contains('?') ? '&' : '?';
-    final fullUrl =
-        '$baseAddress/$url${token != null ? '${separator}Token=$token' : ''}';
+    final baseAddress = session.serverInfo.address;
+    final tokenParam = token != null ? '&Token=$token' : '';
+    final fullUrl = '$baseAddress/MCWS/v1/File/GetImage?File=$key$tokenParam';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),

@@ -86,7 +86,7 @@ final class PlayingNowPositionProvider
 }
 
 String _$playingNowPositionHash() =>
-    r'8e4f29c775b839b7b9a72f9969866fa619188c16';
+    r'4115001223702ff0f68357e2e8050d4921898f85';
 
 abstract class _$PlayingNowPosition extends $Notifier<int> {
   int build();

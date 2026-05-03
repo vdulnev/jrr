@@ -13,6 +13,7 @@ abstract class Album with _$Album {
     required String folderPath,
     @Default('') String date,
     @Default(0) int trackCount,
+    @Default(-1) int artworkFileKey,
   }) = _Album;
 
   factory Album.fromTrack(Track track) {
@@ -27,6 +28,7 @@ abstract class Album with _$Album {
       folderPath: folderPath,
       date: date,
       trackCount: track.totalTracks,
+      artworkFileKey: track.fileKey,
     );
   }
 }

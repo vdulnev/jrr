@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/artwork_widget.dart';
 import '../data/models/album.dart';
 import '../providers/library_providers.dart';
 import 'track_list_scaffold.dart';
@@ -34,6 +35,12 @@ class AlbumDetailScreen extends ConsumerWidget {
       onRetry: () => ref.invalidate(albumTracksProvider(album)),
       actionSheetTitle: album.name,
       addedSnackbarLabel: album.name,
+      headerContent: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: ArtworkWidget(fileKey: album.artworkFileKey, size: 200),
+        ),
+      ),
     );
   }
 }

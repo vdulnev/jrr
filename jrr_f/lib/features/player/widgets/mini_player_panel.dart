@@ -220,11 +220,11 @@ class _Cover extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final talker = getIt<Talker>();
-    final imageUrl = ref.watch(
-      playerProvider.select((status) => status.value?.imageUrl),
+    final fileKey = ref.watch(
+      playerProvider.select((status) => status.value?.fileKey),
     );
-    talker.debug('[MiniPlayerPanel] Final imageUrl: $imageUrl');
-    return ArtworkWidget(imageUrl: imageUrl, size: 40);
+    talker.debug('[MiniPlayerPanel] Final fileKey: $fileKey');
+    return ArtworkWidget(fileKey: fileKey, size: 40);
   }
 }
 
