@@ -152,68 +152,13 @@ class LocalPlayerService {
       '[LocalPlayerService] Created source for track ${track.fileKey}: $url',
     );
 
-    final AudioSource source;
-
     final uriAudioSource = AudioSource.uri(
       Uri.parse(url),
       tag: track,
       headers: {'User-Agent': 'JRR-Remote/1.0', 'X-MCWS-Token': ?token},
     );
 
-    final playbackRange = _parsePlaybackRange(track.playbackRange);
-
-    if (playbackRange != null) {
-      final end = playbackRange.end == Duration.zero ? null : playbackRange.end;
-      final clippingAudioSource = ClippingAudioSource(
-        child: uriAudioSource,
-        start: playbackRange.start,
-        end: end,
-        duration: Duration(milliseconds: (track.duration * 1000.0).round()),
-        tag: track,
-      );
-      source = clippingAudioSource;
-      _talker.debug(
-        '[LocalPlayerService] Wrapped source in ClippingAudioSource: start=${playbackRange.start}, end=$end',
-      );
-    } else {
-      source = uriAudioSource;
-      _talker.debug(
-        '[LocalPlayerService] No valid playback range, using UriAudioSource directly',
-      );
-    }
-
-    return source;
-  }
-
-  ({Duration start, Duration end})? _parsePlaybackRange(String input) {
-    final parts = input.split('-');
-
-    if (parts.length != 2) {
-      _talker.debug(
-        '[LocalPlayerService] Invalid playback range format ("$input")',
-      );
-      return null; // Invalid format
-    }
-
-    // Parse as doubles to handle fractional milliseconds (e.g. .333333)
-    final startMs = double.tryParse(parts[0]);
-    final endMs = double.tryParse(parts[1]);
-
-    if (startMs == null || endMs == null) {
-      _talker.debug(
-        '[LocalPlayerService] Invalid playback range format ("$input")',
-      );
-      return null; // Invalid numbers
-    }
-
-    // Convert milliseconds to microseconds to preserve the fractional precision
-    _talker.debug(
-      '[LocalPlayerService] Parsed playback range: start=${startMs}ms, end=${endMs}ms',
-    );
-    return (
-      start: Duration(microseconds: (startMs * 1000).round()),
-      end: Duration(microseconds: (endMs * 1000).round()),
-    );
+    return uriAudioSource;
   }
 
   void next() {

@@ -21,7 +21,6 @@ abstract class Track with _$Track {
     String albumArtistAuto,
     @JsonKey(name: 'Genre') @Default('') String genre,
     @JsonKey(name: 'Duration') @Default(0) double duration,
-    @JsonKey(name: 'Playback Range') @Default('') String playbackRange,
     @JsonKey(name: 'Track #') @Default(0) int trackNumber,
     @JsonKey(name: 'Disc #') @Default(0) int discNumber,
     @JsonKey(name: 'Total Discs') @Default(0) int totalDiscs,
