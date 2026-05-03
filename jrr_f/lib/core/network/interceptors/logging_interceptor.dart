@@ -36,7 +36,7 @@ class LoggingInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final body = options.data;
     final bodyStr = _prettyBody(body);
-    _talker.debug('→ ${options.method} ${_redact(options.uri)}$bodyStr');
+    _talker.debug('[dio] → ${options.method} ${_redact(options.uri)}$bodyStr');
     handler.next(options);
   }
 
@@ -48,7 +48,7 @@ class LoggingInterceptor extends Interceptor {
     final body = response.data;
     final bodyStr = _prettyBody(body);
     _talker.debug(
-      '← ${response.statusCode} ${_redact(response.realUri)}$bodyStr',
+      '[dio] ← ${response.statusCode} ${_redact(response.realUri)}$bodyStr',
     );
     handler.next(response);
   }
@@ -58,7 +58,7 @@ class LoggingInterceptor extends Interceptor {
     final body = err.response?.data;
     final bodyStr = _prettyBody(body);
     _talker.error(
-      '✕ ${_redact(err.requestOptions.uri)}$bodyStr',
+      '[dio] ✕ ${_redact(err.requestOptions.uri)}$bodyStr',
       err,
       err.stackTrace,
     );
