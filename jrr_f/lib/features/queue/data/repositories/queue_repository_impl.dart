@@ -3,12 +3,12 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
-import '../../../library/data/models/track.dart';
+import '../../../library/data/models/tracks.dart';
 import 'queue_repository.dart';
 
 class QueueRepositoryImpl implements QueueRepository {
   @override
-  Future<Either<AppException, List<Track>>> getQueue(String zoneId) =>
+  Future<Either<AppException, Tracks>> getQueue(String zoneId) =>
       getIt<McwsClient>().getPlayingNow(zoneId);
 
   @override

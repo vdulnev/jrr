@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/track.dart';
+import '../../features/library/data/models/tracks.dart';
 import '../../features/player/providers/player_provider.dart';
 
 class TrackRow extends ConsumerStatefulWidget {
@@ -155,14 +156,14 @@ class _TrackRowState extends ConsumerState<TrackRow> {
   }
 
   void _play(Track track) {
-    ref.read(playerProvider.notifier).playNow([track]);
+    ref.read(playerProvider.notifier).playNow(Tracks(tracks: [track]));
   }
 
   void _playNext(Track track) {
-    ref.read(playerProvider.notifier).playNext([track]);
+    ref.read(playerProvider.notifier).playNext(Tracks(tracks: [track]));
   }
 
   void _addToQueue(Track track) {
-    ref.read(playerProvider.notifier).addToQueue([track]);
+    ref.read(playerProvider.notifier).addToQueue(Tracks(tracks: [track]));
   }
 }

@@ -6,6 +6,7 @@ import '../../../../core/network/mcws_client.dart';
 import '../models/album.dart';
 import '../models/browse_item.dart';
 import '../models/track.dart';
+import '../models/tracks.dart';
 import 'library_repository.dart';
 
 class LibraryRepositoryImpl implements LibraryRepository {
@@ -14,10 +15,10 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().browseChildren(id);
 
   @override
-  Future<Either<AppException, List<Track>>> browseFiles(String id) =>
+  Future<Either<AppException, Tracks>> browseFiles(String id) =>
       getIt<McwsClient>().browseFiles(id);
   @override
-  Future<Either<AppException, List<Track>>> search(
+  Future<Either<AppException, Tracks>> search(
     String query, {
     int startIndex = 0,
   }) => getIt<McwsClient>().searchFiles(query, startIndex: startIndex);
@@ -31,13 +32,12 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().getAlbumsByArtist(artist);
 
   @override
-  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) =>
+  Future<Either<AppException, Tracks>> getAlbumTracks(Album album) =>
       getIt<McwsClient>().getAlbumTracks(album);
 
   @override
-  Future<Either<AppException, List<Track>>> getTracksByFolder(
-    String folderPath,
-  ) => getIt<McwsClient>().getTracksByFolder(folderPath);
+  Future<Either<AppException, Tracks>> getTracksByFolder(String folderPath) =>
+      getIt<McwsClient>().getTracksByFolder(folderPath);
 
   @override
   Future<Either<AppException, List<Album>>> getRandomAlbums({int count = 10}) =>

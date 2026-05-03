@@ -6,6 +6,7 @@ import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
 import '../../features/library/data/models/browse_item.dart';
 import '../../features/library/data/models/track.dart';
+import '../../features/library/data/models/tracks.dart';
 import '../../features/player/data/models/playback_state.dart';
 import '../../features/player/data/models/player_status.dart';
 import '../../features/player/data/models/repeat_mode.dart';
@@ -213,10 +214,10 @@ class McwsClient {
   // Playing Now queue
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<Track>>> getPlayingNow(String zoneId) async {
+  Future<Either<AppException, Tracks>> getPlayingNow(String zoneId) async {
     return _request(
       () => _api.getPlayingNow(zoneId: zoneId),
-      (List<Track> items) => right(items),
+      (List<Track> items) => right(Tracks(tracks: items)),
     );
   }
 
@@ -269,12 +270,12 @@ class McwsClient {
   // Library browse & search
   // -------------------------------------------------------------------------
 
-  Future<Either<AppException, List<Track>>> searchFiles(
+  Future<Either<AppException, Tracks>> searchFiles(
     String query, {
     int startIndex = 0,
   }) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return right([]);
+    if (trimmed.isEmpty) return right(Tracks.empty);
 
     final term = _esc(trimmed);
     return _request(
@@ -283,7 +284,9 @@ class McwsClient {
             '[Media Type]=Audio ([Name] contains $term OR [Artist] contains $term OR [Album] contains $term)',
         startIndex: startIndex,
       ),
-      (items) => right(items..sort((a, b) => a.name.compareTo(b.name))),
+      (items) => right(
+        Tracks(tracks: items..sort((a, b) => a.name.compareTo(b.name))),
+      ),
     );
   }
 
@@ -325,25 +328,24 @@ class McwsClient {
     ),
   );
 
-  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album) {
+  Future<Either<AppException, Tracks>> getAlbumTracks(Album album) {
     final base = '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
     final query = album.folderPath.isNotEmpty
         ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;
     return _request(
       () => _api.filesSearch(query: query),
-      (tracks) => right(tracks),
+      (tracks) => right(Tracks(tracks: tracks)),
     );
   }
 
-  Future<Either<AppException, List<Track>>> getTracksByFolder(
-    String folderPath,
-  ) => _request(
-    () => _api.filesSearch(
-      query: '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}"',
-    ),
-    (tracks) => right(tracks),
-  );
+  Future<Either<AppException, Tracks>> getTracksByFolder(String folderPath) =>
+      _request(
+        () => _api.filesSearch(
+          query: '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}"',
+        ),
+        (tracks) => right(Tracks(tracks: tracks)),
+      );
 
   Future<Either<AppException, List<Album>>> getRandomAlbums() => _request(
     () => _api.filesSearch(
@@ -369,8 +371,10 @@ class McwsClient {
             ),
       );
 
-  Future<Either<AppException, List<Track>>> browseFiles(String id) =>
-      _request(() => _api.browseFiles(id: id), (items) => right(items));
+  Future<Either<AppException, Tracks>> browseFiles(String id) => _request(
+    () => _api.browseFiles(id: id),
+    (items) => right(Tracks(tracks: items)),
+  );
 
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,

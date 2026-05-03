@@ -58,7 +58,7 @@ class _BrowseFilesViewState extends ConsumerState<BrowseFilesView> {
             ),
             Expanded(
               child: _grouped
-                  ? GroupedTrackList(tracks: tracks)
+                  ? GroupedTrackList(tracks: tracks.tracks)
                   : ListView.builder(
                       itemCount: tracks.length,
                       itemBuilder: (_, i) => LibraryItemTile(

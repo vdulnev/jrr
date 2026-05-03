@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/track.dart';
+import '../data/models/tracks.dart';
 
 class LibraryItemTile extends ConsumerStatefulWidget {
   final Track item;
@@ -116,13 +117,14 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
   }
 
   void _handleAction(String action, Track item) {
+    final tracks = Tracks(tracks: [item]);
     switch (action) {
       case 'play':
-        ref.read(playerProvider.notifier).playNow([item]);
+        ref.read(playerProvider.notifier).playNow(tracks);
       case 'playNext':
-        ref.read(playerProvider.notifier).playNext([item]);
+        ref.read(playerProvider.notifier).playNext(tracks);
       case 'add':
-        ref.read(playerProvider.notifier).addToQueue([item]);
+        ref.read(playerProvider.notifier).addToQueue(tracks);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

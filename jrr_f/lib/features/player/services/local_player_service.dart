@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:audio_session/audio_session.dart';
+import 'package:jrr_f/features/player/data/models/repeat_mode.dart';
+import 'package:jrr_f/features/player/data/models/shuffle_mode.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:talker/talker.dart';
 
@@ -7,6 +9,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
+import '../../library/data/models/tracks.dart';
 
 class LocalPlayerService {
   final AudioPlayer _player;
@@ -44,9 +47,9 @@ class LocalPlayerService {
   Stream<double> get volumeStream => _player.volumeStream;
   Stream<Duration?> get durationStream => _player.durationStream;
 
-  Future<void> setTracks(List<Track> tracks) async {
+  Future<void> setTracks(Tracks tracks) async {
     _talker.info('[LocalPlayerService] setTracks: ${tracks.length} tracks');
-    final sources = tracks.map((t) => _createSource(t)).toList();
+    final sources = tracks.tracks.map((t) => _createSource(t)).toList();
 
     try {
       _talker.info(
@@ -61,7 +64,7 @@ class LocalPlayerService {
     }
   }
 
-  Future<void> playNow(List<Track> tracks) async {
+  Future<void> playNow(Tracks tracks) async {
     _talker.info('[LocalPlayerService] playNow: ${tracks.length} tracks');
     await setTracks(tracks);
     await play();
@@ -102,19 +105,21 @@ class LocalPlayerService {
     await _player.seek(Duration(milliseconds: positionMs), index: index);
   }
 
-  Future<void> playNext(List<Track> tracks) async {
+  Future<void> playNext(Tracks tracks) async {
     _talker.info('[LocalPlayerService] playNext: ${tracks.length} tracks');
     final currentIndex = _player.currentIndex ?? -1;
     final insertIndex = currentIndex + 1;
     await _player.insertAudioSources(
       insertIndex,
-      tracks.map((t) => _createSource(t)).toList(),
+      tracks.tracks.map((t) => _createSource(t)).toList(),
     );
   }
 
-  Future<void> addToQueue(List<Track> tracks) async {
+  Future<void> addToQueue(Tracks tracks) async {
     _talker.info('[LocalPlayerService] addToQueue: ${tracks.length} tracks');
-    await _player.addAudioSources(tracks.map((t) => _createSource(t)).toList());
+    await _player.addAudioSources(
+      tracks.tracks.map((t) => _createSource(t)).toList(),
+    );
   }
 
   Future<void> setVolume(double level) async {
@@ -137,7 +142,8 @@ class LocalPlayerService {
     // baseUrl usually ends with /MCWS/v1/
     var url = baseUrl;
     if (!url.endsWith('/')) url += '/';
-    url += 'File/GetFile?File=${track.fileKey}&FileType=Key&Playback=1&Conversion=wav&Quality=high';
+    url +=
+        'File/GetFile?File=${track.fileKey}&FileType=Key&Playback=1&Conversion=wav&Quality=high';
     if (token != null) {
       url += '&Token=$token';
     }
@@ -220,20 +226,54 @@ class LocalPlayerService {
     _player.seekToPrevious();
   }
 
-  Future<void> playByIndex({required int index}) async {
+  Future<void> playByIndex(int index) async {
     _talker.debug('[LocalPlayerService] Command: playByIndex ($index)');
     await _player.seek(Duration.zero, index: index);
     await _player.play();
   }
 
-  void insertTracksAt(List<Track> tracks) {
-    final index = (_player.currentIndex ?? 0);
+  void insertTracksAt({required Tracks tracks, required int index}) {
     _talker.debug(
       '[LocalPlayerService] insertTracksAt: ${tracks.length} tracks at index $index',
     );
-    _player.audioSources.insertAll(
+    _player.insertAudioSources(
       index,
-      tracks.map((t) => _createSource(t)).toList(),
+      tracks.tracks.map((t) => _createSource(t)).toList(),
     );
+  }
+
+  Future<void> setShuffle(ShuffleMode mode) async {
+    final enable = mode == ShuffleMode.on;
+    _talker.debug('[LocalPlayerService] Setting shuffle: $enable');
+    await _player.setShuffleModeEnabled(enable);
+  }
+
+  Future<void> setRepeat(RepeatMode mode) async {
+    LoopMode loopMode;
+    switch (mode) {
+      case RepeatMode.off:
+        loopMode = LoopMode.off;
+        break;
+      case RepeatMode.playlist:
+        loopMode = LoopMode.all;
+        break;
+      case RepeatMode.track:
+        loopMode = LoopMode.one;
+        break;
+    }
+    _talker.debug('[LocalPlayerService] Setting repeat mode: $mode');
+    await _player.setLoopMode(loopMode);
+  }
+
+  Future<void> moveTrack(int source, int target) async {
+    _talker.debug(
+      '[LocalPlayerService] Moving track from index $source to $target',
+    );
+    _player.moveAudioSource(source, target);
+  }
+
+  Future<void> removeTrack(int index) async {
+    _talker.debug('[LocalPlayerService] Removing track at index $index');
+    _player.removeAudioSourceAt(index);
   }
 }

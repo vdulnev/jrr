@@ -4,25 +4,21 @@ import '../../../../core/error/app_exception.dart';
 import '../models/album.dart';
 import '../models/browse_item.dart';
 import '../models/track.dart';
+import '../models/tracks.dart';
 
 abstract interface class LibraryRepository {
   Future<Either<AppException, List<BrowseItem>>> browseChildren(String id);
 
-  Future<Either<AppException, List<Track>>> browseFiles(String id);
-  Future<Either<AppException, List<Track>>> search(
-    String query, {
-    int startIndex,
-  });
+  Future<Either<AppException, Tracks>> browseFiles(String id);
+  Future<Either<AppException, Tracks>> search(String query, {int startIndex});
 
   Future<Either<AppException, List<String>>> getArtists();
 
   Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist);
 
-  Future<Either<AppException, List<Track>>> getAlbumTracks(Album album);
+  Future<Either<AppException, Tracks>> getAlbumTracks(Album album);
 
-  Future<Either<AppException, List<Track>>> getTracksByFolder(
-    String folderPath,
-  );
+  Future<Either<AppException, Tracks>> getTracksByFolder(String folderPath);
 
   Future<Either<AppException, Track?>> searchByFileKey(int fileKey);
 

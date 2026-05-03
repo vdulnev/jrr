@@ -12,7 +12,7 @@ part of 'queue_provider.dart';
 @ProviderFor(Queue)
 final queueProvider = QueueProvider._();
 
-final class QueueProvider extends $AsyncNotifierProvider<Queue, List<Track>> {
+final class QueueProvider extends $AsyncNotifierProvider<Queue, Tracks> {
   QueueProvider._()
     : super(
         from: null,
@@ -32,19 +32,19 @@ final class QueueProvider extends $AsyncNotifierProvider<Queue, List<Track>> {
   Queue create() => Queue();
 }
 
-String _$queueHash() => r'cb1d21765594ef8bd204620294671e49a224977b';
+String _$queueHash() => r'761ee12db6ea315589d42af81316eab6b4429869';
 
-abstract class _$Queue extends $AsyncNotifier<List<Track>> {
-  FutureOr<List<Track>> build();
+abstract class _$Queue extends $AsyncNotifier<Tracks> {
+  FutureOr<Tracks> build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<List<Track>>, List<Track>>;
+    final ref = this.ref as $Ref<AsyncValue<Tracks>, Tracks>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<Track>>, List<Track>>,
-              AsyncValue<List<Track>>,
+              AnyNotifier<AsyncValue<Tracks>, Tracks>,
+              AsyncValue<Tracks>,
               Object?,
               Object?
             >;

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/models/track.dart';
+import '../data/models/tracks.dart';
 import '../../player/providers/player_provider.dart';
 
 Future<void> showLibraryActionSheet(
   BuildContext context,
   WidgetRef ref, {
-  required List<Track> tracks,
+  required Tracks tracks,
   String? title,
 }) async {
   await showModalBottomSheet<void>(
@@ -24,7 +24,7 @@ Future<void> showLibraryActionSheet(
 class _LibraryActionSheet extends StatelessWidget {
   final WidgetRef ref;
   final String? title;
-  final List<Track> tracks;
+  final Tracks tracks;
 
   const _LibraryActionSheet({
     required this.ref,

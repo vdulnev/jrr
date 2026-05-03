@@ -10,14 +10,14 @@ class SequenceStateLog extends TalkerLog {
   @override
   String get message {
     final track = state.currentSource?.tag as Track?;
-    final trackInfo = track != null 
-        ? '${track.name} (Key: ${track.fileKey})' 
+    final trackInfo = track != null
+        ? '${track.name} (Key: ${track.fileKey})'
         : 'None';
-        
+
     return 'INDEX: ${state.currentIndex}\n'
-           'QUEUE SIZE: ${state.sequence.length}\n'
-           'CURRENT TRACK: $trackInfo\n'
-           'SHUFFLE INDICES: ${state.shuffleIndices}';
+        'QUEUE SIZE: ${state.sequence.length}\n'
+        'CURRENT TRACK: $trackInfo\n'
+        'SHUFFLE INDICES: ${state.shuffleIndices}';
   }
 
   @override
@@ -25,7 +25,7 @@ class SequenceStateLog extends TalkerLog {
 
   @override
   LogLevel get logLevel => LogLevel.debug;
-  
+
   @override
   AnsiPen? get pen => AnsiPen()..blue();
 

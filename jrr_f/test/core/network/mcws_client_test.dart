@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
+import 'package:jrr_f/features/library/data/models/tracks.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
@@ -181,7 +182,7 @@ void main() {
       final result = await client.getPlayingNow('zone-1');
 
       expect(result.isRight(), true);
-      final items = result.getOrElse((_) => []);
+      final items = result.getOrElse((_) => Tracks.empty);
       expect(items.length, 1);
       expect(items[0].name, 'Song 1');
     });
@@ -223,7 +224,7 @@ void main() {
     test('returns empty list for empty query', () async {
       final result = await client.searchFiles('');
       expect(result.isRight(), true);
-      expect(result.getOrElse((_) => []), isEmpty);
+      expect(result.getOrElse((_) => Tracks.empty).isEmpty, true);
     });
 
     test('trims query and returns tracks', () async {
@@ -247,7 +248,7 @@ void main() {
       final result = await client.searchFiles('  query  ');
 
       expect(result.isRight(), true);
-      final tracks = result.getOrElse((_) => []);
+      final tracks = result.getOrElse((_) => Tracks.empty);
       expect(tracks.length, 1);
       expect(tracks[0].fileKey, 123);
       expect(tracks[0].name, 'Matched Song');

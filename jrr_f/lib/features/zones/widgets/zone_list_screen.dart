@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jrr_f/core/di/injection.dart';
+import 'package:talker/talker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -15,8 +17,15 @@ class ZoneListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final talker = getIt<Talker>();
+
     final zonesState = ref.watch(zoneListProvider);
     final activeZone = ref.watch(activeZoneProvider);
+
+    talker.debug('[ZoneListScreen]: zonesState: $zonesState');
+    talker.debug(
+      '[ZoneListScreen]: Building with activeZone: ${activeZone?.name ?? 'None'}',
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -80,11 +89,7 @@ class _ZoneTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = isActive
-        ? ref.watch(playerProvider).asData?.value?.state
-        : null;
-    final isPlaying = playerState == PlaybackState.playing;
-    final isPaused = playerState == PlaybackState.paused;
+    final talker = getIt<Talker>();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -138,14 +143,34 @@ class _ZoneTile extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isPlaying || isPaused) ...[
+                      if (isActive) ...[
                         const SizedBox(width: 8),
-                        Icon(
-                          isPlaying
-                              ? Icons.play_arrow_rounded
-                              : Icons.pause_rounded,
-                          size: 14,
-                          color: AppColors.accent,
+                        Consumer(
+                          builder: (_, ref, _) {
+                            final state = ref.watch(
+                              playerProvider.select(
+                                (status) => status.value?.state,
+                              ),
+                            );
+                            final isPlaying = state == PlaybackState.playing;
+                            final isPaused = state == PlaybackState.paused;
+                            if (!isPlaying && !isPaused) {
+                              talker.debug(
+                                '[ZoneListScreen]: $state. Zone is active but not playing/paused, hiding indicator',
+                              );
+                              return const SizedBox.shrink();
+                            }
+                            talker.debug(
+                              '[ZoneListScreen]: $state. Zone is active and playing/paused, showing indicator',
+                            );
+                            return Icon(
+                              isPlaying
+                                  ? Icons.play_arrow_rounded
+                                  : Icons.pause_rounded,
+                              size: 14,
+                              color: AppColors.accent,
+                            );
+                          },
                         ),
                       ],
                     ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/tracks_popup_menu.dart';
 import '../data/models/track.dart';
+import '../data/models/tracks.dart';
 import 'library_item_tile.dart';
 
 class GroupedTrackList extends ConsumerWidget {
@@ -80,7 +81,7 @@ class _ArtistHeader extends ConsumerWidget {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          TracksPopupMenu(tracks: tracks),
+          TracksPopupMenu(tracks: Tracks(tracks: tracks)),
         ],
       ),
     );
@@ -107,7 +108,7 @@ class _AlbumHeader extends ConsumerWidget {
               ),
             ),
           ),
-          TracksPopupMenu(tracks: tracks),
+          TracksPopupMenu(tracks: Tracks(tracks: tracks)),
         ],
       ),
     );

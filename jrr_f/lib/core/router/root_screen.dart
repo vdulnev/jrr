@@ -6,6 +6,7 @@ import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
 import '../../features/connection/widgets/server_manager_screen.dart';
 import '../../features/library/widgets/library_screen.dart';
+import '../../features/player/providers/local_player_provider.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/queue/widgets/queue_screen.dart';
@@ -44,6 +45,7 @@ class _AuthenticatedShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(zonePollingProvider);
+    ref.watch(localPlayerProvider);
 
     return AdaptiveLayoutBuilder(
       narrowBuilder: (context) => _NarrowLayout(ref: ref),

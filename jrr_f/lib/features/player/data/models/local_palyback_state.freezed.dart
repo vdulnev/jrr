@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LocalPlaybackState {
 
- SequenceState? get sequenceState; ProcessingState get processingState; bool get playing; Duration get position; Duration? get duration; double get volume; bool get shuffleModeEnabled; LoopMode get loopMode;
+ SequenceStateData? get sequenceState; PlayerStateData get playerState; Duration get position; Duration? get duration; double get volume;
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,12 +25,12 @@ $LocalPlaybackStateCopyWith<LocalPlaybackState> get copyWith => _$LocalPlaybackS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalPlaybackState&&(identical(other.sequenceState, sequenceState) || other.sequenceState == sequenceState)&&(identical(other.processingState, processingState) || other.processingState == processingState)&&(identical(other.playing, playing) || other.playing == playing)&&(identical(other.position, position) || other.position == position)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.shuffleModeEnabled, shuffleModeEnabled) || other.shuffleModeEnabled == shuffleModeEnabled)&&(identical(other.loopMode, loopMode) || other.loopMode == loopMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalPlaybackState&&(identical(other.sequenceState, sequenceState) || other.sequenceState == sequenceState)&&(identical(other.playerState, playerState) || other.playerState == playerState)&&(identical(other.position, position) || other.position == position)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.volume, volume) || other.volume == volume));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sequenceState,processingState,playing,position,duration,volume,shuffleModeEnabled,loopMode);
+int get hashCode => Object.hash(runtimeType,sequenceState,playerState,position,duration,volume);
 
 
 
@@ -41,11 +41,11 @@ abstract mixin class $LocalPlaybackStateCopyWith<$Res>  {
   factory $LocalPlaybackStateCopyWith(LocalPlaybackState value, $Res Function(LocalPlaybackState) _then) = _$LocalPlaybackStateCopyWithImpl;
 @useResult
 $Res call({
- SequenceState? sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
+ SequenceStateData? sequenceState, PlayerStateData playerState, Duration position, Duration? duration, double volume
 });
 
 
-
+$SequenceStateDataCopyWith<$Res>? get sequenceState;$PlayerStateDataCopyWith<$Res> get playerState;
 
 }
 /// @nodoc
@@ -58,20 +58,38 @@ class _$LocalPlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sequenceState = freezed,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sequenceState = freezed,Object? playerState = null,Object? position = null,Object? duration = freezed,Object? volume = null,}) {
   return _then(_self.copyWith(
 sequenceState: freezed == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
-as SequenceState?,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
-as ProcessingState,playing: null == playing ? _self.playing : playing // ignore: cast_nullable_to_non_nullable
-as bool,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as SequenceStateData?,playerState: null == playerState ? _self.playerState : playerState // ignore: cast_nullable_to_non_nullable
+as PlayerStateData,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as Duration?,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as double,shuffleModeEnabled: null == shuffleModeEnabled ? _self.shuffleModeEnabled : shuffleModeEnabled // ignore: cast_nullable_to_non_nullable
-as bool,loopMode: null == loopMode ? _self.loopMode : loopMode // ignore: cast_nullable_to_non_nullable
-as LoopMode,
+as double,
   ));
 }
+/// Create a copy of LocalPlaybackState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SequenceStateDataCopyWith<$Res>? get sequenceState {
+    if (_self.sequenceState == null) {
+    return null;
+  }
 
+  return $SequenceStateDataCopyWith<$Res>(_self.sequenceState!, (value) {
+    return _then(_self.copyWith(sequenceState: value));
+  });
+}/// Create a copy of LocalPlaybackState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayerStateDataCopyWith<$Res> get playerState {
+  
+  return $PlayerStateDataCopyWith<$Res>(_self.playerState, (value) {
+    return _then(_self.copyWith(playerState: value));
+  });
+}
 }
 
 
@@ -153,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SequenceStateData? sequenceState,  PlayerStateData playerState,  Duration position,  Duration? duration,  double volume)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState() when $default != null:
-return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
+return $default(_that.sequenceState,_that.playerState,_that.position,_that.duration,_that.volume);case _:
   return orElse();
 
 }
@@ -174,10 +192,10 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SequenceStateData? sequenceState,  PlayerStateData playerState,  Duration position,  Duration? duration,  double volume)  $default,) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState():
-return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
+return $default(_that.sequenceState,_that.playerState,_that.position,_that.duration,_that.volume);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +212,10 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SequenceState? sequenceState,  ProcessingState processingState,  bool playing,  Duration position,  Duration? duration,  double volume,  bool shuffleModeEnabled,  LoopMode loopMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SequenceStateData? sequenceState,  PlayerStateData playerState,  Duration position,  Duration? duration,  double volume)?  $default,) {final _that = this;
 switch (_that) {
 case _LocalPlaybackState() when $default != null:
-return $default(_that.sequenceState,_that.processingState,_that.playing,_that.position,_that.duration,_that.volume,_that.shuffleModeEnabled,_that.loopMode);case _:
+return $default(_that.sequenceState,_that.playerState,_that.position,_that.duration,_that.volume);case _:
   return null;
 
 }
@@ -209,17 +227,14 @@ return $default(_that.sequenceState,_that.processingState,_that.playing,_that.po
 
 
 class _LocalPlaybackState extends LocalPlaybackState {
-  const _LocalPlaybackState({this.sequenceState, required this.processingState, required this.playing, required this.position, this.duration, required this.volume, required this.shuffleModeEnabled, required this.loopMode}): super._();
+  const _LocalPlaybackState({this.sequenceState, required this.playerState, required this.position, this.duration, required this.volume}): super._();
   
 
-@override final  SequenceState? sequenceState;
-@override final  ProcessingState processingState;
-@override final  bool playing;
+@override final  SequenceStateData? sequenceState;
+@override final  PlayerStateData playerState;
 @override final  Duration position;
 @override final  Duration? duration;
 @override final  double volume;
-@override final  bool shuffleModeEnabled;
-@override final  LoopMode loopMode;
 
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
@@ -231,12 +246,12 @@ _$LocalPlaybackStateCopyWith<_LocalPlaybackState> get copyWith => __$LocalPlayba
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalPlaybackState&&(identical(other.sequenceState, sequenceState) || other.sequenceState == sequenceState)&&(identical(other.processingState, processingState) || other.processingState == processingState)&&(identical(other.playing, playing) || other.playing == playing)&&(identical(other.position, position) || other.position == position)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.shuffleModeEnabled, shuffleModeEnabled) || other.shuffleModeEnabled == shuffleModeEnabled)&&(identical(other.loopMode, loopMode) || other.loopMode == loopMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalPlaybackState&&(identical(other.sequenceState, sequenceState) || other.sequenceState == sequenceState)&&(identical(other.playerState, playerState) || other.playerState == playerState)&&(identical(other.position, position) || other.position == position)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.volume, volume) || other.volume == volume));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sequenceState,processingState,playing,position,duration,volume,shuffleModeEnabled,loopMode);
+int get hashCode => Object.hash(runtimeType,sequenceState,playerState,position,duration,volume);
 
 
 
@@ -247,11 +262,11 @@ abstract mixin class _$LocalPlaybackStateCopyWith<$Res> implements $LocalPlaybac
   factory _$LocalPlaybackStateCopyWith(_LocalPlaybackState value, $Res Function(_LocalPlaybackState) _then) = __$LocalPlaybackStateCopyWithImpl;
 @override @useResult
 $Res call({
- SequenceState? sequenceState, ProcessingState processingState, bool playing, Duration position, Duration? duration, double volume, bool shuffleModeEnabled, LoopMode loopMode
+ SequenceStateData? sequenceState, PlayerStateData playerState, Duration position, Duration? duration, double volume
 });
 
 
-
+@override $SequenceStateDataCopyWith<$Res>? get sequenceState;@override $PlayerStateDataCopyWith<$Res> get playerState;
 
 }
 /// @nodoc
@@ -264,21 +279,39 @@ class __$LocalPlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of LocalPlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sequenceState = freezed,Object? processingState = null,Object? playing = null,Object? position = null,Object? duration = freezed,Object? volume = null,Object? shuffleModeEnabled = null,Object? loopMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sequenceState = freezed,Object? playerState = null,Object? position = null,Object? duration = freezed,Object? volume = null,}) {
   return _then(_LocalPlaybackState(
 sequenceState: freezed == sequenceState ? _self.sequenceState : sequenceState // ignore: cast_nullable_to_non_nullable
-as SequenceState?,processingState: null == processingState ? _self.processingState : processingState // ignore: cast_nullable_to_non_nullable
-as ProcessingState,playing: null == playing ? _self.playing : playing // ignore: cast_nullable_to_non_nullable
-as bool,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as SequenceStateData?,playerState: null == playerState ? _self.playerState : playerState // ignore: cast_nullable_to_non_nullable
+as PlayerStateData,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as Duration?,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as double,shuffleModeEnabled: null == shuffleModeEnabled ? _self.shuffleModeEnabled : shuffleModeEnabled // ignore: cast_nullable_to_non_nullable
-as bool,loopMode: null == loopMode ? _self.loopMode : loopMode // ignore: cast_nullable_to_non_nullable
-as LoopMode,
+as double,
   ));
 }
 
+/// Create a copy of LocalPlaybackState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SequenceStateDataCopyWith<$Res>? get sequenceState {
+    if (_self.sequenceState == null) {
+    return null;
+  }
 
+  return $SequenceStateDataCopyWith<$Res>(_self.sequenceState!, (value) {
+    return _then(_self.copyWith(sequenceState: value));
+  });
+}/// Create a copy of LocalPlaybackState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayerStateDataCopyWith<$Res> get playerState {
+  
+  return $PlayerStateDataCopyWith<$Res>(_self.playerState, (value) {
+    return _then(_self.copyWith(playerState: value));
+  });
+}
 }
 
 // dart format on

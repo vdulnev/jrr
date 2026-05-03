@@ -51,12 +51,20 @@ class LocalQueueTracks extends Table {
   IntColumn get position => integer()(); // Position in the queue
 }
 
-@DriftDatabase(tables: [SavedServers, Favorites, LocalQueueTracks])
+/// Metadata for the local zone queue.
+class LocalQueueState extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get currentIndex => integer().withDefault(const Constant(-1))();
+}
+
+@DriftDatabase(
+  tables: [SavedServers, Favorites, LocalQueueTracks, LocalQueueState],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -70,6 +78,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3 && to >= 3) {
           await m.createTable(localQueueTracks);
+        }
+        if (from < 4 && to >= 4) {
+          await m.createTable(localQueueState);
         }
       },
     );

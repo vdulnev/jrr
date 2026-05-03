@@ -1,5 +1,5 @@
 import 'dart:async' hide Zone;
-import 'package:jrr_f/features/library/data/models/track.dart';
+import 'package:jrr_f/features/library/data/models/tracks.dart';
 import 'package:jrr_f/features/library/data/repositories/library_repository.dart';
 import 'package:jrr_f/features/player/data/models/local_palyback_state.dart';
 import 'package:jrr_f/features/player/data/models/playback_state.dart';
@@ -34,8 +34,8 @@ class Player extends _$Player {
     }
 
     if (zone.isLocal) {
-      // Watch the local player provider and pipe its state into this one.
-      final localPlaybackState = ref.watch(localPlayerProvider);
+      // Watch the local player state provider and pipe its state into this one.
+      final localPlaybackState = ref.watch(localPlaybackStateProvider);
       return _calculateStatus(localPlaybackState);
     }
 
@@ -45,18 +45,18 @@ class Player extends _$Player {
 
   PlayerStatus _calculateStatus(LocalPlaybackState localPlaybackState) {
     final seqState = localPlaybackState.sequenceState;
-    final currentSource = seqState?.currentSource;
     final currentIndex = seqState?.currentIndex ?? -1;
-    final sequence = seqState?.sequence ?? [];
+    final sequence = seqState?.sequence ?? Tracks.empty;
 
-    final currentTrack = currentSource?.tag as Track?;
+    final currentTrack = seqState?.currentTrack;
 
-    final processingState = localPlaybackState.processingState;
+    final processingState = localPlaybackState.playerState.processingState;
+    final playing = localPlaybackState.playerState.playing;
 
     PlaybackState playbackState;
     if (processingState == ProcessingState.idle) {
       playbackState = PlaybackState.stopped;
-    } else if (localPlaybackState.playing) {
+    } else if (playing) {
       playbackState = PlaybackState.playing;
     } else {
       playbackState = PlaybackState.paused;
@@ -91,10 +91,10 @@ class Player extends _$Player {
       album: currentTrack?.album ?? '',
       imageUrl: currentTrack?.imageUrl ?? '',
       status: statusText,
-      shuffleMode: localPlaybackState.shuffleModeEnabled
+      shuffleMode: (seqState?.shuffleModeEnabled ?? false)
           ? ShuffleMode.on
           : ShuffleMode.off,
-      repeatMode: switch (localPlaybackState.loopMode) {
+      repeatMode: switch (seqState?.loopMode ?? LoopMode.off) {
         LoopMode.off => RepeatMode.off,
         LoopMode.one => RepeatMode.track,
         LoopMode.all => RepeatMode.playlist,
@@ -193,7 +193,7 @@ class Player extends _$Player {
   }
 
   /// Replaces the Playing Now queue and starts playback immediately.
-  Future<void> playNow(List<Track> tracks) => _run(
+  Future<void> playNow(Tracks tracks) => _run(
     remote: (_) {
       final zone = ref.read(activeZoneProvider);
       getIt<Talker>().debug(
@@ -202,17 +202,14 @@ class Player extends _$Player {
       if (zone == null) return Future.value();
       return getIt<LibraryRepository>().playNow(
         zone.id,
-        tracks.map((t) => t.fileKey).toList(),
+        tracks.tracks.map((t) => t.fileKey).toList(),
       );
     },
-    local: () async {
-      var provider = ref.read(localPlayerProvider.notifier);
-      await provider.playNow(tracks);
-    },
+    local: () => ref.read(localPlayerProvider.notifier).playNow(tracks),
   );
 
   /// Inserts [fileKeys] immediately after the current track.
-  Future<void> playNext(List<Track> tracks) => _run(
+  Future<void> playNext(Tracks tracks) => _run(
     remote: (_) {
       final zone = ref.read(activeZoneProvider);
       getIt<Talker>().debug(
@@ -221,14 +218,14 @@ class Player extends _$Player {
       if (zone == null) return Future.value();
       return getIt<LibraryRepository>().playNext(
         zone.id,
-        tracks.map((t) => t.fileKey).toList(),
+        tracks.tracks.map((t) => t.fileKey).toList(),
       );
     },
     local: () => ref.read(localPlayerProvider.notifier).playNext(tracks),
   );
 
   /// Appends [fileKeys] to the end of the Playing Now queue.
-  Future<void> addToQueue(List<Track> tracks) {
+  Future<void> addToQueue(Tracks tracks) {
     final zone = ref.read(activeZoneProvider);
     getIt<Talker>().debug(
       '[PlayerProvider] addToQueue: zone=$zone, tracks=$tracks',
@@ -237,7 +234,7 @@ class Player extends _$Player {
     return _run(
       remote: (_) => getIt<LibraryRepository>().addToQueue(
         zone.id,
-        tracks.map((t) => t.fileKey).toList(),
+        tracks.tracks.map((t) => t.fileKey).toList(),
       ),
       local: () => ref.read(localPlayerProvider.notifier).addToQueue(tracks),
     );
@@ -258,5 +255,34 @@ class Player extends _$Player {
       await remote(zone.id);
       await refresh();
     }
+  }
+}
+
+@Riverpod(keepAlive: true)
+class PlayingNowPosition extends _$PlayingNowPosition {
+  @override
+  int build() {
+    final talker = getIt<Talker>();
+    final playerStatus = ref.watch(playerProvider);
+    return playerStatus.when(
+      skipLoadingOnReload: true,
+      data: (status) {
+        talker.debug(
+          '[playingNowPositionProvider] Current playingNowPosition: ${status?.playingNowPosition}',
+        );
+        return status?.playingNowPosition ?? -1;
+      },
+      error: (error, st) {
+        talker.error(
+          '[playingNowPositionProvider] Error occurred while fetching playingNowPosition: $error',
+          st,
+        );
+        return -1;
+      },
+      loading: () {
+        talker.debug('[playingNowPositionProvider] Loading playingNowPosition');
+        return -1;
+      },
+    );
   }
 }

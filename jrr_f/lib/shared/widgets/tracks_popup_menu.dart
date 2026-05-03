@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../features/player/providers/player_provider.dart';
-import '../../features/library/data/models/track.dart';
+import '../../features/library/data/models/tracks.dart';
 
 class TracksPopupMenu extends ConsumerWidget {
-  final List<Track> tracks;
+  final Tracks tracks;
   final String? label;
 
   const TracksPopupMenu({required this.tracks, this.label, super.key});

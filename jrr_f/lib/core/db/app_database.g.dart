@@ -1190,12 +1190,223 @@ class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
   }
 }
 
+class $LocalQueueStateTable extends LocalQueueState
+    with TableInfo<$LocalQueueStateTable, LocalQueueStateData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalQueueStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _currentIndexMeta = const VerificationMeta(
+    'currentIndex',
+  );
+  @override
+  late final GeneratedColumn<int> currentIndex = GeneratedColumn<int>(
+    'current_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(-1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, currentIndex];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_queue_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalQueueStateData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('current_index')) {
+      context.handle(
+        _currentIndexMeta,
+        currentIndex.isAcceptableOrUnknown(
+          data['current_index']!,
+          _currentIndexMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalQueueStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalQueueStateData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      currentIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_index'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalQueueStateTable createAlias(String alias) {
+    return $LocalQueueStateTable(attachedDatabase, alias);
+  }
+}
+
+class LocalQueueStateData extends DataClass
+    implements Insertable<LocalQueueStateData> {
+  final int id;
+  final int currentIndex;
+  const LocalQueueStateData({required this.id, required this.currentIndex});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['current_index'] = Variable<int>(currentIndex);
+    return map;
+  }
+
+  LocalQueueStateCompanion toCompanion(bool nullToAbsent) {
+    return LocalQueueStateCompanion(
+      id: Value(id),
+      currentIndex: Value(currentIndex),
+    );
+  }
+
+  factory LocalQueueStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalQueueStateData(
+      id: serializer.fromJson<int>(json['id']),
+      currentIndex: serializer.fromJson<int>(json['currentIndex']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'currentIndex': serializer.toJson<int>(currentIndex),
+    };
+  }
+
+  LocalQueueStateData copyWith({int? id, int? currentIndex}) =>
+      LocalQueueStateData(
+        id: id ?? this.id,
+        currentIndex: currentIndex ?? this.currentIndex,
+      );
+  LocalQueueStateData copyWithCompanion(LocalQueueStateCompanion data) {
+    return LocalQueueStateData(
+      id: data.id.present ? data.id.value : this.id,
+      currentIndex: data.currentIndex.present
+          ? data.currentIndex.value
+          : this.currentIndex,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalQueueStateData(')
+          ..write('id: $id, ')
+          ..write('currentIndex: $currentIndex')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, currentIndex);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalQueueStateData &&
+          other.id == this.id &&
+          other.currentIndex == this.currentIndex);
+}
+
+class LocalQueueStateCompanion extends UpdateCompanion<LocalQueueStateData> {
+  final Value<int> id;
+  final Value<int> currentIndex;
+  const LocalQueueStateCompanion({
+    this.id = const Value.absent(),
+    this.currentIndex = const Value.absent(),
+  });
+  LocalQueueStateCompanion.insert({
+    this.id = const Value.absent(),
+    this.currentIndex = const Value.absent(),
+  });
+  static Insertable<LocalQueueStateData> custom({
+    Expression<int>? id,
+    Expression<int>? currentIndex,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (currentIndex != null) 'current_index': currentIndex,
+    });
+  }
+
+  LocalQueueStateCompanion copyWith({
+    Value<int>? id,
+    Value<int>? currentIndex,
+  }) {
+    return LocalQueueStateCompanion(
+      id: id ?? this.id,
+      currentIndex: currentIndex ?? this.currentIndex,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (currentIndex.present) {
+      map['current_index'] = Variable<int>(currentIndex.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalQueueStateCompanion(')
+          ..write('id: $id, ')
+          ..write('currentIndex: $currentIndex')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SavedServersTable savedServers = $SavedServersTable(this);
   late final $FavoritesTable favorites = $FavoritesTable(this);
   late final $LocalQueueTracksTable localQueueTracks = $LocalQueueTracksTable(
+    this,
+  );
+  late final $LocalQueueStateTable localQueueState = $LocalQueueStateTable(
     this,
   );
   @override
@@ -1206,6 +1417,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     savedServers,
     favorites,
     localQueueTracks,
+    localQueueState,
   ];
 }
 
@@ -1839,6 +2051,147 @@ typedef $$LocalQueueTracksTableProcessedTableManager =
       LocalQueueTrack,
       PrefetchHooks Function()
     >;
+typedef $$LocalQueueStateTableCreateCompanionBuilder =
+    LocalQueueStateCompanion Function({Value<int> id, Value<int> currentIndex});
+typedef $$LocalQueueStateTableUpdateCompanionBuilder =
+    LocalQueueStateCompanion Function({Value<int> id, Value<int> currentIndex});
+
+class $$LocalQueueStateTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalQueueStateTable> {
+  $$LocalQueueStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentIndex => $composableBuilder(
+    column: $table.currentIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalQueueStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalQueueStateTable> {
+  $$LocalQueueStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentIndex => $composableBuilder(
+    column: $table.currentIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalQueueStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalQueueStateTable> {
+  $$LocalQueueStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get currentIndex => $composableBuilder(
+    column: $table.currentIndex,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalQueueStateTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalQueueStateTable,
+          LocalQueueStateData,
+          $$LocalQueueStateTableFilterComposer,
+          $$LocalQueueStateTableOrderingComposer,
+          $$LocalQueueStateTableAnnotationComposer,
+          $$LocalQueueStateTableCreateCompanionBuilder,
+          $$LocalQueueStateTableUpdateCompanionBuilder,
+          (
+            LocalQueueStateData,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalQueueStateTable,
+              LocalQueueStateData
+            >,
+          ),
+          LocalQueueStateData,
+          PrefetchHooks Function()
+        > {
+  $$LocalQueueStateTableTableManager(
+    _$AppDatabase db,
+    $LocalQueueStateTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalQueueStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalQueueStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalQueueStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> currentIndex = const Value.absent(),
+              }) =>
+                  LocalQueueStateCompanion(id: id, currentIndex: currentIndex),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> currentIndex = const Value.absent(),
+              }) => LocalQueueStateCompanion.insert(
+                id: id,
+                currentIndex: currentIndex,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalQueueStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalQueueStateTable,
+      LocalQueueStateData,
+      $$LocalQueueStateTableFilterComposer,
+      $$LocalQueueStateTableOrderingComposer,
+      $$LocalQueueStateTableAnnotationComposer,
+      $$LocalQueueStateTableCreateCompanionBuilder,
+      $$LocalQueueStateTableUpdateCompanionBuilder,
+      (
+        LocalQueueStateData,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalQueueStateTable,
+          LocalQueueStateData
+        >,
+      ),
+      LocalQueueStateData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1849,4 +2202,6 @@ class $AppDatabaseManager {
       $$FavoritesTableTableManager(_db, _db.favorites);
   $$LocalQueueTracksTableTableManager get localQueueTracks =>
       $$LocalQueueTracksTableTableManager(_db, _db.localQueueTracks);
+  $$LocalQueueStateTableTableManager get localQueueState =>
+      $$LocalQueueStateTableTableManager(_db, _db.localQueueState);
 }

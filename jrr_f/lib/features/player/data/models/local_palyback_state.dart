@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:just_audio/just_audio.dart';
-import '../../../library/data/models/track.dart';
+import 'player_state_data.dart';
+import 'sequence_state_data.dart';
 
 part 'local_palyback_state.freezed.dart';
 
@@ -9,20 +9,17 @@ abstract class LocalPlaybackState with _$LocalPlaybackState {
   const LocalPlaybackState._();
 
   const factory LocalPlaybackState({
-    SequenceState? sequenceState,
-    required ProcessingState processingState,
-    required bool playing,
+    SequenceStateData? sequenceState,
+    required PlayerStateData playerState,
     required Duration position,
     Duration? duration,
     required double volume,
-    required bool shuffleModeEnabled,
-    required LoopMode loopMode,
   }) = _LocalPlaybackState;
 
   @override
   String toString() {
     final ss = sequenceState;
-    final track = ss?.currentSource?.tag as Track?;
+    final track = ss?.currentTrack;
     final trackName = track?.name ?? 'None';
 
     String fmt(Duration? d) {
@@ -32,26 +29,14 @@ abstract class LocalPlaybackState with _$LocalPlaybackState {
       final s = (d.inSeconds % 60).toString().padLeft(2, '0');
       return '$h:$m:$s';
     }
-    
-    return 'LocalPlaybackState(\n'
-           '  playing: $playing, state: $processingState\n'
-           '  pos: ${fmt(position)} / ${fmt(duration)}\n'
-           '  vol: ${(volume * 100).toInt()}%\n'
-           '  shuffle: $shuffleModeEnabled, repeat: $loopMode\n'
-           '  track: $trackName, FileKey: ${track?.fileKey}\n'
-           '  index: ${ss?.currentIndex}, queue: ${ss?.sequence.length}\n'
-           '  sequence: ${ss?.sequence.map((e) => (e.tag as Track?)?.fileKey ?? 'None').toList()}\n'
-           '  uris: ${ss?.sequence.map((e) => _getUri(e)).toList()}\n'
-           ')';
-  }
 
-  String _getUri(AudioSource audioSource) {
-    if (audioSource is UriAudioSource) {
-      return audioSource.uri.toString();
-    } else if (audioSource is ClippingAudioSource) {
-      final child = audioSource.child;
-      return child.uri.toString();
-        }
-    return 'Unknown uri';
+    return 'LocalPlaybackState(\n'
+        '  playing: ${playerState.playing}, state: ${playerState.processingState}\n'
+        '  pos: ${fmt(position)} / ${fmt(duration)}\n'
+        '  vol: ${(volume * 100).toInt()}%\n'
+        '  shuffle: ${ss?.shuffleModeEnabled}, repeat: ${ss?.loopMode}\n'
+        '  track: $trackName, FileKey: ${track?.fileKey}\n'
+        '  index: ${ss?.currentIndex}, queue: ${ss?.sequence.length}\n'
+        ')';
   }
 }

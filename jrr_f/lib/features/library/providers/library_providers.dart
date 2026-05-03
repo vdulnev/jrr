@@ -4,13 +4,14 @@ import '../../../core/di/injection.dart';
 import '../data/models/album.dart';
 import '../data/models/browse_item.dart';
 import '../data/models/track.dart';
+import '../data/models/tracks.dart';
 import '../data/repositories/library_repository.dart';
 
 part 'library_providers.g.dart';
 
 @riverpod
-Future<List<Track>> librarySearch(Ref ref, String query) async {
-  if (query.trim().isEmpty) return [];
+Future<Tracks> librarySearch(Ref ref, String query) async {
+  if (query.trim().isEmpty) return Tracks.empty;
   final result = await getIt<LibraryRepository>().search(query.trim());
   return result.getOrElse((e) => throw e);
 }
@@ -28,13 +29,13 @@ Future<List<Album>> albumsByArtist(Ref ref, String artist) async {
 }
 
 @riverpod
-Future<List<Track>> albumTracks(Ref ref, Album album) async {
+Future<Tracks> albumTracks(Ref ref, Album album) async {
   final result = await getIt<LibraryRepository>().getAlbumTracks(album);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
-Future<List<Track>> folderTracks(Ref ref, String folderPath) async {
+Future<Tracks> folderTracks(Ref ref, String folderPath) async {
   final result = await getIt<LibraryRepository>().getTracksByFolder(folderPath);
   return result.getOrElse((e) => throw e);
 }
@@ -52,7 +53,7 @@ Future<List<BrowseItem>> browseChildren(Ref ref, String id) async {
 }
 
 @riverpod
-Future<List<Track>> browseFiles(Ref ref, String id) async {
+Future<Tracks> browseFiles(Ref ref, String id) async {
   final result = await getIt<LibraryRepository>().browseFiles(id);
   return result.getOrElse((e) => throw e);
 }
