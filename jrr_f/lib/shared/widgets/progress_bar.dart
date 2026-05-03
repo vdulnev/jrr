@@ -15,60 +15,49 @@ class AppProgressBar extends StatefulWidget {
 class _AppProgressBarState extends State<AppProgressBar> {
   bool _dragging = false;
 
-  double _calcProgress(Offset localPosition, double width) {
-    return (localPosition.dx / width).clamp(0.0, 1.0);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: (d) {
-        setState(() => _dragging = true);
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fullWidth = constraints.maxWidth;
+        final filledWidth = fullWidth * widget.progress;
+
+        void report(Offset localPosition) {
           widget.onChanged?.call(
-            _calcProgress(d.localPosition, box.size.width),
+            (localPosition.dx / fullWidth).clamp(0.0, 1.0),
           );
         }
-      },
-      onPanUpdate: (d) {
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          widget.onChanged?.call(
-            _calcProgress(d.localPosition, box.size.width),
-          );
-        }
-      },
-      onPanEnd: (_) => setState(() => _dragging = false),
-      onTapDown: (d) {
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          widget.onChanged?.call(
-            _calcProgress(d.localPosition, box.size.width),
-          );
-        }
-      },
-      child: SizedBox(
-        height: 32,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            height: _dragging ? 6 : 3,
-            decoration: BoxDecoration(
-              color: AppColors.bg4,
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth * widget.progress;
-                return Stack(
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (d) {
+            setState(() => _dragging = true);
+            report(d.localPosition);
+          },
+          onPanUpdate: (d) => report(d.localPosition),
+          onPanEnd: (_) => setState(() => _dragging = false),
+          onPanCancel: () => setState(() => _dragging = false),
+          onTapDown: (d) => report(d.localPosition),
+          child: SizedBox(
+            height: 48,
+            width: fullWidth,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: _dragging ? 6 : 3,
+                width: fullWidth,
+                decoration: BoxDecoration(
+                  color: AppColors.bg4,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Positioned(
                       left: 0,
                       top: 0,
                       bottom: 0,
-                      width: width,
+                      width: filledWidth,
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
@@ -80,7 +69,7 @@ class _AppProgressBarState extends State<AppProgressBar> {
                     ),
                     if (_dragging)
                       Positioned(
-                        left: width - 7,
+                        left: filledWidth - 7,
                         top: -4,
                         child: Container(
                           width: 14,
@@ -92,12 +81,12 @@ class _AppProgressBarState extends State<AppProgressBar> {
                         ),
                       ),
                   ],
-                );
-              },
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -306,6 +306,9 @@ class _ProgressSection extends ConsumerWidget {
           progress: progress,
           onChanged: (v) {
             final ms = (v * durationMs).round();
+            talker.debug(
+              '[NowPlayingScreen]: Progress changed to $v volume, $ms ms',
+            );
             ref.read(playerProvider.notifier).seekTo(ms);
           },
         ),
