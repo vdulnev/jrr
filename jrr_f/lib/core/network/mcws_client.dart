@@ -318,7 +318,7 @@ class McwsClient {
   ) => _request(
     () => _api.filesSearch(
       query:
-          '[Media Type]=Audio [Artist]=[${_esc(artist)}] ~limit=-1,1,[Album],Expression={If(Math([Total Discs]>1|[Disc #]>1),FileParent([Filename (path)]),[Filename (path)])} ~sort=[Album]',
+          '[Media Type]=Audio [Artist]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
     ),
     (tracks) => right(
       tracks
