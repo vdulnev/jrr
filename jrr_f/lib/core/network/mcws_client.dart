@@ -303,11 +303,11 @@ class McwsClient {
 
   Future<Either<AppException, List<String>>> getArtists() => _request(
     () => _api.filesSearch(
-      query: '[Media Type]=Audio ~limit=-1,1,[Artist] ~sort=[Artist]',
+      query: '[Media Type]=Audio ~limit=-1,1,[Album Artist (auto)] ~sort=[Album Artist (auto)]',
     ),
     (items) => right(
       items
-          .map((track) => track.artist)
+          .map((track) => track.albumArtistAuto)
           .where((artist) => artist.isNotEmpty)
           .toList(),
     ),
@@ -318,11 +318,11 @@ class McwsClient {
   ) => _request(
     () => _api.filesSearch(
       query:
-          '[Media Type]=Audio [Artist]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
+          '[Media Type]=Audio [Album Artist (auto)]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
     ),
     (tracks) => right(
       tracks
-          .where((t) => t.artist == artist && t.album.isNotEmpty)
+          .where((t) => t.albumArtistAuto == artist && t.album.isNotEmpty)
           .map(Album.fromTrack)
           .toList(),
     ),

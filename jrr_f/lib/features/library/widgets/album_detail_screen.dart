@@ -16,7 +16,7 @@ class AlbumDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return TrackListScaffold(
-      subtitle: album.artist,
+      subtitle: album.albumArtist,
       onBack: () => context.router.maybePop(),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

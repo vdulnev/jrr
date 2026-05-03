@@ -20,6 +20,9 @@ _Track _$TrackFromJson(Map<String, dynamic> json) => _Track(
   albumArtist: json['Album Artist'] == null
       ? ''
       : const ForceStringConverter().fromJson(json['Album Artist']),
+  albumArtistAuto: json['Album Artist (auto)'] == null
+      ? ''
+      : const ForceStringConverter().fromJson(json['Album Artist (auto)']),
   genre: json['Genre'] as String? ?? '',
   duration: (json['Duration'] as num?)?.toDouble() ?? 0,
   playbackRange: json['Playback Range'] as String? ?? '',
@@ -44,6 +47,9 @@ Map<String, dynamic> _$TrackToJson(_Track instance) => <String, dynamic>{
   'Artist': const ForceStringConverter().toJson(instance.artist),
   'Album': const ForceStringConverter().toJson(instance.album),
   'Album Artist': const ForceStringConverter().toJson(instance.albumArtist),
+  'Album Artist (auto)': const ForceStringConverter().toJson(
+    instance.albumArtistAuto,
+  ),
   'Genre': instance.genre,
   'Duration': instance.duration,
   'Playback Range': instance.playbackRange,

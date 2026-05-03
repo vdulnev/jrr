@@ -51,7 +51,7 @@ class AlbumRowTile extends ConsumerWidget {
                       if (showArtist) ...[
                         Flexible(
                           child: Text(
-                            album.artist,
+                            album.albumArtist,
                             style: AppTextStyles.itemSubtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

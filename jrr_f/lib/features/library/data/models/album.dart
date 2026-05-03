@@ -8,7 +8,6 @@ part 'album.freezed.dart';
 abstract class Album with _$Album {
   const factory Album({
     required String name,
-    required String artist,
     required String albumArtist,
     required String folderPath,
     @Default('') String date,
@@ -22,8 +21,7 @@ abstract class Album with _$Album {
     final date = track.dateReadable;
     return Album(
       name: track.album,
-      artist: track.artist,
-      albumArtist: track.albumArtist,
+      albumArtist: track.albumArtistAuto,
       folderPath: folderPath,
       date: date,
       artworkFileKey: track.fileKey,

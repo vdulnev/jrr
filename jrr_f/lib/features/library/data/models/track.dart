@@ -15,6 +15,10 @@ abstract class Track with _$Track {
     @ForceStringConverter()
     @Default('')
     String albumArtist,
+    @JsonKey(name: 'Album Artist (auto)')
+    @ForceStringConverter()
+    @Default('')
+    String albumArtistAuto,
     @JsonKey(name: 'Genre') @Default('') String genre,
     @JsonKey(name: 'Duration') @Default(0) double duration,
     @JsonKey(name: 'Playback Range') @Default('') String playbackRange,
