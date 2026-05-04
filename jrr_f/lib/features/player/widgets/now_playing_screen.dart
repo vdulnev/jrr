@@ -72,7 +72,12 @@ class NowPlayingScreen extends ConsumerWidget {
                             style: AppTextStyles.sectionLabel,
                           ),
                           const SizedBox(height: 4),
-                          _FormatQuality(activeZone: activeZone),
+                          _FormatQuality(
+                            activeZoneName: activeZone.name,
+                            fileType: track?.fileType ?? '',
+                            bitDepth: track?.bitDepth ?? 0,
+                            sampleRate: track?.sampleRate ?? 0,
+                          ),
                         ],
                       ),
                     ),
@@ -453,46 +458,39 @@ class _PlayingNowPosition extends ConsumerWidget {
   }
 }
 
-class _FormatQuality extends ConsumerWidget {
-  const _FormatQuality({required this.activeZone});
+class _FormatQuality extends StatelessWidget {
+  const _FormatQuality({
+    required this.activeZoneName,
+    required this.fileType,
+    required this.bitDepth,
+    required this.sampleRate,
+  });
 
-  final Zone activeZone;
+  final String activeZoneName;
+  final String fileType;
+  final int bitDepth;
+  final int sampleRate;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final Talker talker = getIt<Talker>();
-
-    final bitDepth = ref.watch(
-      playerProvider.select((status) => status.value?.bitDepth ?? 0),
-    );
-    final sampleRate = ref.watch(
-      playerProvider.select((status) => status.value?.sampleRate ?? 0),
-    );
-    final bitrate = ref.watch(
-      playerProvider.select((status) => status.value?.bitrate ?? 0),
-    );
-    talker.debug(
-      '[NowPlayingScreen]: Sound quality updated: bitDepth: $bitDepth, sampleRate: $sampleRate, bitrate: $bitrate',
-    );
+  Widget build(BuildContext context) {
     return Text(
-      '${activeZone.name}'
-      '${_formatQuality(bitDepth: bitDepth, sampleRate: sampleRate, bitrate: bitrate)}',
+      '$activeZoneName'
+      '${_formatQuality(fileType: fileType, bitDepth: bitDepth, sampleRate: sampleRate)}',
       style: AppTextStyles.itemSubtitle,
     );
   }
 
   String _formatQuality({
+    required String fileType,
     required int bitDepth,
     required int sampleRate,
-    required int bitrate,
   }) {
-    if (bitDepth > 0 && sampleRate > 0) {
+    if (bitDepth > 0 && sampleRate > 0 && fileType.isNotEmpty) {
       final sr = sampleRate >= 1000
           ? '${(sampleRate / 1000).round()}'
           : '$sampleRate';
-      return ' \u00b7 FLAC $bitDepth/$sr';
+      return ' \u00b7 $fileType $bitDepth/$sr';
     }
-    if (bitrate > 0) return ' \u00b7 $bitrate kbps';
     return '';
   }
 }
