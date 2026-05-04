@@ -35,9 +35,18 @@ class AlbumGroup {
   final Album album;
   final List<Album> discs;
 
-  AlbumGroup({required this.album, this.discs = const []});
+  AlbumGroup({required this.album, List<Album> discs = const []})
+    : discs = [...discs]..sort((a, b) => a.discNumber.compareTo(b.discNumber));
 
   bool get isMultiDisc => discs.length > 1;
 
   String get id => '${album.name}|${album.parentFolderPath}';
+
+  String get date {
+    if (discs.isEmpty) return album.date;
+    // Extract dates, filter empty, sort and take latest
+    final dates = discs.map((d) => d.date).where((d) => d.isNotEmpty).toList()
+      ..sort();
+    return dates.isNotEmpty ? dates.last : album.date;
+  }
 }

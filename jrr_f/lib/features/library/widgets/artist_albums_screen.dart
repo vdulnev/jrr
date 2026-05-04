@@ -81,9 +81,15 @@ class ArtistAlbumsScreen extends ConsumerWidget {
 
           if (discs.length > 1) {
             final first = discs.first;
+            final latestDate = discs
+                .map((d) => d.date)
+                .where((d) => d.isNotEmpty)
+                .toList()
+              ..sort();
             final parent = first.copyWith(
               folderPath: first.parentFolderPath,
               discNumber: 0,
+              date: latestDate.isNotEmpty ? latestDate.last : first.date,
             );
             groups.add(AlbumGroup(album: parent, discs: discs));
           } else {
@@ -97,8 +103,12 @@ class ArtistAlbumsScreen extends ConsumerWidget {
           groups.add(AlbumGroup(album: album));
         }
 
-        // Final sort of groups by album name
-        groups.sort((a, b) => a.album.name.compareTo(b.album.name));
+        // Final sort of groups: by date then by name
+        groups.sort((a, b) {
+          final dateCompare = a.date.compareTo(b.date);
+          if (dateCompare != 0) return dateCompare;
+          return a.album.name.compareTo(b.album.name);
+        });
 
         return AlbumListScreen(
           groups: groups,
