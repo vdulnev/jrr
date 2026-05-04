@@ -10,21 +10,34 @@ abstract class Album with _$Album {
     required String name,
     required String albumArtist,
     required String folderPath,
+    required String parentFolderPath,
     @Default('') String date,
     @Default(-1) int artworkFileKey,
+    @Default(0) int totalDiscs,
+    @Default(0) int discNumber,
   }) = _Album;
 
   factory Album.fromTrack(Track track) {
-    final folderPath = track.totalDiscs > 1 || track.discNumber > 0
-        ? track.parentFolderPath
-        : track.folderPath;
-    final date = track.dateReadable;
     return Album(
       name: track.album,
       albumArtist: track.albumArtistAuto,
-      folderPath: folderPath,
-      date: date,
+      folderPath: track.folderPath,
+      parentFolderPath: track.parentFolderPath,
+      date: track.dateReadable,
       artworkFileKey: track.fileKey,
+      totalDiscs: track.totalDiscs,
+      discNumber: track.discNumber,
     );
   }
+}
+
+class AlbumGroup {
+  final Album album;
+  final List<Album> discs;
+
+  AlbumGroup({required this.album, this.discs = const []});
+
+  bool get isMultiDisc => discs.length > 1;
+
+  String get id => '${album.name}|${album.parentFolderPath}';
 }

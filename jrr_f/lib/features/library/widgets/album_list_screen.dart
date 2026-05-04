@@ -8,7 +8,7 @@ import '../data/models/album.dart';
 import 'album_row_tile.dart';
 
 class AlbumListScreen extends ConsumerStatefulWidget {
-  final List<Album> albums;
+  final List<AlbumGroup> groups;
   final String title;
   final String? subtitle;
   final VoidCallback? onRefresh;
@@ -16,7 +16,7 @@ class AlbumListScreen extends ConsumerStatefulWidget {
   final bool showArtist;
 
   const AlbumListScreen({
-    required this.albums,
+    required this.groups,
     required this.title,
     this.subtitle,
     this.onRefresh,
@@ -31,17 +31,20 @@ class AlbumListScreen extends ConsumerStatefulWidget {
 
 class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
   String _filter = '';
+  final Set<String> _expandedGroups = {};
 
-  List<Album> _filtered(List<Album> albums) {
-    if (_filter.isEmpty) return albums;
+  List<AlbumGroup> _filtered(List<AlbumGroup> groups) {
+    if (_filter.isEmpty) return groups;
     final lower = _filter.toLowerCase();
-    return albums.where((a) => a.name.toLowerCase().contains(lower)).toList();
+    return groups
+        .where((g) => g.album.name.toLowerCase().contains(lower))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final albums = widget.albums;
-    final filtered = _filtered(albums);
+    final groups = widget.groups;
+    final filtered = _filtered(groups);
 
     return Scaffold(
       body: SafeArea(
@@ -73,7 +76,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   : null,
             ),
             // Filter field
-            if (albums.length > 5)
+            if (groups.length > 5)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 child: TextField(
@@ -98,10 +101,39 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 148),
                       itemCount: filtered.length,
-                      itemBuilder: (_, i) => AlbumRowTile(
-                        album: filtered[i],
-                        showArtist: widget.showArtist,
-                      ),
+                      itemBuilder: (_, i) {
+                        final group = filtered[i];
+                        final isExpanded = _expandedGroups.contains(group.id);
+                        final hasSubItems = group.isMultiDisc;
+
+                        return Column(
+                          children: [
+                            AlbumRowTile(
+                              album: group.album,
+                              showArtist: widget.showArtist,
+                              hasSubItems: hasSubItems,
+                              isExpanded: isExpanded,
+                              onToggle: () => setState(() {
+                                if (isExpanded) {
+                                  _expandedGroups.remove(group.id);
+                                } else {
+                                  _expandedGroups.add(group.id);
+                                }
+                              }),
+                            ),
+                            if (isExpanded)
+                              ...group.discs.map(
+                                (disc) => AlbumRowTile(
+                                  album: disc,
+                                  showArtist: widget.showArtist,
+                                  indent: 44,
+                                  titleOverride:
+                                      'Disc ${disc.discNumber}/${disc.totalDiscs}',
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
             ),
           ],

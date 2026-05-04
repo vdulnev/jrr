@@ -21,7 +21,14 @@ class AlbumDetailScreen extends ConsumerWidget {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text([album.date, album.name].where((s) => s.isNotEmpty).join(' - ')),
+          Text(
+            [
+              album.date,
+              album.name,
+              if (album.totalDiscs > 1 && album.discNumber > 0)
+                'Disc ${album.discNumber}/${album.totalDiscs}',
+            ].where((s) => s.isNotEmpty).join(' - '),
+          ),
           if (album.albumArtist.isNotEmpty)
             Text(
               album.albumArtist,

@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jrr_f/features/library/data/models/album.dart';
 
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -53,14 +54,61 @@ class ArtistAlbumsScreen extends ConsumerWidget {
           ),
         ),
       ),
-      data: (albums) => AlbumListScreen(
-        albums: albums,
-        title: artist,
-        subtitle: 'Artist',
-        showArtist: false,
-        onBack: () => context.router.maybePop(),
-        onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
-      ),
+      data: (albums) {
+        final sortedAlbums = [...albums]
+          ..sort((a, b) => a.name.compareTo(b.name));
+
+        final discGroups = <String, List<Album>>{};
+        final otherAlbums = <Album>[];
+
+        for (final album in sortedAlbums) {
+          if (album.totalDiscs > 1 &&
+              album.discNumber > 0 &&
+              album.parentFolderPath.isNotEmpty) {
+            final key = '${album.name}|${album.parentFolderPath}';
+            discGroups.putIfAbsent(key, () => []).add(album);
+          } else {
+            otherAlbums.add(album);
+          }
+        }
+
+        final groups = <AlbumGroup>[];
+
+        // Process multi-disc groups
+        for (final entry in discGroups.entries) {
+          final discs = entry.value
+            ..sort((a, b) => a.discNumber.compareTo(b.discNumber));
+
+          if (discs.length > 1) {
+            final first = discs.first;
+            final parent = first.copyWith(
+              folderPath: first.parentFolderPath,
+              discNumber: 0,
+            );
+            groups.add(AlbumGroup(album: parent, discs: discs));
+          } else {
+            // Only one disc found for this name/parent folder, treat as single
+            groups.add(AlbumGroup(album: discs.first));
+          }
+        }
+
+        // Process single albums
+        for (final album in otherAlbums) {
+          groups.add(AlbumGroup(album: album));
+        }
+
+        // Final sort of groups by album name
+        groups.sort((a, b) => a.album.name.compareTo(b.album.name));
+
+        return AlbumListScreen(
+          groups: groups,
+          title: artist,
+          subtitle: 'Artist',
+          showArtist: false,
+          onBack: () => context.router.maybePop(),
+          onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
+        );
+      },
     );
   }
 }
