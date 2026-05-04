@@ -36,6 +36,31 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
 
         return Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () => ref.invalidate(artistsProvider),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.line2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Refresh',
+                        style: AppTextStyles.accentSmall,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             // Filter field
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
