@@ -6,7 +6,9 @@ import 'package:talker/talker.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../player/data/models/local_audio_quality.dart';
 import '../../player/data/models/playback_state.dart';
+import '../../player/providers/local_audio_quality_provider.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/zone.dart';
 import '../providers/active_zone_provider.dart';
@@ -178,9 +180,19 @@ class _ZoneTile extends ConsumerWidget {
                   if (zone.isDLNA || zone.isLocal)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        zone.isLocal ? 'LOCAL' : 'DLNA',
-                        style: AppTextStyles.monoLabel,
+                      child: Row(
+                        children: [
+                          Text(
+                            zone.isLocal ? 'LOCAL' : 'DLNA',
+                            style: AppTextStyles.monoLabel,
+                          ),
+                          if (zone.isLocal) ...[
+                            const SizedBox(width: 6),
+                            const Text('·', style: AppTextStyles.monoLabel),
+                            const SizedBox(width: 6),
+                            const _QualityPopup(),
+                          ],
+                        ],
                       ),
                     ),
                 ],
@@ -198,6 +210,36 @@ class _ZoneTile extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _QualityPopup extends ConsumerWidget {
+  const _QualityPopup();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(localAudioQualityPrefProvider);
+    return PopupMenuButton<LocalAudioQuality>(
+      tooltip: 'Audio quality',
+      padding: EdgeInsets.zero,
+      onSelected: (q) =>
+          ref.read(localAudioQualityPrefProvider.notifier).set(q),
+      itemBuilder: (_) => [
+        for (final q in LocalAudioQuality.values)
+          CheckedPopupMenuItem(
+            value: q,
+            checked: q == current,
+            child: Text(q.label),
+          ),
+      ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(current.label, style: AppTextStyles.monoLabel),
+          const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.text3),
+        ],
       ),
     );
   }

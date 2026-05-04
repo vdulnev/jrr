@@ -10,14 +10,23 @@ import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
+import '../data/models/local_audio_quality.dart';
 
 class LocalPlayerService {
   final AudioPlayer _player;
   final Talker _talker;
 
-  LocalPlayerService({required AudioPlayer player, required Talker talker})
-    : _player = player,
-      _talker = talker;
+  /// Resolves the currently selected audio quality. Read on every
+  /// `_createSource` call so changes apply to subsequent track loads.
+  LocalAudioQuality Function() qualityResolver;
+
+  LocalPlayerService({
+    required AudioPlayer player,
+    required Talker talker,
+    LocalAudioQuality Function()? qualityResolver,
+  }) : _player = player,
+       _talker = talker,
+       qualityResolver = qualityResolver ?? (() => LocalAudioQuality.lossless);
 
   Future<void> init() async {
     try {
@@ -142,11 +151,13 @@ class LocalPlayerService {
     // baseUrl usually ends with /MCWS/v1/
     var url = baseUrl;
     if (!url.endsWith('/')) url += '/';
+    final quality = qualityResolver();
     url +=
-        'File/GetFile?File=${track.fileKey}&FileType=Key&Playback=1&Conversion=wav&Quality=high';
+        'File/GetFile?File=${track.fileKey}&FileType=Key&Playback=1&${quality.mcwsParams}';
     if (token != null) {
       url += '&Token=$token';
     }
+    _talker.debug('[LocalPlayerService] Quality: ${quality.label}');
 
     _talker.debug(
       '[LocalPlayerService] Created source for track ${track.fileKey}: $url',
@@ -155,7 +166,10 @@ class LocalPlayerService {
     final uriAudioSource = AudioSource.uri(
       Uri.parse(url),
       tag: track,
-      headers: {'User-Agent': 'JRR-Remote/1.0', 'X-MCWS-Token': ?token},
+      headers: {
+        'User-Agent': 'JRR-Remote/1.0',
+        'X-MCWS-Token': ?token,
+      },
     );
 
     return uriAudioSource;

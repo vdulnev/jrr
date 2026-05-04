@@ -15,6 +15,7 @@ import '../data/models/sequence_state_data.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../services/local_player_service.dart';
+import 'local_audio_quality_provider.dart';
 
 part 'local_player_provider.g.dart';
 
@@ -195,6 +196,16 @@ class LocalPlayer extends _$LocalPlayer {
       }
     });
 
+    // Listen for quality changes to trigger a reload
+    ref.listen(localAudioQualityPrefProvider, (prev, next) {
+      if (prev != next && prev != null) {
+        _talker.info(
+          '[LocalPlayer] Audio quality changed to ${next.label}. Reloading queue...',
+        );
+        _reloadWithNewQuality();
+      }
+    });
+
     final sub = _service.playbackEventStream.listen(
       (event) {
         final icy = event.icyMetadata;
@@ -279,6 +290,33 @@ class LocalPlayer extends _$LocalPlayer {
     final queueRepo = getIt<LocalQueueRepository>();
     await queueRepo.setTracks(tracks);
     _talker.debug('[LocalPlayer] Saved queue with ${tracks.length} tracks');
+  }
+
+  Future<void> _reloadWithNewQuality() async {
+    final sequence = ref.read(localPlayerSequenceProvider);
+    if (sequence == null) return;
+
+    final wasPlaying = ref.read(localPlayerStateProvider).playing;
+    final currentIndex = sequence.currentIndex;
+    final currentPositionMs = _service.position.inMilliseconds;
+
+    _talker.debug(
+      '[LocalPlayer] Reloading with new quality. '
+      'Current track: $currentIndex, position: $currentPositionMs ms, playing: $wasPlaying',
+    );
+
+    // Stop and reload
+    await _service.stop();
+    await _service.setTracks(sequence.sequence);
+
+    // Restore state
+    if (currentIndex >= 0 && currentIndex < sequence.sequence.length) {
+      await _service.seekTo(currentPositionMs, index: currentIndex);
+    }
+
+    if (wasPlaying) {
+      await _service.play();
+    }
   }
 
   // Actions only

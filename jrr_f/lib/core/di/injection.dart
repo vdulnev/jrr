@@ -15,6 +15,7 @@ import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
+import '../../features/player/data/models/local_audio_quality.dart';
 import '../../features/player/services/local_player_service.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
@@ -72,6 +73,9 @@ Future<void> configureDependencies() async {
   final localPlayerService = LocalPlayerService(
     player: player,
     talker: getIt<Talker>(),
+    qualityResolver: () => LocalAudioQuality.fromName(
+      getIt<SharedPreferences>().getString('local_audio_quality'),
+    ),
   );
   await localPlayerService.init();
   getIt.registerSingleton<LocalPlayerService>(localPlayerService);
