@@ -50,7 +50,7 @@ final class ServerSetupFormProvider
   }
 }
 
-String _$serverSetupFormHash() => r'e0d0e499c04e6a78b2d3e55a1bd13355fa063715';
+String _$serverSetupFormHash() => r'3e80d9473fa2be7269464f3d44f928c8c2c5f82d';
 
 /// Holds the submission state for [ServerSetupScreen].
 /// null  = idle, AsyncLoading = connecting, AsyncError = failed.

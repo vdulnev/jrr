@@ -17,8 +17,7 @@ class ServerSetupScreen extends ConsumerStatefulWidget {
 
 class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _hostController = TextEditingController();
-  final _portController = TextEditingController(text: '52199');
+  final _accessKeyController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -32,8 +31,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
 
   @override
   void dispose() {
-    _hostController.dispose();
-    _portController.dispose();
+    _accessKeyController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -44,8 +42,6 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     final data = await ref.read(lastServerProvider.future);
     if (!mounted || data == null) return;
     _prefilled = true;
-    _hostController.text = data.host;
-    _portController.text = data.port.toString();
     _usernameController.text = data.username;
     final password = data.password;
     if (password != null) _passwordController.text = password;
@@ -56,8 +52,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     await ref
         .read(serverSetupFormProvider.notifier)
         .connect(
-          host: _hostController.text.trim(),
-          port: int.parse(_portController.text.trim()),
+          accessKey: _accessKeyController.text.trim(),
           username: _usernameController.text.trim(),
           password: _passwordController.text,
         );
@@ -102,32 +97,18 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
-                          controller: _hostController,
+                          controller: _accessKeyController,
                           enabled: !isLoading,
                           decoration: const InputDecoration(
-                            labelText: 'Host',
-                            hintText: '192.168.1.100',
+                            labelText: 'Access Key',
+                            hintText: 'e.g. abc123',
                           ),
-                          keyboardType: TextInputType.url,
+                          textCapitalization: TextCapitalization.none,
+                          autocorrect: false,
                           textInputAction: TextInputAction.next,
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Required'
                               : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _portController,
-                          enabled: !isLoading,
-                          decoration: const InputDecoration(labelText: 'Port'),
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                          validator: (v) {
-                            final n = int.tryParse(v ?? '');
-                            if (n == null || n < 1 || n > 65535) {
-                              return 'Port must be 1–65535';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

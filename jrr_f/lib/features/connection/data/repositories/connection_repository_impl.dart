@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart' show DioException;
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -10,6 +11,7 @@ import '../../../../core/db/app_database.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/dio_factory.dart';
+import '../../../../core/network/jriver_lookup_api.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../../../../core/network/mcws_xml_parser.dart';
 import '../models/server_info.dart';
@@ -53,6 +55,67 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         ),
         parser: _parser,
       );
+
+  @override
+  Future<Either<AppException, AccessKeyLookupResult>> lookupAccessKey(
+    String accessKey,
+  ) async {
+    final key = accessKey.trim();
+    if (key.isEmpty) {
+      return left(
+        const AppException.parseError(details: 'Access key is empty'),
+      );
+    }
+    try {
+      // Public JRiver registry — separate retrofit api with no auth.
+      final dio = createPublicDio(talker: _talker);
+      final body = await JRiverLookupApi(dio).lookup(key);
+      _talker.debug('[ConnectionRepo] Access key lookup raw body: $body');
+
+      // The lookup endpoint uses plain XML elements (<ip>…</ip>,
+      // <port>…</port>, <localiplist>…</localiplist>) rather than the
+      // MCWS <Item Name="…"> format, so the shared MCWS parser doesn't
+      // apply. Extract the few fields we need with a small regex.
+      String? element(String tag) {
+        final m = RegExp(
+          '<$tag>([^<]*)</$tag>',
+          caseSensitive: false,
+        ).firstMatch(body);
+        return m?.group(1)?.trim();
+      }
+
+      String? firstNonEmpty(List<String?> candidates) {
+        for (final v in candidates) {
+          final t = v?.trim();
+          if (t != null && t.isNotEmpty) return t;
+        }
+        return null;
+      }
+
+      final host = firstNonEmpty([
+        element('localiplist')?.split(',').firstOrNull,
+        element('ip'),
+      ]);
+      final port = int.tryParse(element('port') ?? '');
+      if (host == null || port == null) {
+        return left(
+          const AppException.parseError(
+            details: 'Lookup response missing IP/Port',
+          ),
+        );
+      }
+      return right(AccessKeyLookupResult(host: host, port: port));
+    } on DioException catch (e) {
+      _talker.warning('[ConnectionRepo] Access key lookup failed: $e');
+      return left(
+        AppException.connectionRefused(
+          address: e.requestOptions.uri.toString(),
+        ),
+      );
+    } catch (e) {
+      return left(AppException.unknown(error: e));
+    }
+  }
 
   @override
   Future<Either<AppException, ServerInfo>> connect({

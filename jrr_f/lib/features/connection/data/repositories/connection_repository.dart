@@ -4,6 +4,13 @@ import '../../../../core/db/app_database.dart';
 import '../../../../core/error/app_exception.dart';
 import '../models/server_info.dart';
 
+/// Result of a JRiver Access Key lookup against webplay.jriver.com.
+class AccessKeyLookupResult {
+  final String host;
+  final int port;
+  const AccessKeyLookupResult({required this.host, required this.port});
+}
+
 abstract interface class ConnectionRepository {
   Future<Either<AppException, ServerInfo>> connect({
     required String host,
@@ -11,6 +18,12 @@ abstract interface class ConnectionRepository {
     required String username,
     required String password,
   });
+
+  /// Resolves a 6-character JRiver Access Key to the server's host/port via
+  /// the JRiver lookup service.
+  Future<Either<AppException, AccessKeyLookupResult>> lookupAccessKey(
+    String accessKey,
+  );
 
   Future<void> clearSession();
 
