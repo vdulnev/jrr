@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:jrr_f/features/library/data/models/tracks.dart';
+import 'package:talker/talker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -15,8 +17,12 @@ class QueueScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final talker = getIt<Talker>();
+
     final queueState = ref.watch(queueProvider);
     final currentIndex = ref.watch(playingNowPositionProvider);
+
+    talker.debug('[QueueScreen]: queueState: $queueState, currentIndex: $currentIndex');
 
     return Scaffold(
       body: SafeArea(
