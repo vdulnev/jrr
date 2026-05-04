@@ -7,6 +7,8 @@ import '../../../shared/widgets/error_view.dart';
 import '../providers/last_server_provider.dart';
 import '../providers/server_setup_provider.dart';
 
+enum _ConnectMode { accessKey, manual }
+
 @RoutePage()
 class ServerSetupScreen extends ConsumerStatefulWidget {
   const ServerSetupScreen({super.key});
@@ -18,9 +20,12 @@ class ServerSetupScreen extends ConsumerStatefulWidget {
 class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _accessKeyController = TextEditingController();
+  final _hostController = TextEditingController();
+  final _portController = TextEditingController(text: '52199');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  _ConnectMode _mode = _ConnectMode.accessKey;
   bool _prefilled = false;
 
   @override
@@ -32,6 +37,8 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   @override
   void dispose() {
     _accessKeyController.dispose();
+    _hostController.dispose();
+    _portController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -42,20 +49,36 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     final data = await ref.read(lastServerProvider.future);
     if (!mounted || data == null) return;
     _prefilled = true;
+    _hostController.text = data.host;
+    _portController.text = data.port.toString();
     _usernameController.text = data.username;
     final password = data.password;
     if (password != null) _passwordController.text = password;
+    if (data.host.isNotEmpty) {
+      setState(() => _mode = _ConnectMode.manual);
+    }
   }
 
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    await ref
-        .read(serverSetupFormProvider.notifier)
-        .connect(
+    final notifier = ref.read(serverSetupFormProvider.notifier);
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    switch (_mode) {
+      case _ConnectMode.accessKey:
+        await notifier.connectWithAccessKey(
           accessKey: _accessKeyController.text.trim(),
-          username: _usernameController.text.trim(),
-          password: _passwordController.text,
+          username: username,
+          password: password,
         );
+      case _ConnectMode.manual:
+        await notifier.connectWithHost(
+          host: _hostController.text.trim(),
+          port: int.parse(_portController.text.trim()),
+          username: username,
+          password: password,
+        );
+    }
   }
 
   @override
@@ -90,26 +113,76 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                     style: AppTextStyles.itemSubtitle,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
+                  SegmentedButton<_ConnectMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _ConnectMode.accessKey,
+                        label: Text('Access Key'),
+                      ),
+                      ButtonSegment(
+                        value: _ConnectMode.manual,
+                        label: Text('Host & Port'),
+                      ),
+                    ],
+                    selected: {_mode},
+                    onSelectionChanged: isLoading
+                        ? null
+                        : (sel) => setState(() => _mode = sel.first),
+                  ),
+                  const SizedBox(height: 24),
                   Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextFormField(
-                          controller: _accessKeyController,
-                          enabled: !isLoading,
-                          decoration: const InputDecoration(
-                            labelText: 'Access Key',
-                            hintText: 'e.g. abc123',
+                        if (_mode == _ConnectMode.accessKey)
+                          TextFormField(
+                            controller: _accessKeyController,
+                            enabled: !isLoading,
+                            decoration: const InputDecoration(
+                              labelText: 'Access Key',
+                              hintText: 'e.g. abc123',
+                            ),
+                            textCapitalization: TextCapitalization.none,
+                            autocorrect: false,
+                            textInputAction: TextInputAction.next,
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
+                                : null,
+                          )
+                        else ...[
+                          TextFormField(
+                            controller: _hostController,
+                            enabled: !isLoading,
+                            decoration: const InputDecoration(
+                              labelText: 'Host',
+                              hintText: '192.168.1.100',
+                            ),
+                            keyboardType: TextInputType.url,
+                            textInputAction: TextInputAction.next,
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
+                                : null,
                           ),
-                          textCapitalization: TextCapitalization.none,
-                          autocorrect: false,
-                          textInputAction: TextInputAction.next,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Required'
-                              : null,
-                        ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _portController,
+                            enabled: !isLoading,
+                            decoration: const InputDecoration(
+                              labelText: 'Port',
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            validator: (v) {
+                              final n = int.tryParse(v ?? '');
+                              if (n == null || n < 1 || n > 65535) {
+                                return 'Port must be 1–65535';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _usernameController,

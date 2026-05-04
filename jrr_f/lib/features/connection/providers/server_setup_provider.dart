@@ -14,7 +14,7 @@ class ServerSetupForm extends _$ServerSetupForm {
   @override
   AsyncValue<void>? build() => null;
 
-  Future<void> connect({
+  Future<void> connectWithAccessKey({
     required String accessKey,
     required String username,
     required String password,
@@ -33,11 +33,40 @@ class ServerSetupForm extends _$ServerSetupForm {
       return;
     }
 
+    await _connect(
+      host: resolved.host,
+      port: resolved.port,
+      username: username,
+      password: password,
+    );
+  }
+
+  Future<void> connectWithHost({
+    required String host,
+    required int port,
+    required String username,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    await _connect(
+      host: host,
+      port: port,
+      username: username,
+      password: password,
+    );
+  }
+
+  Future<void> _connect({
+    required String host,
+    required int port,
+    required String username,
+    required String password,
+  }) async {
     final error = await ref
         .read(sessionProvider.notifier)
         .connect(
-          host: resolved.host,
-          port: resolved.port,
+          host: host,
+          port: port,
           username: username,
           password: password,
         );
