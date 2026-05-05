@@ -16,6 +16,7 @@ import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../services/local_player_service.dart';
 import 'local_audio_quality_provider.dart';
+import '../../offline/providers/downloaded_tracks_provider.dart';
 
 part 'local_player_provider.g.dart';
 
@@ -201,6 +202,19 @@ class LocalPlayer extends _$LocalPlayer {
       if (prev != next && prev != null) {
         _talker.info(
           '[LocalPlayer] Audio quality changed to ${next.label}. Reloading queue...',
+        );
+        _reloadWithNewQuality();
+      }
+    });
+
+    // Listen for new downloads to trigger a reload to prefer local files
+    ref.listen(downloadedTracksProvider, (prev, next) {
+      final prevCount = prev?.value?.length ?? 0;
+      final nextCount = next.value?.length ?? 0;
+
+      if (nextCount > prevCount) {
+        _talker.info(
+          '[LocalPlayer] New download detected ($nextCount tracks). Reloading queue to prefer local files...',
         );
         _reloadWithNewQuality();
       }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:audio_session/audio_session.dart';
 import 'package:jrr_f/features/player/data/models/repeat_mode.dart';
 import 'package:jrr_f/features/player/data/models/shuffle_mode.dart';
@@ -10,6 +11,7 @@ import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
+import '../../offline/data/repositories/downloads_repository.dart';
 import '../data/models/local_audio_quality.dart';
 
 class LocalPlayerService {
@@ -142,6 +144,16 @@ class LocalPlayerService {
   }
 
   AudioSource _createSource(Track track) {
+    final downloadsRepo = getIt<DownloadsRepository>();
+    final localPath = downloadsRepo.localPathFor(track.fileKey);
+
+    if (localPath != null && File(localPath).existsSync()) {
+      _talker.debug(
+        '[LocalPlayerService] Using local file for track ${track.fileKey}: $localPath',
+      );
+      return AudioSource.uri(Uri.file(localPath), tag: track);
+    }
+
     final client = getIt<McwsClient>();
     final repo = getIt<ConnectionRepository>();
     final baseUrl = client.baseUrl;

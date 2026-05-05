@@ -15,12 +15,34 @@ import 'downloads_repository.dart';
 class DownloadsRepositoryImpl implements DownloadsRepository {
   final AppDatabase _db;
   final Talker _talker;
+  final Map<int, String> _localPathCache = {};
 
   DownloadsRepositoryImpl({
     required AppDatabase db,
     required Talker talker,
   }) : _db = db,
-       _talker = talker;
+       _talker = talker {
+    _initCache();
+  }
+
+  Future<void> _initCache() async {
+    final tracks = await getDownloadedTracks();
+    for (final t in tracks) {
+      _localPathCache[t.fileKey] = t.localPath;
+    }
+    _talker.info('[DownloadsRepository] Cache initialized with ${_localPathCache.length} tracks');
+    
+    // Listen for changes to keep cache in sync
+    watchDownloadedTracks().listen((tracks) {
+      _localPathCache.clear();
+      for (final t in tracks) {
+        _localPathCache[t.fileKey] = t.localPath;
+      }
+    });
+  }
+
+  @override
+  String? localPathFor(int fileKey) => _localPathCache[fileKey];
 
   @override
   Future<void> enqueue(Track track) async {

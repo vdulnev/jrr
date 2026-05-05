@@ -28,10 +28,14 @@ abstract class DownloadsRepository {
   /// Gets all current download jobs (queued, running, failed, cancelled).
   Future<List<DownloadJob>> getJobs();
 
-  /// Gets all successfully downloaded tracks.
+  /// Returns the successfully downloaded tracks.
   Future<List<DownloadedTrack>> getDownloadedTracks();
 
+  /// Returns the local file path for a downloaded track synchronously from cache.
+  String? localPathFor(int fileKey);
+
   /// Returns the local file path for a downloaded track, or null if not downloaded.
+
   Future<String?> getLocalPath(int fileKey);
 
   /// Returns the current download state for a track.
