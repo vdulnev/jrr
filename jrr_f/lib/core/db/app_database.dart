@@ -57,14 +57,54 @@ class LocalQueueState extends Table {
   IntColumn get currentIndex => integer().withDefault(const Constant(-1))();
 }
 
+/// Fully downloaded tracks for offline playback.
+@DataClassName('DownloadedTrackRow')
+class DownloadedTracks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get fileKey => integer().unique()();
+  TextColumn get trackJson => text()(); // Serialized Track object
+  TextColumn get localPath => text()();
+  TextColumn get artworkPath => text().nullable()();
+  TextColumn get albumGroupId => text()();
+  TextColumn get albumArtist => text()();
+  TextColumn get album => text()();
+  TextColumn get dateReadable => text()();
+  IntColumn get discNumber => integer()();
+  IntColumn get totalDiscs => integer()();
+  IntColumn get trackNumber => integer()();
+  IntColumn get fileSizeBytes => integer()();
+  IntColumn get downloadedAt => integer()(); // unix ms
+}
+
+/// Queue and status of in-progress or failed downloads.
+@DataClassName('DownloadJobRow')
+class DownloadJobs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get fileKey => integer().unique()();
+  TextColumn get trackJson => text()(); // Serialized Track object
+  TextColumn get state => text()(); // queued, running, failed, cancelled
+  TextColumn get error => text().nullable()();
+  IntColumn get bytesDone => integer()();
+  IntColumn get bytesTotal => integer()();
+  IntColumn get enqueuedAt => integer()(); // unix ms
+  IntColumn get startedAt => integer().nullable()(); // unix ms
+}
+
 @DriftDatabase(
-  tables: [SavedServers, Favorites, LocalQueueTracks, LocalQueueState],
+  tables: [
+    SavedServers,
+    Favorites,
+    LocalQueueTracks,
+    LocalQueueState,
+    DownloadedTracks,
+    DownloadJobs,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -73,7 +113,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from == 1 && to == 2) {
+        if (from < 2 && to >= 2) {
           await m.createTable(favorites);
         }
         if (from < 3 && to >= 3) {
@@ -81,6 +121,10 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4 && to >= 4) {
           await m.createTable(localQueueState);
+        }
+        if (from < 5 && to >= 5) {
+          await m.createTable(downloadedTracks);
+          await m.createTable(downloadJobs);
         }
       },
     );

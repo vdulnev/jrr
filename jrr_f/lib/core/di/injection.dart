@@ -13,6 +13,9 @@ import '../../features/favorites/data/repositories/favorites_repository.dart';
 import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
+import '../../features/offline/data/repositories/downloads_repository.dart';
+import '../../features/offline/data/repositories/downloads_repository_impl.dart';
+import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/models/local_audio_quality.dart';
@@ -65,6 +68,18 @@ Future<void> configureDependencies() async {
     LocalQueueRepositoryImpl(getIt<AppDatabase>()),
   );
   getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
+
+  // Offline / Downloads
+  getIt.registerSingleton<DownloadsRepository>(
+    DownloadsRepositoryImpl(db: getIt<AppDatabase>(), talker: getIt<Talker>()),
+  );
+  final downloadService = DownloadService(
+    repository: getIt<DownloadsRepository>(),
+    connectionRepository: getIt<ConnectionRepository>(),
+    talker: getIt<Talker>(),
+  );
+  downloadService.start();
+  getIt.registerSingleton<DownloadService>(downloadService);
 
   // Audio Player for local playback
   final player = AudioPlayer();

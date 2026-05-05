@@ -42,6 +42,10 @@ abstract class Track with _$Track {
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
+  String get albumGroupId => '$album|$parentFolderPath';
+
+  String get date => dateReadable;
+
   String get folderPath => parentPath(filePath);
 
   String get parentFolderPath => parentPath(folderPath);

@@ -46,6 +46,9 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   just_audio: ^0.10.5
   audio_session: ^0.2.3
+  path_provider: ^2.1.5
+  crypto: ^3.0.7
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +66,8 @@ dev_dependencies:
   retrofit_generator: ^10.2.5
   drift_dev: ^2.31.0
   flutter_launcher_icons: ^0.13.1
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
 
 flutter_launcher_icons:
   android: true
