@@ -66,7 +66,7 @@ final class DownloadStatusProvider
   }
 }
 
-String _$downloadStatusHash() => r'9a7f3ef8fe19b3a0f5a33b65f917c0e78fc29308';
+String _$downloadStatusHash() => r'49d1f589e920b6d577849c5f796f3d6d83a9d44b';
 
 final class DownloadStatusFamily extends $Family
     with $FunctionalFamilyOverride<DownloadState, int> {
@@ -143,7 +143,7 @@ final class DownloadProgressProvider
   }
 }
 
-String _$downloadProgressHash() => r'9f8d54cd1608da515b04f53e86e17dec5d0f096e';
+String _$downloadProgressHash() => r'b78bf27bc82673851e8dcbb55dee50d32d6667bc';
 
 final class DownloadProgressFamily extends $Family
     with $FunctionalFamilyOverride<double, int> {

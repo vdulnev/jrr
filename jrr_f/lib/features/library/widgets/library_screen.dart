@@ -7,7 +7,7 @@ import '../../../core/theme/app_theme.dart';
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 
-  static const _tabs = ['Artists', 'Random', 'Browse', 'Favorites'];
+  static const _tabs = ['Artists', 'Random', 'Browse', 'Favorites', 'Downloads'];
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +17,7 @@ class LibraryScreen extends StatelessWidget {
         RandomTabRouterRoute(),
         BrowseTabRouterRoute(),
         FavoritesTabRouterRoute(),
+        DownloadsTabRouterRoute(),
       ],
       transitionBuilder: (context, child, animation) => child,
       builder: (context, child) {

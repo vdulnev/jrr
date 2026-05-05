@@ -215,6 +215,139 @@ class ConnectingRouteArgs {
 }
 
 /// generated route for
+/// [DownloadedAlbumDetailScreen]
+class DownloadedAlbumDetailRoute
+    extends PageRouteInfo<DownloadedAlbumDetailRouteArgs> {
+  DownloadedAlbumDetailRoute({
+    required String albumGroupId,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+         DownloadedAlbumDetailRoute.name,
+         args: DownloadedAlbumDetailRouteArgs(
+           albumGroupId: albumGroupId,
+           key: key,
+         ),
+         initialChildren: children,
+       );
+
+  static const String name = 'DownloadedAlbumDetailRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<DownloadedAlbumDetailRouteArgs>();
+      return DownloadedAlbumDetailScreen(
+        albumGroupId: args.albumGroupId,
+        key: args.key,
+      );
+    },
+  );
+}
+
+class DownloadedAlbumDetailRouteArgs {
+  const DownloadedAlbumDetailRouteArgs({required this.albumGroupId, this.key});
+
+  final String albumGroupId;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'DownloadedAlbumDetailRouteArgs{albumGroupId: $albumGroupId, key: $key}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DownloadedAlbumDetailRouteArgs) return false;
+    return albumGroupId == other.albumGroupId && key == other.key;
+  }
+
+  @override
+  int get hashCode => albumGroupId.hashCode ^ key.hashCode;
+}
+
+/// generated route for
+/// [DownloadedAlbumsScreen]
+class DownloadedAlbumsRoute extends PageRouteInfo<DownloadedAlbumsRouteArgs> {
+  DownloadedAlbumsRoute({
+    required String artist,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+         DownloadedAlbumsRoute.name,
+         args: DownloadedAlbumsRouteArgs(artist: artist, key: key),
+         initialChildren: children,
+       );
+
+  static const String name = 'DownloadedAlbumsRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<DownloadedAlbumsRouteArgs>();
+      return DownloadedAlbumsScreen(artist: args.artist, key: args.key);
+    },
+  );
+}
+
+class DownloadedAlbumsRouteArgs {
+  const DownloadedAlbumsRouteArgs({required this.artist, this.key});
+
+  final String artist;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'DownloadedAlbumsRouteArgs{artist: $artist, key: $key}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DownloadedAlbumsRouteArgs) return false;
+    return artist == other.artist && key == other.key;
+  }
+
+  @override
+  int get hashCode => artist.hashCode ^ key.hashCode;
+}
+
+/// generated route for
+/// [DownloadedArtistsScreen]
+class DownloadedArtistsRoute extends PageRouteInfo<void> {
+  const DownloadedArtistsRoute({List<PageRouteInfo>? children})
+    : super(DownloadedArtistsRoute.name, initialChildren: children);
+
+  static const String name = 'DownloadedArtistsRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const DownloadedArtistsScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [DownloadsTabRouterScreen]
+class DownloadsTabRouterRoute extends PageRouteInfo<void> {
+  const DownloadsTabRouterRoute({List<PageRouteInfo>? children})
+    : super(DownloadsTabRouterRoute.name, initialChildren: children);
+
+  static const String name = 'DownloadsTabRouterRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const DownloadsTabRouterScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [FavoritesTabRouterScreen]
 class FavoritesTabRouterRoute extends PageRouteInfo<void> {
   const FavoritesTabRouterRoute({List<PageRouteInfo>? children})

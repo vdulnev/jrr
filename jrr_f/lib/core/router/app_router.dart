@@ -12,6 +12,9 @@ import '../../features/library/widgets/favorites_tab.dart';
 import '../../features/library/widgets/folder_tracks_screen.dart';
 import '../../features/library/widgets/library_tab_routers.dart';
 import '../../features/library/widgets/random_tab.dart';
+import '../../features/offline/widgets/downloaded_album_detail_screen.dart';
+import '../../features/offline/widgets/downloaded_albums_screen.dart';
+import '../../features/offline/widgets/downloaded_artists_screen.dart';
 import 'root_screen.dart';
 
 part 'app_router.gr.dart';
@@ -52,6 +55,14 @@ class AppRouter extends RootStackRouter {
         AutoRoute(
           page: FavoritesTabRouterRoute.page,
           children: [AutoRoute(page: FavoritesTabRoute.page, initial: true)],
+        ),
+        AutoRoute(
+          page: DownloadsTabRouterRoute.page,
+          children: [
+            AutoRoute(page: DownloadedArtistsRoute.page, initial: true),
+            AutoRoute(page: DownloadedAlbumsRoute.page),
+            AutoRoute(page: DownloadedAlbumDetailRoute.page),
+          ],
         ),
         AutoRoute(page: ConnectingRoute.page),
       ],

@@ -32,3 +32,11 @@ class FavoritesTabRouterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const AutoRouter();
 }
+
+@RoutePage()
+class DownloadsTabRouterScreen extends StatelessWidget {
+  const DownloadsTabRouterScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const AutoRouter();
+}
