@@ -1,14 +1,26 @@
 # Flutter Implementation Spec — JRiver Remote (`jrr_f`)
 
-This document specifies the Flutter implementation of the JRiver Remote. It complements the parent product spec at `../SPEC.md`, which is the source of truth for product scope, user stories, functional requirements, and API contracts. This file only describes *how* the Flutter app realizes that spec.
+This document specifies the Flutter implementation of the JRiver Remote.
+It complements the parent product spec at `../spec.md`, which is the
+source of truth for product scope, MCWS API contracts, and cross-platform
+behavior. This file describes only *how* the Flutter app realizes that
+spec.
 
-If anything here conflicts with the parent spec, the parent spec wins for behavior and this file wins for Flutter-specific implementation details.
+If anything here conflicts with the parent spec, the parent spec wins for
+behavior and this file wins for Flutter-specific implementation details.
+
+**Version:** 2.2.0
+**Status:** Phases 1–8 implemented (remote control, library, design
+system, multi-platform layouts, local playback, favorites)
 
 ---
 
 ## 0. Dart rules
 
-Never use null assertion operator.
+- Never use the null-assertion operator (`!`).
+- Never use `dynamic` — be explicit.
+- Trailing commas in all widget constructors; prefer `const`.
+- Run `dart format .` before every commit.
 
 ## 1. Tech Stack
 
@@ -16,22 +28,28 @@ Never use null assertion operator.
 |---|---|---|
 | Language | Dart ≥ 3.11.4 | null-safe, records, patterns |
 | Framework | Flutter (stable) | Material 3 |
-| State management | **Riverpod** (`flutter_riverpod`) | `Notifier` / `AsyncNotifier` providers |
-| Routing | **auto_route** | code-gen, typed routes, guards |
-| DI / service location | **get_it** | registered in `lib/core/di/` |
-| Functional programming | **fpdart** | error handling |
-| Logging | **Talker** + custom redacting Dio logger + `talker_flutter` | in-process redaction of secrets |
-| Models / unions | **Freezed** + `json_serializable` | sealed classes for state + DTOs |
-| HTTP | **Dio** | with custom interceptors |
-| Local DB | **drift** (SQLite) | favorites, cached portfolio + history, alerts, settings |
-| Simple prefs | **shared_preferences** | non-sensitive UI-only flags |
-| HTTP codegen | **Retrofit** (`retrofit`) | abstract API → generated implementation |
-| Notifications | **awesome_notifications** | local price alerts |
-| Mocking (tests) | **mocktail** | per project test convention |
+| State management | **Riverpod 3** (`flutter_riverpod`, `riverpod_annotation`, `riverpod_generator`) | code-generated `Notifier` / `AsyncNotifier` providers |
+| Routing | **auto_route 11** | code-gen, typed routes, nested `AutoTabsRouter` for Library |
+| DI / service location | **get_it 9** | base + `'session'` scopes |
+| Functional programming | **fpdart** | `Either<AppException, T>` at the repository boundary |
+| Logging | **Talker** + `talker_dio_logger` + `talker_riverpod_logger` + `talker_flutter` | single instance, redacts `Token` query param |
+| Models / unions | **Freezed 3** + `json_serializable` | sealed classes for state + DTOs |
+| HTTP | **Dio 5** | with custom auth + logging interceptors |
+| HTTP codegen | **Retrofit** (`retrofit`, `retrofit_generator`) | abstract API → generated implementation |
+| Local DB | **drift** + `drift_flutter` (SQLite) | servers, favorites, local queue |
+| Simple prefs | **shared_preferences** | active zone GUID, last tab, local player state |
+| Secure storage | **flutter_secure_storage** | server passwords (OS keychain/keystore) |
+| Local audio playback | **just_audio** + **audio_session** | streams MCWS `File/GetFile` directly to the device |
+| Mocking (tests) | **mocktail** | no `mockito` codegen |
+| App icons | **flutter_launcher_icons** | per-platform launcher icons |
 
 ### Target platforms
 
 iOS, Android, macOS, Windows, Linux. Web is **not** a target.
+
+The app ships an adaptive layout: a bottom-tab shell on narrow viewports
+(phones / portrait tablets) and a sidebar + content shell on wide
+viewports (desktops, landscape tablets). See §3 "Adaptive layout".
 
 ---
 
@@ -39,134 +57,191 @@ iOS, Android, macOS, Windows, Linux. Web is **not** a target.
 
 ```
 lib/
-  main.dart                        # entry point; bootstraps DI + app
+  main.dart                        # entry; bootstraps DI, error handlers,
+                                   # ProviderScope w/ TalkerRiverpodObserver
   app.dart                         # MaterialApp.router wired to AppRouter
   core/
     di/
-      injection.dart               # get_it base-scope registrations (startup singletons)
+      injection.dart               # get_it base-scope registrations
     error/
       app_exception.dart           # sealed Freezed AppException union
       app_exception.freezed.dart
+    layout/
+      layout_breakpoints.dart      # width threshold for narrow vs wide
+      adaptive_layout.dart         # AdaptiveLayoutBuilder
+      two_panel_shell.dart         # wide layout: Sidebar + content
+      sidebar.dart                 # left-rail navigation (wide layout)
     network/
-      dio_factory.dart             # builds the Dio instance with interceptors
-      mcws_api.dart                # Retrofit abstract class — annotated HTTP endpoints
-      mcws_api.g.dart              # generated Retrofit implementation
-      mcws_client.dart             # domain-level client: error mapping, query building, response parsing
+      dio_factory.dart             # createDio() + createPublicDio()
+      mcws_api.dart                # Retrofit abstract MCWS endpoints
+      mcws_api.g.dart              # generated
+      mcws_client.dart             # domain client: query building, parsing
       mcws_xml_parser.dart         # XML → Map<String, String>
+      jriver_lookup_api.dart       # Public registry lookup (webplay.jriver.com)
+      jriver_lookup_api.g.dart
       models/
         auth_result.dart           # Authenticate response DTO
       interceptors/
-        auth_interceptor.dart      # appends Token= query param
-        logging_interceptor.dart   # Talker-based, redacts token values
+        auth_interceptor.dart      # appends Token query param
+        logging_interceptor.dart   # Talker-backed, redacts token
     db/
-      app_database.dart            # Drift database + migrations
-      app_database.g.dart          # generated
+      app_database.dart            # Drift DB; schema v4
+      app_database.g.dart
     router/
-      app_router.dart              # @AutoRouterConfig
-      app_router.gr.dart           # generated
-      navigation_notifier.dart     # Riverpod notifier owning the route stack
-      root_screen.dart             # AutoRouter.declarative + mini player
+      app_router.dart              # @AutoRouterConfig (nested routes)
+      app_router.gr.dart
+      navigation_notifier.dart     # AppTab enum + ActiveTab notifier
+      navigation_notifier.g.dart
+      root_screen.dart             # auth gate + adaptive shell
+      player_placeholder_screen.dart
+    theme/
+      app_theme.dart               # AppColors, AppFonts, AppTextStyles,
+                                   # buildAppTheme()
   features/
     connection/
       data/
         models/
-          server_info.dart         # from Alive response (Freezed)
+          server_info.dart         # Freezed
         repositories/
-          connection_repository.dart      # abstract interface
-          connection_repository_impl.dart # impl with secure storage
+          connection_repository.dart       # interface
+          connection_repository_impl.dart  # secure storage + scope mgmt
       providers/
-        last_server_provider.dart
-        server_setup_provider.dart
-        session_provider.dart      # manages auth state
-        session_state.dart         # Restoring | Unauthenticated | Authenticated
+        last_server_provider.dart        # autofill on setup screen
+        server_setup_provider.dart       # form-submission AsyncValue<void>?
+        session_provider.dart            # Session notifier (silent reconnect)
+        session_state.dart               # Restoring | Unauthenticated | Authenticated
       widgets/
-        server_setup_screen.dart   # host/port/credential entry
-        connecting_screen.dart     # spinner while Alive + Authenticate run
+        server_setup_screen.dart   # access-key OR manual host/port entry
+        connecting_screen.dart
+        server_manager_screen.dart # Settings tab content
     player/
       data/
         models/
-          player_status.dart       # Freezed; includes Track?
+          player_status.dart       # Freezed
           playback_state.dart      # enum
           shuffle_mode.dart        # enum
           repeat_mode.dart         # enum
+          local_audio_quality.dart # Conversion + Quality preset enum
+          player_state_data.dart   # Freezed wrapper around just_audio state
+          sequence_state_data.dart # Freezed wrapper around sequence
+          local_palyback_state.dart# combined snapshot (typo preserved)
         repositories/
-          player_repository.dart   # abstract interface
+          player_repository.dart
           player_repository_impl.dart
+      services/
+        local_player_service.dart  # just_audio wrapper
+      logging/
+        talker_extensions.dart
+        sequence_state_log.dart
       providers/
-        player_provider.dart       # AsyncNotifier<PlayerStatus>
-        polling_provider.dart      # timer-based orchestrator
+        player_provider.dart       # remote AsyncNotifier<PlayerStatus?>
+        player_polling_provider.dart    # remote-zone poller
+        local_player_provider.dart      # AsyncNotifier driving just_audio
+        local_audio_quality_provider.dart # SharedPreferences-backed enum
       widgets/
-        now_playing_screen.dart    # main tab screen; artwork, transport, seek, volume
-        mini_player_panel.dart     # persistent mini player in layout flow (Column-based)
-        transport_controls.dart
-        seek_bar.dart
-        volume_control.dart
-        artwork_widget.dart
+        now_playing_screen.dart
+        mini_player_panel.dart     # in Column flow, not overlay
     zones/
       data/
         models/
-          zone.dart
+          zone.dart                # Freezed (adds isLocal flag)
+          zones.dart               # Freezed wrapper (List<Zone>)
         repositories/
-          zone_repository.dart     # abstract interface
-          zone_repository_impl.dart
+          zone_repository.dart
+          zone_repository_impl.dart      # appends synthetic "Local" zone
       providers/
-        zone_provider.dart         # AsyncNotifier<List<Zone>>
-        active_zone_provider.dart  # StateProvider<Zone?>
+        zone_provider.dart         # ZoneList AsyncNotifier
+        zone_polling_provider.dart # 30s poll while authenticated
+        active_zone_provider.dart  # restored from SharedPreferences
       widgets/
-        zone_list_screen.dart      # top-level tab with zone list, volume control for active zone
+        zone_list_screen.dart
+        zone_tile.dart
     queue/
       data/
         repositories/
-          queue_repository.dart    # abstract interface
+          queue_repository.dart            # remote (Playback/Playlist)
           queue_repository_impl.dart
+          local_queue_repository.dart      # interface
+          local_queue_repository_impl.dart # Drift-backed
       providers/
-        queue_provider.dart        # AsyncNotifier<List<Track>>
+        queue_provider.dart        # remote AsyncNotifier<Tracks>
       widgets/
         queue_screen.dart
         queue_item_tile.dart
     library/
       data/
         models/
-          album.dart               # Freezed; Album.fromTrack() factory
-          browse_item.dart         # Freezed; id + name for browse tree nodes
-          track.dart               # Freezed + json_serializable; shared by queue & library
+          album.dart               # Freezed; AlbumGroup helper for multi-disc
+          browse_item.dart         # Freezed
+          track.dart               # Freezed + json_serializable; converters
+                                   # for tolerant int/string parsing
+          tracks.dart              # Freezed wrapper (List<Track>)
         repositories/
-          library_repository.dart  # abstract interface
+          library_repository.dart
           library_repository_impl.dart
       providers/
-        library_providers.dart     # artists, albumsByArtist, albumTracks, folderTracks, randomAlbums, search, browseChildren, browseFiles, libraryTabIndex
+        library_providers.dart     # artists, albumsByArtist, albumTracks,
+                                   # folderTracks, randomAlbums, search,
+                                   # browseChildren, browseFiles,
+                                   # searchByFileKey, BrowseNavigationStack
       widgets/
-        library_screen.dart        # top-level tab with segmented control (Artists/Random/Browse)
-        album_list_screen.dart     # reusable: takes List<Album>, title, subtitle, onRefresh; SubScreenHeader, filter field (>5 albums), AlbumRowTile
-        album_detail_screen.dart   # thin @RoutePage wrapper → TrackListScaffold
-        album_row_tile.dart        # album row with art placeholder, kebab PopupMenuButton (play/play-next/add/open-folder)
-        folder_tracks_screen.dart  # folder-based track view with parent/child navigation
-        track_list_scaffold.dart   # shared scaffold: SubScreenHeader + title widget + subtitle + track list body + multi-disc grouping
-        artist_albums_screen.dart  # @RoutePage wrapper for artist → albums
-        random_albums_screen.dart  # @RoutePage wrapper for random albums
-        library_item_tile.dart     # track tile with collapsible info, kebab popup menu, long-press path sheet
-        browse_screen.dart         # tree navigation with internal stack; Browse/Children for nodes, Browse/Files for leaves; also BrowseTreeView for embedded use
-        browse_files_screen.dart   # leaf node track list with flat/grouped toggle; grouped by artist → album+date; kebab popup menus per group
+        library_screen.dart        # AutoTabsRouter shell (Artists / Random
+                                   # / Browse / Favorites)
+        library_tab_routers.dart   # router-only @RoutePage stubs per tab
+        artists_tab.dart
+        random_tab.dart
+        browse_tab.dart
+        favorites_tab.dart
+        artist_albums_screen.dart
+        album_detail_screen.dart   # @RoutePage; thin wrapper → TrackListScaffold
+        folder_tracks_screen.dart  # parent/child folder navigation
+        track_list_scaffold.dart   # shared body for track lists
+        multi_disc_list.dart       # disc-grouped view
+        album_list_screen.dart     # reusable: List<Album> → screen
+        album_list_view.dart
+        album_row_tile.dart
+        library_item_tile.dart     # collapsible track row + popup menu
         library_action_sheet.dart
+        grouped_track_list.dart    # artist → album+date grouping
+        browse_screen.dart
+        browse_content.dart
+        browse_breadcrumb.dart
+        browse_item_list.dart
+        browse_item_tile.dart
+        browse_files_screen.dart
+    favorites/
+      data/
+        repositories/
+          favorites_repository.dart
+          favorites_repository_impl.dart   # Drift-backed (browse-item only)
+      providers/
+        favorites_provider.dart            # AsyncNotifier<List<Favorite>>
+      widgets/
+        favorites_screen.dart
   shared/
     widgets/
-      error_view.dart              # surfaces AsyncValue.error
+      artwork_widget.dart
+      progress_bar.dart
+      action_chip_button.dart
+      transport_button.dart
+      volume_slider.dart
+      tracks_popup_menu.dart       # shared bulk-track action menu
+      track_row.dart
+      vu_meter.dart
+      sub_screen_header.dart
+      error_view.dart
       loading_view.dart
-      sub_screen_header.dart       # shared header: back button, title/titleWidget, subtitle, trailing, content
-      transport_button.dart        # reusable circular icon button for transport controls
-      volume_slider.dart           # compact horizontal volume slider with mute toggle
-    extensions/
-      async_value_ext.dart         # .whenWidget() helper
 test/
-  features/
-    connection/
-    player/
-    zones/
-    queue/
+  widget_test.dart
   core/
     network/
       mcws_xml_parser_test.dart
       mcws_client_test.dart
+  features/
+    connection/
+      connection_repository_test.dart
+    library/
+      track_test.dart
 ```
 
 ---
@@ -174,64 +249,116 @@ test/
 ## 3. Architecture Conventions
 
 ### Layered responsibilities
-- **Widgets**: render + dispatch. No direct repository or Dio access. Read providers via `ref.watch` / `ref.listen`.
-- **Providers (Riverpod)**: hold state, expose actions, call repositories. Use `AsyncNotifier` for anything that loads.
-- **Repositories**: resolve `McwsClient` from get_it, parse DTOs, return typed `Either<AppException, T>`. No Flutter imports.
+- **Widgets**: render + dispatch. No direct repository or Dio access.
+  Read providers via `ref.watch` / `ref.listen`.
+- **Providers (Riverpod)**: hold state, expose actions, call
+  repositories. Use `AsyncNotifier` for anything that loads.
+- **Repositories**: resolve `McwsClient` (or Drift `AppDatabase`,
+  `LocalPlayerService`, etc.) from get_it; return `Either<AppException, T>`.
+  No Flutter imports.
 - **Models**: Freezed only; no logic beyond `fromJson` / computed getters.
 
 ### Widget file convention
-Every public widget class lives in its own file. One public widget per file — no exceptions, including router scaffolding screens and placeholders.
+Every public widget class lives in its own file. One public widget per
+file — including router-stub screens (see `library_tab_routers.dart`).
 
 ### get_it scopes
 
-get_it manages two scope layers:
-
 | Scope | Lifetime | Registered types |
 |---|---|---|
-| **base** (default) | app lifetime | `Talker`, `AppDatabase`, `FlutterSecureStorage`, `SharedPreferences`, `McwsXmlParser`, `ConnectionRepository` |
+| **base** (default) | app lifetime | `Talker`, `AppDatabase`, `FlutterSecureStorage`, `SharedPreferences`, `McwsXmlParser`, `ConnectionRepository`, `PlayerRepository`, `ZoneRepository`, `QueueRepository`, `LocalQueueRepository`, `LibraryRepository`, `FavoritesRepository`, `AudioPlayer`, `LocalPlayerService` |
 | **`'session'`** | login → logout | `McwsClient` |
 
-`ConnectionRepository.connect()` pushes the `'session'` scope and registers `McwsClient` there (with the auth token baked into the `AuthInterceptor` closure).  
-`ConnectionRepository.clearSession()` calls `await getIt.popScope()` — `McwsClient` and its `Dio` instance are discarded automatically.
+`ConnectionRepository.connect()` builds an `McwsClient` (with the auth
+token resolved at request-time via a `tokenGetter` closure on the
+`AuthInterceptor`), authenticates, then pushes the `'session'` scope and
+registers the client there.
+`ConnectionRepository.clearSession()` calls `await getIt.popScope()` —
+`McwsClient` and its `Dio` instance are discarded automatically.
 
-All repositories that need to make MCWS requests resolve the client at call-time: `getIt<McwsClient>()`. They must only be called while a session scope is active (i.e. after successful authentication).
+`LocalPlayerService` and its `AudioPlayer` are **base-scope** singletons:
+local playback survives logout and restores from a Drift-backed queue on
+next launch (see §4 Persistence). The session scope is only for
+network-bound services.
+
+All repositories that hit MCWS resolve the client at call-time via
+`getIt<McwsClient>()`. They must only run while a session scope is
+active (i.e. after successful authentication).
+
+### Adaptive layout
+
+`AdaptiveLayoutBuilder` (in `core/layout/`) chooses between two shells
+based on `LayoutBreakpoints.wideScreen`:
+
+- **Narrow shell** (`_NarrowLayout` in `root_screen.dart`):
+  `Scaffold` + bottom `_TabBar` (5 tabs: Playing, Queue, Library, Zones,
+  Settings) + `IndexedStack` body + optional `MiniPlayerPanel` in the
+  Column above the tab bar.
+- **Wide shell** (`TwoPanelShell`): a fixed-width `Sidebar` of the same
+  5 nav items beside the same content area. Mini-player sits inside the
+  content column above the bottom edge.
+
+Both shells render the same `IndexedStack`-equivalent set of screens;
+only the chrome (sidebar vs bottom tab bar) differs. The mini-player
+must always participate in layout flow (never an overlay) so it can't
+cover modals or popup menus.
 
 ### Riverpod rules
-- **All state lives in Riverpod providers** — no `setState`, no local widget state for business logic.
-- `ConsumerStatefulWidget` is allowed only for widget-lifecycle concerns: `TextEditingController`, `FocusNode`, `AnimationController`, scroll controllers. Never use it to hold loading flags, error state, or domain data.
-- Use `late`, not `late final`, for fields initialized in `build()` — Riverpod can rebuild a notifier and reassign its dependencies.
+- **All state lives in Riverpod providers** — no `setState`, no local
+  widget state for business logic.
+- `ConsumerStatefulWidget` is allowed only for widget-lifecycle concerns:
+  `TextEditingController`, `FocusNode`, `AnimationController`, scroll
+  controllers. Never use it to hold loading flags, error state, or
+  domain data.
+- Use `late`, not `late final`, for fields initialized in `build()` —
+  Riverpod can rebuild a notifier and reassign its dependencies.
 - Never mutate state outside a notifier.
 - Prefer `AsyncValue.guard` for repository calls.
 - Compose providers with `ref.watch(otherProvider)`.
-- Form submission state (`AsyncValue<void>?`: null = idle, loading, error) belongs in a dedicated screen-scoped `@riverpod` notifier, auto-disposed when the screen leaves the tree.
+- Form-submission state (`AsyncValue<void>?`: null = idle, loading,
+  error) belongs in a dedicated screen-scoped `@riverpod` notifier,
+  auto-disposed when the screen leaves the tree
+  (see `server_setup_provider.dart`).
 
 ### Code style
-- **Always run `dart format .` after code changes** — code must be formatted before committing.
-- Follow Dart's official style guide (80-character line limit, etc.).
-- Use `dart format .` to automatically apply formatting.
-- CI should reject commits with unformatted code.
+- **Always run `dart format .` after code changes.**
+- Follow Dart's official style guide (80-character line limit).
+- `dart fix --apply` for automatic mechanical fixes.
+- CI rejects unformatted code or `flutter analyze` warnings.
 
 ## Routing (auto_route)
-- **Declarative routing via `AutoRouter.declarative()`** — all navigation state flows through Riverpod providers.
-- Single `AppRouter` with `@AutoRouterConfig`.
-- **`RootScreen`** wraps authentication guard + `_AuthenticatedShell`:
-  - `sessionProvider` state (Restoring | Unauthenticated | Authenticated) gates access
-  - `_AuthenticatedShell` renders the bottom tab bar with 4 tabs (Playing, Queue, Library, Zones)
-  - Tab content rendered via `IndexedStack` for state preservation
-  - When nav stack is non-empty, sub-screens rendered via `AutoRouter.declarative()` on top
-  - `MiniPlayerPanel` shown in Column layout flow (between content and tab bar) when not on NowPlaying tab or when sub-screens are pushed
-- **`ActiveTab`** (Riverpod `@riverpod` notifier) manages bottom tab selection:
-  - `AppTab` enum: `nowPlaying`, `queue`, `library`, `zones`
-  - `select(tab)` clears nav stack then switches tab
-- **`NavigationNotifier`** (Riverpod) manages the sub-screen navigation stack:
-  - `push()` — add route to stack
-  - `pop()` — remove from stack
-  - `replace()` — replace top route
-  - `clear()` — reset stack
-- **Never use imperative `context.router.push/pop`** — all navigation goes through `ref.read(navigationProvider.notifier)`.
+
+The app uses **nested auto_route** rather than the imperative
+`NavigationNotifier` push/pop stack from earlier phases.
+
+- A single `AppRouter` (`@AutoRouterConfig(replaceInRouteName: 'Screen,Route')`).
+- `RootRoute` is the only top-level route; its children are sibling
+  routes for unauthenticated state (`ServerSetupRoute`,
+  `ConnectingRoute`) and the four library tab subtrees
+  (`ArtistsTabRouterRoute`, `RandomTabRouterRoute`,
+  `BrowseTabRouterRoute`, `FavoritesTabRouterRoute`).
+- Each library tab has its own dedicated `@RoutePage` stub (e.g.
+  `ArtistsTabRouterScreen → AutoRouter()`) so back/forward state is
+  preserved per-tab.
+- `LibraryScreen` mounts `AutoTabsRouter` over those four sub-routers
+  with a custom segmented header for the active tab.
+- The bottom-tab / sidebar shell is **not** auto_route-driven — it's a
+  Riverpod-managed `IndexedStack` keyed by the `ActiveTab` enum
+  (`nowPlaying`, `queue`, `library`, `zones`, `settings`).
+  `ActiveTab.select(tab)` simply assigns the new tab; switching tabs
+  does not clear sub-stacks.
+- `RootScreen` gates access on `sessionProvider`:
+  - `Restoring` → spinner.
+  - `Unauthenticated` → `AutoRouter.declarative(routes: [ServerSetupRoute()])`.
+  - `Authenticated` → `_AuthenticatedShell` (adaptive).
+- Library tabs use *imperative* sub-navigation via `context.router.push`
+  on `ArtistAlbumsRoute`, `AlbumDetailRoute`, `FolderTracksRoute`. The
+  earlier "never use imperative `context.router.push`" rule no longer
+  applies — it conflicts with the nested router model.
 
 ### Error handling
-- Use functional style for error handling. Do not use try/catch.
+- Use functional style at repository boundaries — no try/catch in
+  business logic.
 - All API errors normalized into `AppException` (sealed Freezed union):
 
   ```dart
@@ -260,41 +387,93 @@ All repositories that need to make MCWS requests resolve the client at call-time
   | `DioException` timeout | `timeout` |
   | Anything else | `unknown` |
 
-- UI surfaces errors via `AsyncValue.error` + a shared `ErrorView` widget.
+- UI surfaces errors via `AsyncValue.error` + a shared `ErrorView`.
+- Top-level safety net: `main.dart` installs `FlutterError.onError`
+  and `PlatformDispatcher.instance.onError` to log uncaught widget /
+  async errors via Talker.
 
 ### Logging (Talker)
 - Single `Talker` instance via get_it.
+- `TalkerDioLogger` redacts the `Token` query param value.
+- `TalkerRiverpodObserver` logs all provider state transitions.
+- `TalkerRouteObserver` is registered on the router config.
 
 ---
 
 ## 4. Persistence
 
-### Drift (`app_database.dart`)
-Tables:
+### Drift (`app_database.dart`, schema version 4)
 
 | Table | Columns | Purpose |
 |---|---|---|
-| `saved_servers` | `id` (int PK autoincrement), `host` (text), `port` (int), `username` (text), `password_encrypted` (text), `friendly_name` (text nullable), `last_used_at` (int nullable — unix ms) | Persisted server configurations. `password_encrypted` uses `flutter_secure_storage` indirection: the column stores a lookup key; the actual credential lives in the OS keychain/keystore. |
+| `saved_servers` | `id` PK, `host`, `port` (default 52199), `username`, `password_key` (lookup key into `flutter_secure_storage`), `friendly_name?`, `last_used_at?`, `auth_token?` | Persisted server configurations. Most-recently-used row drives silent reconnect. |
+| `favorites` | `id` PK, `type` (always `'browse_item'`), `identifier` (browse node id), `display_name`, `added_at` | User-pinned browse-tree nodes. Surfaced via the Favorites sub-tab inside Library. |
+| `local_queue_tracks` | `id` PK, `file_key`, `track_json` (full serialized `Track`), `position` | Backing store for the local just_audio queue so it survives app restarts. |
+| `local_queue_state` | `id` PK, `current_index` (default −1) | Last-played index in the local queue. |
 
-Only one table is needed for v1. The `last_used_at` field drives pre-selection on startup (most recently used server is auto-selected).
+**Migrations** (additive):
+- v1 → v2: create `favorites`.
+- v2 → v3: create `local_queue_tracks`.
+- v3 → v4: create `local_queue_state`.
 
-Auth tokens are **not** persisted — they are held in memory for the duration of the session and discarded on logout or app termination.
+Never edit a past migration — add a new one.
 
-Migrations are versioned in `app_database.dart`; never edit a past migration — add a new one.
+### flutter_secure_storage
+
+Server passwords are written to the OS keychain/keystore under
+`server_<host>_<port>_<username>`. Drift stores only the key, never
+the password.
+
+### Auth token persistence (departure from earlier spec)
+
+The auth token **is** persisted on `SavedServers.auth_token`. This
+enables silent reconnect on launch: `Session._attemptSilentReconnect()`
+re-runs the full `connect()` (Authenticate + Alive) using the stored
+password, which produces a fresh token. The persisted token is opaque
+state and is wiped on `clearSession()`.
+
+If silent reconnect fails (network down, password changed), the user
+lands on `ServerSetupScreen` with fields prefilled from
+`lastServerProvider`.
+
+### Access-key lookup
+
+`ServerSetupScreen` accepts either:
+- a 6-character JRiver Access Key (resolved via the public registry at
+  `http://webplay.jriver.com/libraryserver/lookup?id=...`, parsed by a
+  small regex over `<ip>` / `<localiplist>` / `<port>` elements), or
+- a manual `host:port`.
+
+The lookup uses a separate `JRiverLookupApi` Retrofit client built with
+`createPublicDio()` so it carries no auth interceptor.
 
 ### shared_preferences
-Only ephemeral UI flags (last selected tab, last viewed symbol). Never credentials. Never anything the parent spec lists as persistent.
+
+Used for ephemeral, non-sensitive UI flags only:
+
+| Key | Type | Purpose |
+|---|---|---|
+| `active_zone_guid` | String | Restored on next launch by `ActiveZone` notifier |
+| `local_audio_quality` | String | Selected `LocalAudioQuality` enum name |
+| `local_player_index` | int | Last index in the local just_audio queue |
+| `local_player_position_ms` | int | Last playhead position |
+| `local_player_volume` | double | Last local-player volume |
+
+Never credentials; never anything the parent spec lists as
+canonical state.
 
 ### Logout
-`Session.logout()` (Riverpod notifier):
-1. `await getIt<ConnectionRepository>().clearSession()` — pops the `'session'` get_it scope, discarding `McwsClient` and its token.
-2. Cancel the active polling timer (`pollingProvider`).
-3. Clear the active zone (`activeZoneProvider`).
-4. Set state to `SessionState.unauthenticated()`.
-5. Reset the navigation stack via `ref.read(navigationProvider.notifier).clear()`.
-6. Do **not** delete the saved server record — let the user reconnect without re-entering credentials.
 
-`clearSession()` is `async` because `getIt.popScope()` returns `Future<void>`. Always `await` it.
+`Session.logout()`:
+1. `await getIt<ConnectionRepository>().clearSession()` — pops the
+   `'session'` get_it scope (discards `McwsClient`); blanks `auth_token`
+   on **all** saved servers.
+2. State → `SessionState.unauthenticated()`.
+
+The active zone, polling timers, etc. fall out automatically: they
+`ref.watch(sessionProvider)` and pause/clear when the session leaves
+`Authenticated`. Local playback continues — it doesn't depend on the
+session.
 
 ---
 
@@ -304,74 +483,170 @@ Only ephemeral UI flags (last selected tab, last viewed symbol). Never credentia
 
 Interceptors are added in this order (first added = outermost):
 
-1. **`AuthInterceptor`** — appends `Token=<token>` to every request's query parameters. Reads the current token from `ConnectionRepository` via a closure captured at `McwsClient` creation time. If the token is `null`, rejects immediately with `AppException.unauthorized()` (no request sent). Pass `options.extra['skipAuth'] = true` to bypass (used by `authenticate()` which uses HTTP Basic auth instead).
-2. **`LoggingInterceptor`** — wraps `TalkerDioLogger`; redacts the `Token` query param value in all log output (replaces with `***`).
+1. **`AuthInterceptor`** — appends `Token=<token>` to every request's
+   query parameters. Reads the current token via a `tokenGetter` closure
+   captured at `McwsClient` creation. If the token is `null`, rejects
+   immediately with `AppException.unauthorized()` (no request sent).
+   Pass `options.extra['skipAuth'] = true` to bypass — set on
+   `authenticate()` (HTTP Basic) and `alive()` via `@Extra` annotations.
+2. **`LoggingInterceptor`** — wraps `TalkerDioLogger`; redacts the
+   `Token` query param value (replaces with `***`).
 
-No retry interceptor for v1 — transient failures surface as errors that the user can retry manually.
+No retry interceptor for v1 — transient failures surface as errors that
+the user can retry manually via `ErrorView`.
 
 ### Network layer architecture
 
 Two classes split HTTP from domain logic:
 
-**`McwsApi`** (Retrofit) — pure HTTP interface. Each method has a `@GET` annotation and maps to one MCWS endpoint. Returns raw `String` (XML) or `List<Track>` (JSON). Generated `_McwsApi` class implements it via Dio. `filesSearch` is used for all library search queries; `browseChildren` (XML) and `browseFiles` (JSON) are used for tree browsing.
+**`McwsApi`** (Retrofit) — pure HTTP interface; one method per MCWS
+endpoint. Returns raw `String` (XML) or `List<Track>` (JSON).
+`filesSearch` covers all library search queries; `browseChildren` (XML)
+and `browseFiles` (JSON) handle tree browsing; `searchByFileKey`
+fetches a single track via `File/GetInfo`.
 
-**`McwsClient`** — domain-level client. Wraps `McwsApi` calls with:
-- MCWS query string construction (field filters, `~limit`, `~sort`, etc.)
-- Value escaping (`_esc()` — prefixes `[]()-` with `/` for literal use)
-- Client-side exact-match filtering (MCWS does substring matching)
-- XML response parsing via `McwsXmlParser`
-- Error mapping (`DioException` → `AppException`)
-- Domain model transformation (`Track` → `Album`, flat XML fields → `PlayerStatus`)
+**`McwsClient`** — domain client. Wraps `McwsApi` calls with:
+- MCWS query-string construction (field filters, `~limit`, `~sort`).
+- Value escaping (`_esc()` — prefixes `[ ] ( ) -` with `/`).
+- Client-side exact-match filtering (MCWS does substring matching on
+  field equality).
+- XML response parsing via `McwsXmlParser`.
+- `DioException` → `AppException` mapping.
+- Domain-model transformation (`Track` → `Album`, flat XML fields →
+  `PlayerStatus`).
+- Local-streaming URL construction is **not** done here — the local
+  player builds its own `File/GetFile` URLs (see §6).
 
-All repositories resolve `McwsClient` from get_it, never `McwsApi` directly.
+All repositories resolve `McwsClient` from get_it; never `McwsApi`
+directly.
+
+### Local zone
+
+`ZoneRepositoryImpl.getZones()` appends a synthetic `Zone(id: 'local',
+name: 'Local', isLocal: true, …)` to the MCWS response. The Local zone
+is rendered alongside server zones in the Zone list and tagged with a
+`LOCAL` mono label plus an inline audio-quality `PopupMenuButton`
+(`LocalAudioQuality.lossless / lossyHigh / lossyNormal / lossyLow`).
+
+When the active zone is local:
+- `PlayerPolling` stops (no remote `Playback/Info` calls).
+- `NowPlayingScreen` and `MiniPlayerPanel` consume the
+  `localPlaybackState` provider instead.
+- Transport, seek, volume, mute, shuffle, repeat all route through
+  `LocalPlayer` (the AsyncNotifier wrapping `LocalPlayerService`).
 
 ### Offline
 
-MCWS has no offline mode. When any request fails due to a network error:
-- Map `DioException` with type `connectionError` / `receiveTimeout` / `sendTimeout` to the appropriate `AppException` variant.
+MCWS has no offline mode for remote zones. When any request fails:
+- `DioException` → mapped `AppException` variant.
 - The provider's `AsyncValue` transitions to `AsyncValue.error`.
-- `ErrorView` displays the error with a **Retry** button.
-- Polling is suspended automatically when the last `Playback/Info` call fails (the `pollingProvider` catches the error and pauses the timer).
-- When the user taps Retry, `pollingProvider` resumes polling and the first successful response re-activates normal operation.
+- `ErrorView` renders the error with a **Retry** button.
+- `PlayerPolling` schedules its next tick regardless (errors are logged
+  via Talker; the timer does not stop on transient failures).
+
+The local zone is fully usable while remote zones are offline, **as
+long as MCWS itself is reachable** for the streamed `File/GetFile`
+URL — the file streams come from the same server.
 
 ---
 
-## 6. Code Generation
+## 6. Local Audio Playback
 
-Run `dart run build_runner build --delete-conflicting-outputs` after changes to:
-- Freezed models
-- Drift tables
-- auto_route definitions
-- json_serializable DTOs
-- Retrofit API definitions (`mcws_api.dart`)
+The Flutter app can play tracks directly on the device by streaming
+from MCWS. This is exposed as a virtual **"Local"** zone in the zone
+list (see §5).
 
-`*.g.dart`, `*.freezed.dart`, `*.gr.dart` are committed (so CI doesn't need to codegen).
+### Stream URL
+
+Built per-track in `LocalPlayerService._createSource()`:
+
+```
+{baseUrl}File/GetFile?File={fileKey}&FileType=Key&Playback=1
+                     &Conversion={conv}&Quality={qual}&Token={token}
+```
+
+`Conversion` and `Quality` come from the active `LocalAudioQuality`:
+
+| Enum value | Conversion | Quality | Label |
+|---|---|---|---|
+| `lossless` | `wav` | `high` | Lossless |
+| `lossyHigh` | `opus` | `high` | Lossy (high) |
+| `lossyNormal` | `opus` | `normal` | Lossy (normal) |
+| `lossyLow` | `opus` | `low` | Lossy (low) |
+
+The selected quality is stored in `shared_preferences` under
+`local_audio_quality`. Changing quality reloads the queue at the
+current playhead position via `LocalPlayer._reloadWithNewQuality()`.
+
+### Layered design
+
+| Layer | Type | Responsibility |
+|---|---|---|
+| **`LocalPlayerService`** | plain Dart class, base-scope singleton | Wraps `just_audio.AudioPlayer`. `init()` configures `AudioSession.music` and activates it. Builds `AudioSource.uri` per track with Track instance as `tag`. Exposes streams + imperative actions (`play`, `pause`, `seek`, `setShuffle`, `setRepeat`, `playByIndex`, `insertTracksAt`, `addToQueue`, `moveTrack`, `removeTrack`). |
+| **`LocalPlayer{Position,State,Sequence,Volume,Duration}` providers** | `@Riverpod(keepAlive: true)` | One provider per just_audio stream. Each subscribes in `build()` and cancels in `onDispose`. |
+| **`localPlaybackState` provider** | computed | Aggregates the five stream providers into one `LocalPlaybackState` snapshot for UI consumption. |
+| **`LocalPlayer` (AsyncNotifier)** | `@Riverpod(keepAlive: true)` | Bootstraps the queue (`_loadQueue` reads Drift, restores index/position/volume) and exposes the action surface (`playPause`, `next`, `playNow`, `playNext`, `addToQueue`, etc.). Listens to its own sequence/index/volume changes and persists them. Reacts to `localAudioQualityPrefProvider` to reload at new quality. |
+| **`LocalQueueRepository`** | Drift-backed | Reads/writes the `local_queue_tracks` and `local_queue_state` tables. |
+
+The order in `LocalPlayer.build()` matters:
+1. `_loadQueue()` runs **synchronously before** any `ref.listen`
+   subscriptions are registered. Otherwise the zero values just_audio
+   emits during `setAudioSources` race against the saved index/position
+   and overwrite them.
+2. After load, the index, position, volume, and sequence listeners are
+   wired up, and only then does the player begin saving state.
+
+### Why the Local zone is base-scope
+
+The local player must outlive a session: a user can sign out from a
+remote server while a track is still playing locally. The
+`AudioPlayer` and `LocalPlayerService` are therefore registered in the
+base get_it scope and never disposed.
 
 ---
 
-## 7. Testing Strategy
+## 7. Code Generation
 
-### Scope for v1
+Run `dart run build_runner build --delete-conflicting-outputs` after
+changes to:
+- Freezed models (`*.freezed.dart`)
+- Drift tables (`*.g.dart`)
+- auto_route definitions (`*.gr.dart`)
+- json_serializable DTOs (`*.g.dart`)
+- Retrofit API definitions (`mcws_api.dart`, `jriver_lookup_api.dart`)
+- Riverpod generator (`*.g.dart`)
+
+`*.g.dart`, `*.freezed.dart`, `*.gr.dart` are committed (so CI doesn't
+need to codegen).
+
+---
+
+## 8. Testing Strategy
+
+### Scope for v2
 
 | Layer | What to test | Tool |
 |---|---|---|
-| `McwsXmlParser` | All XML → map parsing, including error/failure responses | `dart:test` |
+| `McwsXmlParser` | All XML → map parsing, including failure responses | `flutter_test` |
 | `McwsClient` | Each method: correct endpoint, params, token injection; error mapping | `mocktail` (mock `Dio`) |
 | Repositories | Delegate correctly to `McwsClient`; map domain types | subclass + `buildClient` override; get_it scope in tearDown |
-| Notifiers / Providers | State transitions (loading → data → error), polling start/stop | `ProviderContainer` + `mocktail` |
-| Key widgets | `NowPlayingScreen`, `TransportControls`, `ZoneListScreen` — render, tap, check state | `flutter_test` |
+| Notifiers / Providers | State transitions (loading → data → error), polling start/stop, silent reconnect | `ProviderContainer` + `mocktail` |
+| `Track` model | `parentPath()` + JSON converters (string/int coercion) | `flutter_test` |
+| Key widgets | `NowPlayingScreen`, `TransportControls`, `ZoneListScreen` — render, tap, check state | `flutter_test` (planned) |
 
 ### Conventions
-- Test files live in `test/features/<feature>/` mirroring `lib/features/<feature>/`.
+- Test files live in `test/features/<feature>/` mirroring
+  `lib/features/<feature>/`.
 - File naming: `<source_filename>_test.dart`.
 - Use `mocktail` for all mocks — no `mockito` codegen.
-- Widget tests use `ProviderScope` with overrides to inject mock repositories.
-- No golden tests for v1.
+- Widget tests use `ProviderScope` with overrides to inject mock
+  repositories.
+- No golden tests for v2.
 - Run the full suite with `flutter test`; CI must pass before merge.
 
 ---
 
-## 8. Build & Run
+## 9. Build & Run
 
 ```bash
 flutter pub get
@@ -379,6 +654,8 @@ dart run build_runner build --delete-conflicting-outputs
 
 flutter run                       # default device
 flutter run -d macos              # macOS
+flutter run -d windows            # Windows
+flutter run -d linux              # Linux
 
 flutter analyze
 flutter test                      # offline unit + widget
@@ -387,149 +664,223 @@ dart fix --apply
 ```
 
 Pre-commit checklist (matches the global Dart rules):
-1. `dart format .` — **mandatory**, must be run before every commit
-2. `flutter analyze` — zero warnings
-3. `flutter test` — green
+1. `dart format .` — **mandatory**.
+2. `flutter analyze` — zero warnings.
+3. `flutter test` — green.
+
+CI release pipeline builds Android, Windows, macOS, and Linux artifacts
+on tagged releases (`actions/upload-artifact@v4` per platform, then a
+release-collector job).
 
 ---
 
-## 9. Implementation Phases
+## 10. Implementation Phases
 
 ### Phase 1 — Foundation (done)
-- `flutter create`, `pubspec.yaml` with all dependencies, `build_runner` working
-- `get_it` DI setup (`injection.dart`)
-- `AppRouter` scaffold + `NavigationNotifier`
-- `McwsXmlParser` (pure Dart, tested)
-- `AppException` union
-- `Dio` factory with `AuthInterceptor` + `LoggingInterceptor`
-- Drift database with `saved_servers` table
-- `flutter_secure_storage` integration for credential storage
-- macOS entitlements: `com.apple.security.network.client`, keychain access
+`flutter create`, dependencies, `build_runner`, get_it DI,
+`AppRouter` scaffold, `McwsXmlParser`, `AppException` union, `Dio`
+factory + `AuthInterceptor` + `LoggingInterceptor`, Drift database with
+`saved_servers`, `flutter_secure_storage` integration, macOS network /
+keychain entitlements.
 
 ### Phase 2 — Connection & Authentication (done)
-- `ServerInfo` model
-- `McwsApi` (Retrofit) + `McwsClient` two-layer architecture
-- `ConnectionRepository` (interface + impl with `FlutterSecureStorage`)
-- `SessionProvider` + `SessionState` (Restoring | Unauthenticated | Authenticated)
-- `ServerSetupScreen` + `ConnectingScreen`
-- Navigation guard: redirect to setup when unauthenticated
+`ServerInfo`, `McwsApi` + `McwsClient` two-layer architecture,
+`ConnectionRepository`, `Session` notifier + `SessionState`,
+`ServerSetupScreen` + `ConnectingScreen`, navigation guard.
 
 ### Phase 3 — Player Core (done)
-- Domain models: `Zone`, `PlayerStatus`, `Track`, enums
-- `McwsClient` transport, info, seek, volume, mute, shuffle, repeat methods
-- `PlayerRepository` + `ZoneRepository` (interfaces + impls)
-- `PollingProvider` (timer-based, respects intervals from parent spec §5.1)
-- `PlayerProvider` + `ZoneProvider` + `ActiveZoneProvider`
-- `NowPlayingScreen` with `TransportControls`, `SeekBar`, `VolumeControl`, `ArtworkWidget`
-- Drawer navigation in NowPlayingScreen (Library sub-items: Artists, Random Albums)
-- `ZoneListScreen`
+Domain models, transport / info / seek / volume / mute / shuffle /
+repeat methods, `PlayerRepository` + `ZoneRepository`,
+`PlayerPolling` (intervals from parent spec §5.1), `PlayerProvider` +
+`ZoneProvider` + `ActiveZoneProvider`, `NowPlayingScreen`,
+`ZoneListScreen`.
 
 ### Phase 4 — Playing Now Queue (done)
-- Queue uses shared `Track` model (no separate `PlayingNowItem`)
-- `QueueRepository` (Playlist, PlayByIndex, PlayByKey, EditPlaylist, ClearPlaylist)
-- `QueueProvider` (refreshes when `playingNowChangeCounter` increments)
-- `QueueScreen` + `QueueItemTile`
+Queue uses shared `Track` / `Tracks` model. `QueueRepository` covers
+Playlist, PlayByIndex, PlayByKey, EditPlaylist, ClearPlaylist.
+`QueueProvider` refreshes when `playingNowChangeCounter` increments.
+`QueueScreen` + `QueueItemTile`.
 
 ### Phase 5 — Library Browse & Search (done)
-- **API layer:** Single `filesSearch` Retrofit endpoint; `McwsClient` builds MCWS queries with `_esc()` escaping for `[]()-` characters
-- **Browse:** Artist list → album list → track list drill-down
-  - `LibraryScreen` — top-level tab with segmented control (Artists/Random/Browse); `ConsumerWidget` with `libraryTabIndexProvider`
-  - `AlbumListScreen` — reusable: takes `List<Album>`, title, subtitle, optional onRefresh; `SubScreenHeader`, filter field (shown when >5 albums), `AlbumRowTile` items
-  - `TrackListScaffold` — shared scaffold for all track list screens; `SubScreenHeader` with title widget, subtitle, kebab `_TracksPopupMenu` trailing action; loading/error/empty states, multi-disc grouping with disc headers, optional `headerContent` slot
-  - `AlbumDetailScreen` — thin `@RoutePage` wrapper passing album title + subtitle (artist) + `albumTracksProvider` to `TrackListScaffold`
-  - `FolderTracksScreen` — displays all tracks matching a folder path; stateful with parent/child folder navigation (up/down arrows in `headerContent`); uses `Track.parentPath()` for folder hierarchy traversal; history stack enables forward (up to root) and back (down to original album folder)
-  - `ArtistAlbumsScreen` / `RandomAlbumsScreen` — thin `@RoutePage` wrappers
-- **Search:** `McwsClient.searchFiles(query)` — multi-field search (Name, Artist, Album)
-- **Random Albums:** 10 random albums via `~limit` + `~n` modifiers
-- **Folder browsing:** `McwsClient.getTracksByFolder(folderPath)` — queries `[Filename (path)]="path"` to fetch all audio files in a directory; accessible via "Open folder" action on album list items
-- **Models:**
-  - `Track` (Freezed + json_serializable) — shared by queue, library, and player; `Track.parentPath()` static utility for folder hierarchy navigation
-  - `Album` (Freezed) — derived from Track via `Album.fromTrack()` factory; includes `albumArtist`, `date` (readable date string)
-  - `Album.folderPath` — uses `parentFolderPath` for multi-disc albums
-- **Track tile:** `LibraryItemTile` with `collapsedByDefault` parameter; tap toggles expanded state (shows folder/file paths); long-press shows bottom sheet with selectable file path + clipboard copy; kebab `PopupMenuButton` for play actions
-- **Queue integration:** Play now / Add to queue actions on albums, tracks, and folders via `Playback/PlayByKey`
-- **Client-side filtering:** Exact artist match (MCWS does substring matching)
-- **Browse tree:** Hierarchical library browsing via MCWS `Browse/Children` and `Browse/Files` endpoints
-  - `BrowseScreen` — tree navigation with internal stack; `Browse/Children` fetches child nodes, leaf nodes (empty children) switch to `Browse/Files` for tracks
-  - `BrowseFilesView` — displays tracks at leaf nodes; toggle between flat list and grouped view (by artist → album+date+folderPath); kebab popup menus on individual tracks, artist groups, and album groups
-  - `BrowseItem` model (Freezed) — `id` + `name` for browse tree nodes
-  - Accessible via drawer → Library → Browse
-- **Providers:** `artistsProvider`, `albumsByArtistProvider`, `albumTracksProvider`, `folderTracksProvider`, `randomAlbumsProvider`, `librarySearchProvider`, `browseChildrenProvider`, `browseFilesProvider`
-- **LibraryRepository** interface + impl (includes `getTracksByFolder`, `browseChildren`, `browseFiles`)
+- API: single `filesSearch` Retrofit endpoint; `_esc()` escaping.
+- Browse: artists → albums → tracks drill-down; multi-disc grouping
+  via `AlbumGroup` (`MultiDiscList` widget).
+- Search via `librarySearchProvider`.
+- Random Albums via `~limit` + `~n` modifiers.
+- Folder browsing via `[Filename (path)]="path"`.
+- Browse tree via `Browse/Children` + `Browse/Files`.
+- `Track` extended with `dateReadable`, `fileType`, `albumArtist`,
+  `albumArtistAuto`, `totalDiscs`, `discNumber`, `totalTracks`.
+- Tolerant JSON parsing (`ForceStringConverter`, `ForceIntConverter`).
 
 ### Phase 6 — Mini Player (done)
-- `MiniPlayerPanel` — persistent panel in layout flow (Column-based, not overlay)
-- Shows artwork, track name, artist, prev/play-pause/next transport buttons, 2px progress bar, inline volume slider with mute toggle
-- Tap navigates back to NowPlaying tab
-- Positioned in Column between Expanded content and bottomNavigationBar — participates in layout flow so it never overlaps modals or menus
-- Integrated in `RootScreen._AuthenticatedShell` via `showMiniPlayer` flag (true when not on NowPlaying tab or when sub-screens are pushed)
+`MiniPlayerPanel` in Column flow (not overlay). Shared between narrow
+and wide shells. Tap navigates back to the Now Playing tab.
 
-### Phase 7 — UI Design System & Polish (done)
-- **Design token system:**
-  - `AppColors` — dark theme color palette (bg0–bg4, line/line2, text/text2/text3, accent/accentDim)
-  - `AppFonts` — font family constants (Inter sans, IBMPlexMono mono)
-  - `AppTextStyles` — centralized text style constants (~18 named styles: sectionLabel, screenTitle, subScreenTitle, itemTitle, itemSubtitle, monoLabel, nowPlayingTitle, nowPlayingArtist, labelLarge, accentButton, accentSmall, avatarLetter, sectionHeading, emptyState, chipLabel)
-  - `buildAppTheme()` — Material 3 ThemeData wired to design tokens (colorScheme, textTheme, listTileTheme, inputDecorationTheme, snackBarTheme, appBarTheme, dividerTheme)
-- **Consistent kebab popup menus:**
-  - All playable items use `PopupMenuButton<String>` with consistent menu items: Play, Play next, Add to playing now
-  - Uniform icon: `Icons.more_vert` (18px, `AppColors.text3`)
-  - Menu items use `ListTile` with `contentPadding: EdgeInsets.zero` and `VisualDensity.compact`
-  - Applied across: `LibraryItemTile` (individual tracks), `AlbumRowTile` (albums + optional "Open folder"), `TrackListScaffold._TracksPopupMenu` (bulk track actions), `BrowseFilesView` (via shared `TracksPopupMenu` for browse leaf actions per artist/album group)
-- **Bottom tab navigation:**
-  - 4 tabs: Playing, Queue, Library, Zones
-  - Custom `_TabBar` with uppercase mono labels, accent color for active tab
-  - `IndexedStack` preserves tab state
-  - `ActiveTab` Riverpod notifier clears nav stack on tab switch
-- **Sub-screen navigation:**
-  - `SubScreenHeader` shared widget: back button (chevron + "Back"), title (string or widget), optional subtitle (uppercase mono label), optional trailing widget, optional content area
-  - Used by: `AlbumListScreen`, `TrackListScaffold`, `BrowseScreen`, `FolderTracksScreen`
-- **Library screen redesign:**
-  - `LibraryScreen` as `ConsumerWidget` with segmented tab control (Artists/Random/Browse)
-  - `libraryTabIndexProvider` manages active tab
-  - Artists tab: text filter field, avatar circles with initial letter, chevron navigation
-  - Random tab: shuffle button, `AlbumListView` with `AlbumRowTile`
-  - Browse tab: embedded `BrowseTreeView`
-- **Track tile enhancements:**
-  - `LibraryItemTile`: collapsible info (tap toggles expanded state showing folder/file paths), long-press shows bottom sheet with selectable file path + copy button, kebab popup menu for play actions
-- **Zone screen redesign:**
-  - Top-level tab (not pushed route)
-  - Custom header with OUTPUT/Zones labels
-  - Zone tiles with icon (cast for DLNA, speaker for local), active zone indicator dot
-  - Active zone highlighted with accent dim background
-- **Shared widgets:**
-  - `TransportButton` — circular icon button for transport controls
-  - `VolumeSlider` — compact horizontal volume slider with mute toggle icon
+### Phase 7 — UI Design System (done)
+`AppColors`, `AppFonts`, `AppTextStyles`, `buildAppTheme()` (Material 3
+ThemeData wired to tokens). Consistent kebab `PopupMenuButton<String>`
+across all playable items (Play / Play next / Add to playing now).
+`SubScreenHeader`, `TransportButton`, `VolumeSlider` shared widgets.
 
-### Phase 8 — Polish & Multi-platform
-- Adaptive layouts (compact mobile vs expanded desktop)
-- App lifecycle handling — pause/resume polling (§5.3 of parent spec)
-- Error recovery UX (retry flows, reconnect)
-- macOS / Windows menu bar integration (if time permits)
+### Phase 8 — Multi-platform & Local Playback (done)
+- **Adaptive layout**: `AdaptiveLayoutBuilder` + `TwoPanelShell` +
+  `Sidebar` for wide viewports; bottom-tab shell for narrow.
+- **Settings tab**: `ServerManagerScreen` mounted as the 5th tab.
+- **JRiver Access Key**: `JRiverLookupApi` resolves a 6-char key to
+  `host:port`. `ServerSetupScreen` toggles between access-key and
+  manual modes.
+- **Silent reconnect**: persisted `auth_token` + secure-storage
+  password drive `Session._attemptSilentReconnect()` on launch.
+- **Local playback**: `just_audio` + `audio_session`,
+  `LocalPlayerService`, full Riverpod stream wiring,
+  `LocalQueueRepository` (Drift) for queue persistence,
+  `LocalAudioQuality` selector on the Local zone tile.
+- **Favorites**: Drift-backed `favorites` table; Favorites sub-tab in
+  Library mirrors the Browse navigation stack.
+- **Library navigation**: nested `AutoTabsRouter` with one router stub
+  per sub-tab (Artists / Random / Browse / Favorites) so each tab has
+  independent back-stack state.
+- **Top-level error capture**: `FlutterError.onError` and
+  `PlatformDispatcher.instance.onError` route to Talker.
+
+### Phase 9 — Future polish (planned)
+- Adaptive layouts beyond the binary breakpoint (compact phone vs
+  large tablet vs desktop).
+- App-lifecycle pause/resume of polling timers
+  (`AppLifecycleListener`).
+- Reconnect / retry UX flows beyond `ErrorView`.
+- macOS / Windows menu-bar integration.
+- Cached artwork (see §11).
 
 ---
 
-## 10. Open Questions (Flutter-specific)
+## 11. Open Questions (Flutter-specific)
 
-1. **Credential storage backend**: Use `flutter_secure_storage` for raw credentials (bypasses Drift entirely for secrets), or store an opaque key in Drift and the actual value in the keychain? Leaning toward direct `flutter_secure_storage` with server `id` as key namespace.
+1. **Image caching**: artwork URLs include `Token` as a query param.
+   `cached_network_image` would need a custom `cacheKey` that strips
+   the token to avoid stale entries after re-auth. Currently uncached.
 
-2. **Polling granularity**: Single polling loop for the active zone only, or one `PollingProvider` instance per zone? Single loop is simpler for v1; multi-zone polling can be added in v2 when zone linking is exposed in the UI.
+2. **App-lifecycle handling**: parent spec §5.3 calls for paused
+   polling on background / minimize. Not yet wired —
+   `AppLifecycleListener` should drive `PlayerPolling.pause()` /
+   `resume()` and the same on `ZonePolling`.
 
-3. **Multiple saved servers**: `saved_servers` table supports it, but the UI for v1 only needs to handle one "current" server. Should the setup screen show a list of saved servers on second launch, or always show a blank form?
+3. **Multiple saved servers UI**: the `saved_servers` table supports
+   multiple rows. The UI today only surfaces the most-recent one
+   (autofill on `ServerSetupScreen`); a server-picker is not yet built.
 
-4. **Image caching**: `cached_network_image` or `flutter_cache_manager` for artwork? Artwork URLs include the auth token as a query param — need to ensure the cache key strips or separates the token to avoid stale entries after re-auth.
+4. **Desktop window sizing**: no minimum window dimensions enforced.
 
-5. **Desktop window sizing**: Default window dimensions and minimum size constraints for macOS/Windows/Linux — not covered by the parent spec.
+5. **Local playback parity with remote**: shuffle/repeat in
+   `LocalPlayerService` map to just_audio's modes; advanced shuffle
+   (`Automatic`) and repeat (`Stop`) variants from MCWS are mapped to
+   the closest just_audio equivalent (`shuffleEnabled` / `LoopMode`).
 
 ---
 
-## 11. Changelog
+## 12. Best Practices
+
+These reflect the rules we've converged on after eight phases. New
+code should follow them by default; review should call out deviations.
+
+### Async + state
+1. **Order of operations matters in async notifiers.** When
+   bootstrapping a `keepAlive` notifier from persisted state, finish
+   loading **before** wiring listeners that persist updates — otherwise
+   transient zero-values emitted during init overwrite the saved state.
+   Pattern: `await _loadFromDisk(); ref.listen(...); ref.onDispose(...)`.
+2. **Use `AsyncValue.guard` at the repository call boundary.** Don't
+   try/catch inside notifier methods; let `Either<AppException, T>`
+   bubble up and convert with `getOrElse((e) => throw e)` inside an
+   `AsyncValue.guard` wrapper.
+3. **Cancel every stream subscription in `ref.onDispose`.** Including
+   stream-backed notifiers — a leaked subscription will keep
+   `keepAlive` providers alive after the user logs out.
+4. **`ref.watch(sessionProvider)` to gate work.** Polling notifiers,
+   active-zone restoration, and library queries should *all* gate on
+   the session state so logout naturally pauses them without explicit
+   teardown.
+
+### Routing
+5. **Prefer nested `AutoTabsRouter` over a hand-rolled stack notifier.**
+   When you need per-tab back history, give each tab its own
+   `@RoutePage` router stub and let auto_route own the stack. Use
+   `context.router.push` inside that subtree freely.
+6. **Use `AutoRouter.declarative()` for binary flow gates** (auth,
+   onboarding) where the route depends purely on a Riverpod state.
+
+### Networking
+7. **Inject the auth token via a closure, never via a captured
+   string.** `AuthInterceptor` reads `tokenGetter()` at request-time;
+   the token can be rotated in `ConnectionRepository` without rebuilding
+   the `Dio` instance.
+8. **Mark public endpoints with `@Extra({'skipAuth': true})`.** This
+   keeps the auth interceptor declarative — no per-call branching in
+   the interceptor itself.
+9. **Build `Dio` per scope.** A second `createPublicDio()` for
+   non-MCWS calls (e.g. the JRiver access-key registry) keeps
+   interceptors targeted and avoids accidentally leaking the auth
+   token to third-party hosts.
+10. **Always set `ZoneType=ID` when a `Zone` parameter is present.**
+    Codified as a default parameter in every Retrofit method.
+11. **Tolerate type drift in JSON.** MCWS sometimes returns `"Key"` as
+    a number, sometimes as a string. `ForceIntConverter` /
+    `ForceStringConverter` keep deserialization stable.
+12. **Client-side exact filter after MCWS field equality.** MCWS does
+    substring matching on `[Field]=value`. For unique-key lookups
+    (artist exact match, file path exact match) post-filter in the
+    client.
+
+### Local playback
+13. **Local-zone services live in the base scope, not the session
+    scope.** Logging out should not stop music that is already playing
+    on the device.
+14. **Tag every `AudioSource` with the source `Track`.** The mini
+    player and now-playing screen consume `tag` rather than carrying a
+    parallel index.
+15. **Persist queue state through Drift, not shared_preferences.**
+    `shared_preferences` is fine for scalar UI flags; queues are
+    structured data and want migrations.
+
+### UI
+16. **Mini-player participates in layout flow.** Never an overlay —
+    overlays cover modals and popup menus.
+17. **`PopupMenuButton` for every playable surface.** Same items, same
+    icon, same density. The user shouldn't have to learn three
+    different action surfaces.
+18. **One public widget per file.** Including stub router widgets.
+19. **Centralize text styles.** All non-trivial `TextStyle`s live in
+    `AppTextStyles`.
+
+### Persistence
+20. **`flutter_secure_storage` for credentials, Drift for everything
+    else.** Never put a password in `shared_preferences` or in the
+    Drift schema directly.
+21. **Schema migrations are append-only.** Never edit a previous
+    migration; add a new one and bump `schemaVersion`.
+22. **Wipe the persisted auth token on `clearSession()`.** Token reuse
+    after logout is a footgun; force a fresh `Authenticate` next time.
+
+### Logging
+23. **One `Talker` instance.** Inject via get_it; route Dio,
+    Riverpod, and route-observer logs through it. The
+    `LoggingInterceptor` redacts the token query param.
+24. **Catch top-level errors at `main()`.** `FlutterError.onError` for
+    framework errors, `PlatformDispatcher.instance.onError` for async
+    errors that escape the framework.
+
+---
+
+## 13. Changelog
 
 | Version | Date | Notes |
 |---|---|---|
 | 0.1.0 | 2026-04-14 | Initial Flutter spec — all TODO sections filled in |
-| 0.1.1 | 2026-04-15 | get_it scopes for McwsClient session lifecycle; `skipAuth` in AuthInterceptor; logout is async |
-| 0.1.2 | 2026-04-16 | Added Phase 5 — Library Browse & Search (parent spec v2.0); Polish renamed to Phase 6 |
-| 0.2.0 | 2026-04-19 | Phases 1–6 done. Added: Retrofit API layer, mini player with AnimatedSlide, library browse (artists → albums → tracks), random albums, Album/Track models with date, MCWS query escaping, client-side exact filtering, multi-disc album support. Updated project structure to match reality. |
-| 0.2.1 | 2026-04-20 | Folder browsing: FolderTracksScreen with parent/child folder navigation, TrackListScaffold extracted as shared track list widget, "Open folder" action on album list, collapsible track info in LibraryItemTile, Album.albumArtist field, Track.dateReadable field. |
-| 0.3.0 | 2026-04-21 | Browse tree: BrowseScreen with hierarchical navigation via Browse/Children and Browse/Files MCWS endpoints. BrowseFilesView with flat/grouped toggle (group by artist → album+date), play/add actions per artist and album group. BrowseItem model. Drawer "Browse" entry. |
-| 0.4.0 | 2026-04-21 | UI design system: centralized AppTextStyles, consistent kebab PopupMenuButton menus across all playable items, bottom tab navigation (Playing/Queue/Library/Zones), mini player in Column layout flow, SubScreenHeader shared widget, LibraryScreen segmented tabs, ZoneListScreen as top-level tab, TransportButton/VolumeSlider shared widgets. Phase 7 done, renumbered Phase 8 for future polish. |
+| 0.1.1 | 2026-04-15 | get_it scopes for `McwsClient`; `skipAuth`; logout async |
+| 0.1.2 | 2026-04-16 | Phase 5 added; Polish renumbered |
+| 0.2.0 | 2026-04-19 | Phases 1–6 done. Retrofit API, mini player, library browse, random albums, escaping, multi-disc support |
+| 0.2.1 | 2026-04-20 | Folder browsing, `TrackListScaffold`, collapsible track info, `Album.albumArtist`, `Track.dateReadable` |
+| 0.3.0 | 2026-04-21 | Browse tree (Browse/Children + Browse/Files); `BrowseFilesView` flat/grouped toggle |
+| 0.4.0 | 2026-04-21 | UI design system (Phase 7): `AppTextStyles`, kebab popup menus everywhere, bottom tabs, `MiniPlayerPanel` in Column flow, `SubScreenHeader`, segmented Library tabs |
+| 2.2.0 | 2026-05-05 | Phase 8: adaptive narrow/wide layouts (`AdaptiveLayoutBuilder` + `TwoPanelShell` + `Sidebar`), Settings tab, JRiver Access Key lookup, silent reconnect with persisted `auth_token`, **local playback** (just_audio + audio_session, `LocalPlayerService`, persisted local queue via Drift, `LocalAudioQuality` selector), Favorites tab + Drift-backed `favorites` table, nested `AutoTabsRouter` per Library sub-tab, top-level error handlers in `main`, `Tracks`/`Zones` Freezed wrappers, AlbumGroup multi-disc helper, `Track.fileType`, `Track.albumArtistAuto`. Schema bumped to v4 (favorites, local_queue_tracks, local_queue_state). Added Best Practices section. Imperative `context.router.push` allowed inside library sub-routers. |
