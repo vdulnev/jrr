@@ -178,6 +178,24 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
   }
 
   @override
+  Future<void> restoreSession(SavedServer server) async {
+    if (_hasSessionScope) {
+      _hasSessionScope = false;
+      await getIt.popScope();
+    }
+
+    final baseUrl = 'http://${server.host}:${server.port}/MCWS/v1/';
+    _token = server.authToken;
+    final client = buildClient(baseUrl, () => _token);
+
+    getIt.pushNewScope(
+      scopeName: _sessionScopeName,
+      init: (gi) => gi.registerSingleton<McwsClient>(client),
+    );
+    _hasSessionScope = true;
+  }
+
+  @override
   Future<void> clearSession() async {
     _token = null;
 

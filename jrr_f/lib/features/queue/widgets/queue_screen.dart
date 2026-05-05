@@ -22,7 +22,9 @@ class QueueScreen extends ConsumerWidget {
     final queueState = ref.watch(queueProvider);
     final currentIndex = ref.watch(playingNowPositionProvider);
 
-    talker.debug('[QueueScreen]: queueState: $queueState, currentIndex: $currentIndex');
+    talker.debug(
+      '[QueueScreen]: queueState: $queueState, currentIndex: $currentIndex',
+    );
 
     return Scaffold(
       body: SafeArea(

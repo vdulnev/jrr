@@ -19,26 +19,24 @@ class DownloadedAlbumDetailScreen extends ConsumerWidget {
     return TrackListScaffold(
       title: Text(
         tracksState.maybeWhen(
-          data:
-              (tracks) =>
-                  tracks.tracks.isNotEmpty ? tracks.tracks.first.album : 'Album',
+          data: (tracks) =>
+              tracks.tracks.isNotEmpty ? tracks.tracks.first.album : 'Album',
           orElse: () => 'Album',
         ),
         style: AppTextStyles.subScreenTitle,
       ),
       subtitle: tracksState.maybeWhen(
-        data:
-            (tracks) =>
-                tracks.tracks.isNotEmpty
-                    ? [
-                      tracks.tracks.first.albumArtist,
-                      tracks.tracks.first.dateReadable,
-                    ].where((s) => s.isNotEmpty).join(' \u00b7 ')
-                    : 'Downloaded Album',
+        data: (tracks) => tracks.tracks.isNotEmpty
+            ? [
+                tracks.tracks.first.albumArtist,
+                tracks.tracks.first.dateReadable,
+              ].where((s) => s.isNotEmpty).join(' \u00b7 ')
+            : 'Downloaded Album',
         orElse: () => 'Downloaded Album',
       ),
       tracksState: tracksState,
-      onRetry: () => ref.invalidate(downloadedAlbumTracksProvider(albumGroupId)),
+      onRetry: () =>
+          ref.invalidate(downloadedAlbumTracksProvider(albumGroupId)),
       actionSheetTitle: 'Album',
       addedSnackbarLabel: 'Album',
     );

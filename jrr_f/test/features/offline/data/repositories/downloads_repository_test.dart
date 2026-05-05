@@ -26,11 +26,12 @@ void main() {
     talker = Talker();
     repository = DownloadsRepositoryImpl(db: db, talker: talker);
     tempDir = await Directory.systemTemp.createTemp();
-    
+
     final mockPathProvider = MockPathProvider();
     PathProviderPlatform.instance = mockPathProvider;
-    when(() => mockPathProvider.getApplicationDocumentsPath())
-        .thenAnswer((_) async => tempDir.path);
+    when(
+      () => mockPathProvider.getApplicationDocumentsPath(),
+    ).thenAnswer((_) async => tempDir.path);
   });
 
   tearDown(() async {

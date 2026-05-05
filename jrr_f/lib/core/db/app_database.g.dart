@@ -909,6 +909,16 @@ class $LocalQueueTracksTable extends LocalQueueTracks
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _zoneIdMeta = const VerificationMeta('zoneId');
+  @override
+  late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
+    'zone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('local'),
+  );
   static const VerificationMeta _fileKeyMeta = const VerificationMeta(
     'fileKey',
   );
@@ -943,7 +953,13 @@ class $LocalQueueTracksTable extends LocalQueueTracks
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, fileKey, trackJson, position];
+  List<GeneratedColumn> get $columns => [
+    id,
+    zoneId,
+    fileKey,
+    trackJson,
+    position,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -958,6 +974,12 @@ class $LocalQueueTracksTable extends LocalQueueTracks
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('zone_id')) {
+      context.handle(
+        _zoneIdMeta,
+        zoneId.isAcceptableOrUnknown(data['zone_id']!, _zoneIdMeta),
+      );
     }
     if (data.containsKey('file_key')) {
       context.handle(
@@ -996,6 +1018,10 @@ class $LocalQueueTracksTable extends LocalQueueTracks
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      zoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}zone_id'],
+      )!,
       fileKey: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}file_key'],
@@ -1019,11 +1045,13 @@ class $LocalQueueTracksTable extends LocalQueueTracks
 
 class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   final int id;
+  final String zoneId;
   final int fileKey;
   final String trackJson;
   final int position;
   const LocalQueueTrack({
     required this.id,
+    required this.zoneId,
     required this.fileKey,
     required this.trackJson,
     required this.position,
@@ -1032,6 +1060,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['zone_id'] = Variable<String>(zoneId);
     map['file_key'] = Variable<int>(fileKey);
     map['track_json'] = Variable<String>(trackJson);
     map['position'] = Variable<int>(position);
@@ -1041,6 +1070,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   LocalQueueTracksCompanion toCompanion(bool nullToAbsent) {
     return LocalQueueTracksCompanion(
       id: Value(id),
+      zoneId: Value(zoneId),
       fileKey: Value(fileKey),
       trackJson: Value(trackJson),
       position: Value(position),
@@ -1054,6 +1084,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalQueueTrack(
       id: serializer.fromJson<int>(json['id']),
+      zoneId: serializer.fromJson<String>(json['zoneId']),
       fileKey: serializer.fromJson<int>(json['fileKey']),
       trackJson: serializer.fromJson<String>(json['trackJson']),
       position: serializer.fromJson<int>(json['position']),
@@ -1064,6 +1095,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'zoneId': serializer.toJson<String>(zoneId),
       'fileKey': serializer.toJson<int>(fileKey),
       'trackJson': serializer.toJson<String>(trackJson),
       'position': serializer.toJson<int>(position),
@@ -1072,11 +1104,13 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
 
   LocalQueueTrack copyWith({
     int? id,
+    String? zoneId,
     int? fileKey,
     String? trackJson,
     int? position,
   }) => LocalQueueTrack(
     id: id ?? this.id,
+    zoneId: zoneId ?? this.zoneId,
     fileKey: fileKey ?? this.fileKey,
     trackJson: trackJson ?? this.trackJson,
     position: position ?? this.position,
@@ -1084,6 +1118,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   LocalQueueTrack copyWithCompanion(LocalQueueTracksCompanion data) {
     return LocalQueueTrack(
       id: data.id.present ? data.id.value : this.id,
+      zoneId: data.zoneId.present ? data.zoneId.value : this.zoneId,
       fileKey: data.fileKey.present ? data.fileKey.value : this.fileKey,
       trackJson: data.trackJson.present ? data.trackJson.value : this.trackJson,
       position: data.position.present ? data.position.value : this.position,
@@ -1094,6 +1129,7 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   String toString() {
     return (StringBuffer('LocalQueueTrack(')
           ..write('id: $id, ')
+          ..write('zoneId: $zoneId, ')
           ..write('fileKey: $fileKey, ')
           ..write('trackJson: $trackJson, ')
           ..write('position: $position')
@@ -1102,12 +1138,13 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
   }
 
   @override
-  int get hashCode => Object.hash(id, fileKey, trackJson, position);
+  int get hashCode => Object.hash(id, zoneId, fileKey, trackJson, position);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LocalQueueTrack &&
           other.id == this.id &&
+          other.zoneId == this.zoneId &&
           other.fileKey == this.fileKey &&
           other.trackJson == this.trackJson &&
           other.position == this.position);
@@ -1115,17 +1152,20 @@ class LocalQueueTrack extends DataClass implements Insertable<LocalQueueTrack> {
 
 class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
   final Value<int> id;
+  final Value<String> zoneId;
   final Value<int> fileKey;
   final Value<String> trackJson;
   final Value<int> position;
   const LocalQueueTracksCompanion({
     this.id = const Value.absent(),
+    this.zoneId = const Value.absent(),
     this.fileKey = const Value.absent(),
     this.trackJson = const Value.absent(),
     this.position = const Value.absent(),
   });
   LocalQueueTracksCompanion.insert({
     this.id = const Value.absent(),
+    this.zoneId = const Value.absent(),
     required int fileKey,
     required String trackJson,
     required int position,
@@ -1134,12 +1174,14 @@ class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
        position = Value(position);
   static Insertable<LocalQueueTrack> custom({
     Expression<int>? id,
+    Expression<String>? zoneId,
     Expression<int>? fileKey,
     Expression<String>? trackJson,
     Expression<int>? position,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (zoneId != null) 'zone_id': zoneId,
       if (fileKey != null) 'file_key': fileKey,
       if (trackJson != null) 'track_json': trackJson,
       if (position != null) 'position': position,
@@ -1148,12 +1190,14 @@ class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
 
   LocalQueueTracksCompanion copyWith({
     Value<int>? id,
+    Value<String>? zoneId,
     Value<int>? fileKey,
     Value<String>? trackJson,
     Value<int>? position,
   }) {
     return LocalQueueTracksCompanion(
       id: id ?? this.id,
+      zoneId: zoneId ?? this.zoneId,
       fileKey: fileKey ?? this.fileKey,
       trackJson: trackJson ?? this.trackJson,
       position: position ?? this.position,
@@ -1165,6 +1209,9 @@ class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (zoneId.present) {
+      map['zone_id'] = Variable<String>(zoneId.value);
     }
     if (fileKey.present) {
       map['file_key'] = Variable<int>(fileKey.value);
@@ -1182,6 +1229,7 @@ class LocalQueueTracksCompanion extends UpdateCompanion<LocalQueueTrack> {
   String toString() {
     return (StringBuffer('LocalQueueTracksCompanion(')
           ..write('id: $id, ')
+          ..write('zoneId: $zoneId, ')
           ..write('fileKey: $fileKey, ')
           ..write('trackJson: $trackJson, ')
           ..write('position: $position')
@@ -1196,18 +1244,14 @@ class $LocalQueueStateTable extends LocalQueueState
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $LocalQueueStateTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  static const VerificationMeta _zoneIdMeta = const VerificationMeta('zoneId');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
+  late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
+    'zone_id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _currentIndexMeta = const VerificationMeta(
     'currentIndex',
@@ -1222,7 +1266,7 @@ class $LocalQueueStateTable extends LocalQueueState
     defaultValue: const Constant(-1),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, currentIndex];
+  List<GeneratedColumn> get $columns => [zoneId, currentIndex];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1235,8 +1279,13 @@ class $LocalQueueStateTable extends LocalQueueState
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    if (data.containsKey('zone_id')) {
+      context.handle(
+        _zoneIdMeta,
+        zoneId.isAcceptableOrUnknown(data['zone_id']!, _zoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_zoneIdMeta);
     }
     if (data.containsKey('current_index')) {
       context.handle(
@@ -1251,14 +1300,14 @@ class $LocalQueueStateTable extends LocalQueueState
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {zoneId};
   @override
   LocalQueueStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalQueueStateData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
+      zoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}zone_id'],
       )!,
       currentIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1275,20 +1324,20 @@ class $LocalQueueStateTable extends LocalQueueState
 
 class LocalQueueStateData extends DataClass
     implements Insertable<LocalQueueStateData> {
-  final int id;
+  final String zoneId;
   final int currentIndex;
-  const LocalQueueStateData({required this.id, required this.currentIndex});
+  const LocalQueueStateData({required this.zoneId, required this.currentIndex});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['zone_id'] = Variable<String>(zoneId);
     map['current_index'] = Variable<int>(currentIndex);
     return map;
   }
 
   LocalQueueStateCompanion toCompanion(bool nullToAbsent) {
     return LocalQueueStateCompanion(
-      id: Value(id),
+      zoneId: Value(zoneId),
       currentIndex: Value(currentIndex),
     );
   }
@@ -1299,7 +1348,7 @@ class LocalQueueStateData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalQueueStateData(
-      id: serializer.fromJson<int>(json['id']),
+      zoneId: serializer.fromJson<String>(json['zoneId']),
       currentIndex: serializer.fromJson<int>(json['currentIndex']),
     );
   }
@@ -1307,19 +1356,19 @@ class LocalQueueStateData extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'zoneId': serializer.toJson<String>(zoneId),
       'currentIndex': serializer.toJson<int>(currentIndex),
     };
   }
 
-  LocalQueueStateData copyWith({int? id, int? currentIndex}) =>
+  LocalQueueStateData copyWith({String? zoneId, int? currentIndex}) =>
       LocalQueueStateData(
-        id: id ?? this.id,
+        zoneId: zoneId ?? this.zoneId,
         currentIndex: currentIndex ?? this.currentIndex,
       );
   LocalQueueStateData copyWithCompanion(LocalQueueStateCompanion data) {
     return LocalQueueStateData(
-      id: data.id.present ? data.id.value : this.id,
+      zoneId: data.zoneId.present ? data.zoneId.value : this.zoneId,
       currentIndex: data.currentIndex.present
           ? data.currentIndex.value
           : this.currentIndex,
@@ -1329,61 +1378,71 @@ class LocalQueueStateData extends DataClass
   @override
   String toString() {
     return (StringBuffer('LocalQueueStateData(')
-          ..write('id: $id, ')
+          ..write('zoneId: $zoneId, ')
           ..write('currentIndex: $currentIndex')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, currentIndex);
+  int get hashCode => Object.hash(zoneId, currentIndex);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LocalQueueStateData &&
-          other.id == this.id &&
+          other.zoneId == this.zoneId &&
           other.currentIndex == this.currentIndex);
 }
 
 class LocalQueueStateCompanion extends UpdateCompanion<LocalQueueStateData> {
-  final Value<int> id;
+  final Value<String> zoneId;
   final Value<int> currentIndex;
+  final Value<int> rowid;
   const LocalQueueStateCompanion({
-    this.id = const Value.absent(),
+    this.zoneId = const Value.absent(),
     this.currentIndex = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LocalQueueStateCompanion.insert({
-    this.id = const Value.absent(),
+    required String zoneId,
     this.currentIndex = const Value.absent(),
-  });
+    this.rowid = const Value.absent(),
+  }) : zoneId = Value(zoneId);
   static Insertable<LocalQueueStateData> custom({
-    Expression<int>? id,
+    Expression<String>? zoneId,
     Expression<int>? currentIndex,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (id != null) 'id': id,
+      if (zoneId != null) 'zone_id': zoneId,
       if (currentIndex != null) 'current_index': currentIndex,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LocalQueueStateCompanion copyWith({
-    Value<int>? id,
+    Value<String>? zoneId,
     Value<int>? currentIndex,
+    Value<int>? rowid,
   }) {
     return LocalQueueStateCompanion(
-      id: id ?? this.id,
+      zoneId: zoneId ?? this.zoneId,
       currentIndex: currentIndex ?? this.currentIndex,
+      rowid: rowid ?? this.rowid,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
+    if (zoneId.present) {
+      map['zone_id'] = Variable<String>(zoneId.value);
     }
     if (currentIndex.present) {
       map['current_index'] = Variable<int>(currentIndex.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1391,8 +1450,9 @@ class LocalQueueStateCompanion extends UpdateCompanion<LocalQueueStateData> {
   @override
   String toString() {
     return (StringBuffer('LocalQueueStateCompanion(')
-          ..write('id: $id, ')
-          ..write('currentIndex: $currentIndex')
+          ..write('zoneId: $zoneId, ')
+          ..write('currentIndex: $currentIndex, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -3262,6 +3322,7 @@ typedef $$FavoritesTableProcessedTableManager =
 typedef $$LocalQueueTracksTableCreateCompanionBuilder =
     LocalQueueTracksCompanion Function({
       Value<int> id,
+      Value<String> zoneId,
       required int fileKey,
       required String trackJson,
       required int position,
@@ -3269,6 +3330,7 @@ typedef $$LocalQueueTracksTableCreateCompanionBuilder =
 typedef $$LocalQueueTracksTableUpdateCompanionBuilder =
     LocalQueueTracksCompanion Function({
       Value<int> id,
+      Value<String> zoneId,
       Value<int> fileKey,
       Value<String> trackJson,
       Value<int> position,
@@ -3285,6 +3347,11 @@ class $$LocalQueueTracksTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get zoneId => $composableBuilder(
+    column: $table.zoneId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3318,6 +3385,11 @@ class $$LocalQueueTracksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get zoneId => $composableBuilder(
+    column: $table.zoneId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get fileKey => $composableBuilder(
     column: $table.fileKey,
     builder: (column) => ColumnOrderings(column),
@@ -3345,6 +3417,9 @@ class $$LocalQueueTracksTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get zoneId =>
+      $composableBuilder(column: $table.zoneId, builder: (column) => column);
 
   GeneratedColumn<int> get fileKey =>
       $composableBuilder(column: $table.fileKey, builder: (column) => column);
@@ -3394,11 +3469,13 @@ class $$LocalQueueTracksTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> zoneId = const Value.absent(),
                 Value<int> fileKey = const Value.absent(),
                 Value<String> trackJson = const Value.absent(),
                 Value<int> position = const Value.absent(),
               }) => LocalQueueTracksCompanion(
                 id: id,
+                zoneId: zoneId,
                 fileKey: fileKey,
                 trackJson: trackJson,
                 position: position,
@@ -3406,11 +3483,13 @@ class $$LocalQueueTracksTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> zoneId = const Value.absent(),
                 required int fileKey,
                 required String trackJson,
                 required int position,
               }) => LocalQueueTracksCompanion.insert(
                 id: id,
+                zoneId: zoneId,
                 fileKey: fileKey,
                 trackJson: trackJson,
                 position: position,
@@ -3441,9 +3520,17 @@ typedef $$LocalQueueTracksTableProcessedTableManager =
       PrefetchHooks Function()
     >;
 typedef $$LocalQueueStateTableCreateCompanionBuilder =
-    LocalQueueStateCompanion Function({Value<int> id, Value<int> currentIndex});
+    LocalQueueStateCompanion Function({
+      required String zoneId,
+      Value<int> currentIndex,
+      Value<int> rowid,
+    });
 typedef $$LocalQueueStateTableUpdateCompanionBuilder =
-    LocalQueueStateCompanion Function({Value<int> id, Value<int> currentIndex});
+    LocalQueueStateCompanion Function({
+      Value<String> zoneId,
+      Value<int> currentIndex,
+      Value<int> rowid,
+    });
 
 class $$LocalQueueStateTableFilterComposer
     extends Composer<_$AppDatabase, $LocalQueueStateTable> {
@@ -3454,8 +3541,8 @@ class $$LocalQueueStateTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
+  ColumnFilters<String> get zoneId => $composableBuilder(
+    column: $table.zoneId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3474,8 +3561,8 @@ class $$LocalQueueStateTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
+  ColumnOrderings<String> get zoneId => $composableBuilder(
+    column: $table.zoneId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3494,8 +3581,8 @@ class $$LocalQueueStateTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
+  GeneratedColumn<String> get zoneId =>
+      $composableBuilder(column: $table.zoneId, builder: (column) => column);
 
   GeneratedColumn<int> get currentIndex => $composableBuilder(
     column: $table.currentIndex,
@@ -3540,17 +3627,23 @@ class $$LocalQueueStateTableTableManager
               $$LocalQueueStateTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> zoneId = const Value.absent(),
                 Value<int> currentIndex = const Value.absent(),
-              }) =>
-                  LocalQueueStateCompanion(id: id, currentIndex: currentIndex),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalQueueStateCompanion(
+                zoneId: zoneId,
+                currentIndex: currentIndex,
+                rowid: rowid,
+              ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String zoneId,
                 Value<int> currentIndex = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LocalQueueStateCompanion.insert(
-                id: id,
+                zoneId: zoneId,
                 currentIndex: currentIndex,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -34,7 +34,8 @@ class DownloadedAlbumsScreen extends ConsumerWidget {
                 loading: () => const LoadingView(),
                 error: (e, _) => ErrorView(
                   error: e,
-                  onRetry: () => ref.invalidate(downloadedAlbumsProvider(artist)),
+                  onRetry: () =>
+                      ref.invalidate(downloadedAlbumsProvider(artist)),
                 ),
                 data: (albums) {
                   if (albums.isEmpty) {
@@ -44,11 +45,14 @@ class DownloadedAlbumsScreen extends ConsumerWidget {
                     itemCount: albums.length,
                     itemBuilder: (context, i) {
                       final album = albums[i];
-                      final albumGroupId = '${album.name}|${album.parentFolderPath}';
+                      final albumGroupId =
+                          '${album.name}|${album.parentFolderPath}';
                       return AlbumRowTile(
                         album: album,
                         onTap: () => context.router.push(
-                          DownloadedAlbumDetailRoute(albumGroupId: albumGroupId),
+                          DownloadedAlbumDetailRoute(
+                            albumGroupId: albumGroupId,
+                          ),
                         ),
                       );
                     },

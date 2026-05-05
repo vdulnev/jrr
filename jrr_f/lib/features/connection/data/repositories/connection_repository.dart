@@ -32,6 +32,10 @@ abstract interface class ConnectionRepository {
   /// The current session token; null when not authenticated.
   String? get currentToken;
 
+  /// Restores a session scope from saved server info without network validation.
+  /// Useful for offline startup.
+  Future<void> restoreSession(SavedServer server);
+
   /// Retrieves the password stored under [key] in secure storage.
   Future<String?> getPassword(String key);
 

@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/tracks.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/player/providers/player_provider.dart';
+import '../../features/zones/providers/active_zone_provider.dart';
 
 import '../../features/offline/data/models/download_state.dart';
 import '../../features/offline/providers/download_jobs_provider.dart';
@@ -19,6 +20,7 @@ class TracksPopupMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(isOfflineActiveProvider);
     final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
     final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
 
@@ -29,20 +31,29 @@ class TracksPopupMenu extends ConsumerWidget {
         .map((t) => t.fileKey)
         .toSet();
 
-    final jobsForTracks =
-        downloadJobs.where((j) => trackKeys.contains(j.fileKey));
+    if (isOffline && downloadedKeys.isEmpty) {
+      return const SizedBox(width: 18);
+    }
+
+    final jobsForTracks = downloadJobs.where(
+      (j) => trackKeys.contains(j.fileKey),
+    );
 
     final activeJobs = jobsForTracks.where(
       (j) =>
           j.state == DownloadState.queued || j.state == DownloadState.running,
     );
-    final failedJobs = jobsForTracks.where((j) => j.state == DownloadState.failed);
+    final failedJobs = jobsForTracks.where(
+      (j) => j.state == DownloadState.failed,
+    );
 
     final showDownload =
-        downloadedKeys.length < tracks.length && activeJobs.isEmpty;
-    final showCancel = activeJobs.isNotEmpty;
+        !isOffline &&
+        downloadedKeys.length < tracks.length &&
+        activeJobs.isEmpty;
+    final showCancel = !isOffline && activeJobs.isNotEmpty;
     final showDelete = downloadedKeys.isNotEmpty;
-    final showRetry = failedJobs.isNotEmpty && activeJobs.isEmpty;
+    final showRetry = !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
 
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Zone {
 
- String get id; String get name; String get guid; bool get isDLNA; bool get isLocal;
+ String get id; String get name; String get guid; bool get isDLNA; bool get isLocal; bool get isOffline;
 /// Create a copy of Zone
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ZoneCopyWith<Zone> get copyWith => _$ZoneCopyWithImpl<Zone>(this as Zone, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.isDLNA, isDLNA) || other.isDLNA == isDLNA)&&(identical(other.isLocal, isLocal) || other.isLocal == isLocal));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.isDLNA, isDLNA) || other.isDLNA == isDLNA)&&(identical(other.isLocal, isLocal) || other.isLocal == isLocal)&&(identical(other.isOffline, isOffline) || other.isOffline == isOffline));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,guid,isDLNA,isLocal);
+int get hashCode => Object.hash(runtimeType,id,name,guid,isDLNA,isLocal,isOffline);
 
 @override
 String toString() {
-  return 'Zone(id: $id, name: $name, guid: $guid, isDLNA: $isDLNA, isLocal: $isLocal)';
+  return 'Zone(id: $id, name: $name, guid: $guid, isDLNA: $isDLNA, isLocal: $isLocal, isOffline: $isOffline)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ZoneCopyWith<$Res>  {
   factory $ZoneCopyWith(Zone value, $Res Function(Zone) _then) = _$ZoneCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String guid, bool isDLNA, bool isLocal
+ String id, String name, String guid, bool isDLNA, bool isLocal, bool isOffline
 });
 
 
@@ -62,13 +62,14 @@ class _$ZoneCopyWithImpl<$Res>
 
 /// Create a copy of Zone
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? guid = null,Object? isDLNA = null,Object? isLocal = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? guid = null,Object? isDLNA = null,Object? isLocal = null,Object? isOffline = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,guid: null == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
 as String,isDLNA: null == isDLNA ? _self.isDLNA : isDLNA // ignore: cast_nullable_to_non_nullable
 as bool,isLocal: null == isLocal ? _self.isLocal : isLocal // ignore: cast_nullable_to_non_nullable
+as bool,isOffline: null == isOffline ? _self.isOffline : isOffline // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal,  bool isOffline)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Zone() when $default != null:
-return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case _:
+return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal,_that.isOffline);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal,  bool isOffline)  $default,) {final _that = this;
 switch (_that) {
 case _Zone():
-return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case _:
+return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal,_that.isOffline);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +196,10 @@ return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String guid,  bool isDLNA,  bool isLocal,  bool isOffline)?  $default,) {final _that = this;
 switch (_that) {
 case _Zone() when $default != null:
-return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case _:
+return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal,_that.isOffline);case _:
   return null;
 
 }
@@ -210,7 +211,7 @@ return $default(_that.id,_that.name,_that.guid,_that.isDLNA,_that.isLocal);case 
 
 
 class _Zone implements Zone {
-  const _Zone({required this.id, required this.name, required this.guid, required this.isDLNA, this.isLocal = false});
+  const _Zone({required this.id, required this.name, required this.guid, required this.isDLNA, this.isLocal = false, this.isOffline = false});
   
 
 @override final  String id;
@@ -218,6 +219,7 @@ class _Zone implements Zone {
 @override final  String guid;
 @override final  bool isDLNA;
 @override@JsonKey() final  bool isLocal;
+@override@JsonKey() final  bool isOffline;
 
 /// Create a copy of Zone
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +231,16 @@ _$ZoneCopyWith<_Zone> get copyWith => __$ZoneCopyWithImpl<_Zone>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.isDLNA, isDLNA) || other.isDLNA == isDLNA)&&(identical(other.isLocal, isLocal) || other.isLocal == isLocal));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.isDLNA, isDLNA) || other.isDLNA == isDLNA)&&(identical(other.isLocal, isLocal) || other.isLocal == isLocal)&&(identical(other.isOffline, isOffline) || other.isOffline == isOffline));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,guid,isDLNA,isLocal);
+int get hashCode => Object.hash(runtimeType,id,name,guid,isDLNA,isLocal,isOffline);
 
 @override
 String toString() {
-  return 'Zone(id: $id, name: $name, guid: $guid, isDLNA: $isDLNA, isLocal: $isLocal)';
+  return 'Zone(id: $id, name: $name, guid: $guid, isDLNA: $isDLNA, isLocal: $isLocal, isOffline: $isOffline)';
 }
 
 
@@ -249,7 +251,7 @@ abstract mixin class _$ZoneCopyWith<$Res> implements $ZoneCopyWith<$Res> {
   factory _$ZoneCopyWith(_Zone value, $Res Function(_Zone) _then) = __$ZoneCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String guid, bool isDLNA, bool isLocal
+ String id, String name, String guid, bool isDLNA, bool isLocal, bool isOffline
 });
 
 
@@ -266,13 +268,14 @@ class __$ZoneCopyWithImpl<$Res>
 
 /// Create a copy of Zone
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? guid = null,Object? isDLNA = null,Object? isLocal = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? guid = null,Object? isDLNA = null,Object? isLocal = null,Object? isOffline = null,}) {
   return _then(_Zone(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,guid: null == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
 as String,isDLNA: null == isDLNA ? _self.isDLNA : isDLNA // ignore: cast_nullable_to_non_nullable
 as bool,isLocal: null == isLocal ? _self.isLocal : isLocal // ignore: cast_nullable_to_non_nullable
+as bool,isOffline: null == isOffline ? _self.isOffline : isOffline // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

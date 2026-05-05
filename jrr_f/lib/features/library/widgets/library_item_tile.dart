@@ -8,6 +8,7 @@ import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_status_provider.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
 import '../../player/providers/player_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/track.dart';
 import '../data/models/tracks.dart';
 
@@ -89,86 +90,107 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         children: [
           DownloadProgressIndicator(fileKey: item.fileKey),
           const SizedBox(width: 4),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
-            padding: EdgeInsets.zero,
-            onSelected: (action) => _handleAction(action, item),
-            itemBuilder: (context) {
-              final downloadState =
-                  ref.watch(downloadStatusProvider(item.fileKey));
-              return [
-                const PopupMenuItem(
-                  value: 'play',
-                  child: ListTile(
-                    leading: Icon(Icons.play_arrow_outlined),
-                    title: Text('Play'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
+          Consumer(
+            builder: (context, ref, child) {
+              final isOffline = ref.watch(isOfflineActiveProvider);
+              final downloadState = ref.watch(
+                downloadStatusProvider(item.fileKey),
+              );
+
+              if (isOffline && downloadState != DownloadState.downloaded) {
+                return const SizedBox(width: 18); // Placeholder for alignment
+              }
+
+              return PopupMenuButton<String>(
+                icon: const Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: AppColors.text3,
                 ),
-                const PopupMenuItem(
-                  value: 'playNext',
-                  child: ListTile(
-                    leading: Icon(Icons.queue_play_next),
-                    title: Text('Play next'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'add',
-                  child: ListTile(
-                    leading: Icon(Icons.add_circle_outline),
-                    title: Text('Add to playing now'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                const PopupMenuDivider(),
-                if (downloadState == DownloadState.notDownloaded)
-                  const PopupMenuItem(
-                    value: 'download',
-                    child: ListTile(
-                      leading: Icon(Icons.download_for_offline_outlined),
-                      title: Text('Download'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                onSelected: (action) => _handleAction(action, item),
+                itemBuilder: (context) {
+                  return [
+                    const PopupMenuItem(
+                      value: 'play',
+                      child: ListTile(
+                        leading: Icon(Icons.play_arrow_outlined),
+                        title: Text('Play'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
-                  ),
-                if (downloadState == DownloadState.queued ||
-                    downloadState == DownloadState.running)
-                  const PopupMenuItem(
-                    value: 'cancelDownload',
-                    child: ListTile(
-                      leading: Icon(Icons.cancel_outlined),
-                      title: Text('Cancel download'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                    const PopupMenuItem(
+                      value: 'playNext',
+                      child: ListTile(
+                        leading: Icon(Icons.queue_play_next),
+                        title: Text('Play next'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
-                  ),
-                if (downloadState == DownloadState.downloaded)
-                  const PopupMenuItem(
-                    value: 'deleteDownload',
-                    child: ListTile(
-                      leading:
-                          Icon(Icons.delete_outline, color: AppColors.error),
-                      title: Text('Delete download',
-                          style: TextStyle(color: AppColors.error)),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                    const PopupMenuItem(
+                      value: 'add',
+                      child: ListTile(
+                        leading: Icon(Icons.add_circle_outline),
+                        title: Text('Add to playing now'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
-                  ),
-                if (downloadState == DownloadState.failed)
-                  const PopupMenuItem(
-                    value: 'download',
-                    child: ListTile(
-                      leading: Icon(Icons.replay_outlined),
-                      title: Text('Retry download'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-              ];
+                    const PopupMenuDivider(),
+                    if (!isOffline &&
+                        downloadState == DownloadState.notDownloaded)
+                      const PopupMenuItem(
+                        value: 'download',
+                        child: ListTile(
+                          leading: Icon(Icons.download_for_offline_outlined),
+                          title: Text('Download'),
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    if (!isOffline &&
+                        (downloadState == DownloadState.queued ||
+                            downloadState == DownloadState.running))
+                      const PopupMenuItem(
+                        value: 'cancelDownload',
+                        child: ListTile(
+                          leading: Icon(Icons.cancel_outlined),
+                          title: Text('Cancel download'),
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    if (downloadState == DownloadState.downloaded)
+                      const PopupMenuItem(
+                        value: 'deleteDownload',
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.delete_outline,
+                            color: AppColors.error,
+                          ),
+                          title: Text(
+                            'Delete download',
+                            style: TextStyle(color: AppColors.error),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    if (!isOffline && downloadState == DownloadState.failed)
+                      const PopupMenuItem(
+                        value: 'download',
+                        child: ListTile(
+                          leading: Icon(Icons.replay_outlined),
+                          title: Text('Retry download'),
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                  ];
+                },
+              );
             },
           ),
         ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:jrr_f/features/zones/providers/active_zone_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
@@ -23,14 +24,18 @@ class ZonePolling extends _$ZonePolling {
     });
 
     final session = ref.watch(sessionProvider);
-    if (session is Authenticated) {
+    final activeZone = ref.watch(activeZoneProvider);
+    final isLocalOrOffline =
+        activeZone?.isLocal == true || activeZone?.isOffline == true;
+
+    if (session is Authenticated && !isLocalOrOffline) {
       _talker.debug(
         '[ZonePolling] Session authenticated — starting zone polling',
       );
       _start();
     } else {
       _talker.debug(
-        '[ZonePolling] Session unauthenticated — stopping zone polling',
+        '[ZonePolling] Session unauthenticated or local/offline — stopping zone polling',
       );
       _stop();
     }

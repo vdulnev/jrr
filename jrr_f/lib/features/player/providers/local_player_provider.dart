@@ -17,6 +17,7 @@ import '../data/models/shuffle_mode.dart';
 import '../services/local_player_service.dart';
 import 'local_audio_quality_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 
 part 'local_player_provider.g.dart';
 
@@ -140,13 +141,16 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
 
 @Riverpod(keepAlive: true)
 class LocalPlayer extends _$LocalPlayer {
-  static const _kIndexKey = 'local_player_index';
-  static const _kPositionMsKey = 'local_player_position_ms';
+  static String _kIndexKey(String zoneId) => 'local_player_${zoneId}_index';
+  static String _kPositionMsKey(String zoneId) =>
+      'local_player_${zoneId}_position_ms';
   static const _kVolumeKey = 'local_player_volume';
 
-  late final LocalPlayerService _service;
-  late final SharedPreferences _prefs;
-  late final Talker _talker;
+  late LocalPlayerService _service;
+  late SharedPreferences _prefs;
+  late Talker _talker;
+
+  String _currentZoneId = '';
 
   @override
   Future<void> build() async {
@@ -155,33 +159,57 @@ class LocalPlayer extends _$LocalPlayer {
     _talker = getIt<Talker>();
     final queueRepo = getIt<LocalQueueRepository>();
 
-    // Restore queue + position synchronously before any persistence listeners
-    // exist, so the zero values the player emits during init can't overwrite
-    // the saved state.
-    await _loadQueue();
+    final activeZone = ref.watch(activeZoneProvider);
+    final String newZoneId;
+    if (activeZone == null) {
+      newZoneId = 'local';
+    } else if (activeZone.isOffline) {
+      newZoneId = 'offline';
+    } else if (activeZone.isLocal) {
+      newZoneId = 'local';
+    } else {
+      // Remote zone. We don't strictly need to swap, but let's keep 'local'
+      // as the default state for the local player.
+      newZoneId = 'local';
+    }
 
-    // From here on, listeners are safe to register.
+    _talker.debug(
+      '[LocalPlayer] build: activeZone=${activeZone?.name}, newZoneId=$newZoneId, _currentZoneId=$_currentZoneId',
+    );
+
+    // Initial load or swap
+    if (newZoneId != _currentZoneId) {
+      _talker.info(
+        '[LocalPlayer] Zone changed from "$_currentZoneId" to "$newZoneId". Swapping queues...',
+      );
+      _currentZoneId = newZoneId;
+      await _loadQueue(_currentZoneId);
+    }
+
+    // Register listeners for the CURRENT zone.
+    // These will be disposed and recreated if build() re-runs.
+
     ref.listen(localPlayerSequenceProvider.select((seq) => seq?.currentIndex), (
       prev,
       next,
     ) {
       if (prev != next && next != null) {
-        _talker.debug('[LocalPlayer] Current index changed: $next');
-        queueRepo.setCurrentIndex(next);
-        _prefs.setInt(_kIndexKey, next);
-        _prefs.setInt(_kPositionMsKey, 0);
+        _talker.debug(
+          '[LocalPlayer] [$_currentZoneId] Current index changed: $next',
+        );
+        queueRepo.setCurrentIndex(_currentZoneId, next);
+        _prefs.setInt(_kIndexKey(_currentZoneId), next);
+        _prefs.setInt(_kPositionMsKey(_currentZoneId), 0);
       }
     });
 
     final posSub = _service.positionStream.listen((pos) {
-      _prefs.setInt(_kPositionMsKey, pos.inMilliseconds);
-      _talker.debug('[LocalPlayer] Position saved: $pos');
+      _prefs.setInt(_kPositionMsKey(_currentZoneId), pos.inMilliseconds);
     });
     ref.onDispose(posSub.cancel);
 
     final volSub = _service.volumeStream.listen((vol) {
       _prefs.setDouble(_kVolumeKey, vol);
-      _talker.debug('[LocalPlayer] Volume saved: $vol');
     });
     ref.onDispose(volSub.cancel);
 
@@ -191,9 +219,9 @@ class LocalPlayer extends _$LocalPlayer {
     ) {
       if (prev != next && next != null) {
         _talker.debug(
-          '[LocalPlayer] Sequence changed. Saving queue with ${next.length} tracks.',
+          '[LocalPlayer] [$_currentZoneId] Sequence changed. Saving queue with ${next.length} tracks.',
         );
-        _saveQueue(next);
+        _saveQueue(_currentZoneId, next);
       }
     });
 
@@ -201,7 +229,7 @@ class LocalPlayer extends _$LocalPlayer {
     ref.listen(localAudioQualityPrefProvider, (prev, next) {
       if (prev != next && prev != null) {
         _talker.info(
-          '[LocalPlayer] Audio quality changed to ${next.label}. Reloading queue...',
+          '[LocalPlayer] [$_currentZoneId] Audio quality changed to ${next.label}. Reloading queue...',
         );
         _reloadWithNewQuality();
       }
@@ -214,7 +242,7 @@ class LocalPlayer extends _$LocalPlayer {
 
       if (nextCount > prevCount) {
         _talker.info(
-          '[LocalPlayer] New download detected ($nextCount tracks). Reloading queue to prefer local files...',
+          '[LocalPlayer] [$_currentZoneId] New download detected ($nextCount tracks). Reloading queue to prefer local files...',
         );
         _reloadWithNewQuality();
       }
@@ -226,7 +254,7 @@ class LocalPlayer extends _$LocalPlayer {
         final info = icy?.info;
         final headers = icy?.headers;
         _talker.debug(
-          '[LocalPlayer] Playback event details: '
+          '[LocalPlayer] [$_currentZoneId] Playback event details: '
           'processingState: ${event.processingState}, '
           'updatePosition: ${event.updatePosition}, '
           'updateTime: ${event.updateTime}, '
@@ -249,20 +277,20 @@ class LocalPlayer extends _$LocalPlayer {
             : null;
         if (e is PlayerException) {
           _talker.error(
-            '[LocalPlayer] PlayerException code=${e.code} '
+            '[LocalPlayer] [$_currentZoneId] PlayerException code=${e.code} '
             'message=${e.message} currentTag=$current',
             e,
             st,
           );
         } else if (e is PlayerInterruptedException) {
           _talker.error(
-            '[LocalPlayer] PlayerInterruptedException message=${e.message}',
+            '[LocalPlayer] [$_currentZoneId] PlayerInterruptedException message=${e.message}',
             e,
             st,
           );
         } else {
           _talker.error(
-            '[LocalPlayer] Unknown playback error type=${e.runtimeType} '
+            '[LocalPlayer] [$_currentZoneId] Unknown playback error type=${e.runtimeType} '
             'currentTag=$current',
             e,
             st,
@@ -273,37 +301,46 @@ class LocalPlayer extends _$LocalPlayer {
     ref.onDispose(sub.cancel);
   }
 
-  Future<void> _loadQueue() async {
+  Future<void> _loadQueue(String zoneId) async {
+    _talker.info('[LocalPlayer] Loading queue for $zoneId');
     final queueRepo = getIt<LocalQueueRepository>();
-    final tracks = (await queueRepo.getTracks()).getOrElse((e) => Tracks.empty);
+    final tracks = (await queueRepo.getTracks(
+      zoneId,
+    )).getOrElse((e) => Tracks.empty);
+
+    // Stop current playback before swapping
+    await _service.stop();
 
     await _service.setTracks(tracks);
-    _talker.debug('[LocalPlayer] Loaded queue with ${tracks.length} tracks');
-
-    final savedIndex = _prefs.getInt(_kIndexKey) ?? -1;
-    final savedPosMs = _prefs.getInt(_kPositionMsKey) ?? 0;
     _talker.debug(
-      '[LocalPlayer] Captured saved state: index=$savedIndex, posMs=$savedPosMs',
+      '[LocalPlayer] [$zoneId] Loaded queue with ${tracks.length} tracks',
+    );
+
+    final savedIndex = _prefs.getInt(_kIndexKey(zoneId)) ?? -1;
+    final savedPosMs = _prefs.getInt(_kPositionMsKey(zoneId)) ?? 0;
+    _talker.debug(
+      '[LocalPlayer] [$zoneId] Captured saved state: index=$savedIndex, posMs=$savedPosMs',
     );
 
     if (tracks.isNotEmpty && savedIndex >= 0 && savedIndex < tracks.length) {
       _talker.debug(
-        '[LocalPlayer] Restoring position: index=$savedIndex, posMs=$savedPosMs',
+        '[LocalPlayer] [$zoneId] Restoring position: index=$savedIndex, posMs=$savedPosMs',
       );
       await _service.seekTo(savedPosMs, index: savedIndex);
     }
 
     final savedVolume = _prefs.getDouble(_kVolumeKey);
     if (savedVolume != null) {
-      _talker.debug('[LocalPlayer] Restoring volume: $savedVolume');
       await _service.setVolume(savedVolume);
     }
   }
 
-  Future<void> _saveQueue(Tracks tracks) async {
+  Future<void> _saveQueue(String zoneId, Tracks tracks) async {
     final queueRepo = getIt<LocalQueueRepository>();
-    await queueRepo.setTracks(tracks);
-    _talker.debug('[LocalPlayer] Saved queue with ${tracks.length} tracks');
+    await queueRepo.setTracks(zoneId, tracks);
+    _talker.debug(
+      '[LocalPlayer] [$zoneId] Saved queue with ${tracks.length} tracks',
+    );
   }
 
   Future<void> _reloadWithNewQuality() async {

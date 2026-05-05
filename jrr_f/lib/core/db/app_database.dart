@@ -46,6 +46,7 @@ class Favorites extends Table {
 /// Tracks in the local zone queue.
 class LocalQueueTracks extends Table {
   IntColumn get id => integer().autoIncrement()();
+  TextColumn get zoneId => text().withDefault(const Constant('local'))();
   IntColumn get fileKey => integer()();
   TextColumn get trackJson => text()(); // Serialized Track object
   IntColumn get position => integer()(); // Position in the queue
@@ -53,8 +54,11 @@ class LocalQueueTracks extends Table {
 
 /// Metadata for the local zone queue.
 class LocalQueueState extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get zoneId => text()();
   IntColumn get currentIndex => integer().withDefault(const Constant(-1))();
+
+  @override
+  Set<Column> get primaryKey => {zoneId};
 }
 
 /// Fully downloaded tracks for offline playback.
@@ -104,7 +108,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -125,6 +129,14 @@ class AppDatabase extends _$AppDatabase {
         if (from < 5 && to >= 5) {
           await m.createTable(downloadedTracks);
           await m.createTable(downloadJobs);
+        }
+        if (from < 6 && to >= 6) {
+          // Add zoneId to localQueueTracks
+          await m.addColumn(localQueueTracks, localQueueTracks.zoneId);
+
+          // Recreate localQueueState because of primary key change
+          await m.deleteTable('local_queue_state');
+          await m.createTable(localQueueState);
         }
       },
     );

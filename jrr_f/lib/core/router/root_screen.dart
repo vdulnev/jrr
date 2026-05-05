@@ -54,13 +54,13 @@ class _AuthenticatedShell extends ConsumerWidget {
   }
 }
 
-class _NarrowLayout extends StatelessWidget {
+class _NarrowLayout extends ConsumerWidget {
   final WidgetRef ref;
 
   const _NarrowLayout({required this.ref});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final activeTab = ref.watch(activeTabProvider);
     final showMiniPlayer = activeTab != AppTab.nowPlaying;
 
@@ -109,14 +109,14 @@ class _WideLayout extends StatelessWidget {
   }
 }
 
-class _TabBar extends StatelessWidget {
+class _TabBar extends ConsumerWidget {
   final AppTab active;
   final ValueChanged<AppTab> onSelect;
 
   const _TabBar({required this.active, required this.onSelect});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       height: 82,
       decoration: BoxDecoration(

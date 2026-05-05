@@ -11,6 +11,7 @@ import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../player/providers/player_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
 import '../providers/library_providers.dart';
 
@@ -38,30 +39,45 @@ class AlbumRowTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(isOfflineActiveProvider);
     final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
     final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
 
     final albumGroupId = '${album.name}|${album.parentFolderPath}';
 
-    final downloadedInAlbum =
-        downloadedTracks.where((t) => t.albumGroupId == albumGroupId);
-    final jobsInAlbum =
-        downloadJobs.where((j) => j.track.albumGroupId == albumGroupId);
+    final downloadedInAlbum = downloadedTracks.where(
+      (t) => t.albumGroupId == albumGroupId,
+    );
+    final jobsInAlbum = downloadJobs.where(
+      (j) => j.track.albumGroupId == albumGroupId,
+    );
 
     final activeJobs = jobsInAlbum.where(
       (j) =>
           j.state == DownloadState.queued || j.state == DownloadState.running,
     );
-    final failedJobs = jobsInAlbum.where((j) => j.state == DownloadState.failed);
+    final failedJobs = jobsInAlbum.where(
+      (j) => j.state == DownloadState.failed,
+    );
 
-    final showDownload = activeJobs.isEmpty;
-    final showCancel = activeJobs.isNotEmpty;
+    final showDownload = !isOffline && activeJobs.isEmpty;
+    final showCancel = !isOffline && activeJobs.isNotEmpty;
     final showDelete = downloadedInAlbum.isNotEmpty;
-    final showRetry = failedJobs.isNotEmpty && activeJobs.isEmpty;
+    final showRetry = !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
+
+    if (isOffline && downloadedInAlbum.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap ?? () => context.router.push(AlbumDetailRoute(album: album)),
+      onTap:
+          onTap ??
+          () => isOffline
+              ? context.router.push(
+                  DownloadedAlbumDetailRoute(albumGroupId: albumGroupId),
+                )
+              : context.router.push(AlbumDetailRoute(album: album)),
       child: Container(
         padding: EdgeInsets.fromLTRB(20 + indent, 12, 20, 12),
         decoration: const BoxDecoration(
@@ -103,14 +119,14 @@ class AlbumRowTile extends ConsumerWidget {
                     overflow: showArtist
                         ? TextOverflow.ellipsis
                         : (indent > 0
-                            ? TextOverflow.ellipsis
-                            : TextOverflow.visible),
+                              ? TextOverflow.ellipsis
+                              : TextOverflow.visible),
                     softWrap: !showArtist && indent == 0,
                   ),
                 ],
               ),
             ),
-            if (hasSubItems)
+            if (hasSubItems && !isOffline)
               IconButton(
                 icon: Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
@@ -121,99 +137,102 @@ class AlbumRowTile extends ConsumerWidget {
                 constraints: const BoxConstraints(),
                 onPressed: onToggle,
               ),
-            PopupMenuButton<String>(
-              icon: const Icon(
-                Icons.more_vert,
-                size: 18,
-                color: AppColors.text3,
-              ),
-              padding: EdgeInsets.zero,
-              onSelected: (action) => _handleAction(context, ref, action),
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'play',
-                  child: ListTile(
-                    leading: Icon(Icons.play_arrow_outlined),
-                    title: Text('Play'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
+            if (!isOffline || downloadedInAlbum.isNotEmpty)
+              PopupMenuButton<String>(
+                icon: const Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: AppColors.text3,
                 ),
-                const PopupMenuItem(
-                  value: 'playNext',
-                  child: ListTile(
-                    leading: Icon(Icons.queue_play_next),
-                    title: Text('Play next'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'add',
-                  child: ListTile(
-                    leading: Icon(Icons.add_circle_outline),
-                    title: Text('Add to playing now'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                if (album.folderPath.isNotEmpty)
+                padding: EdgeInsets.zero,
+                onSelected: (action) => _handleAction(context, ref, action),
+                itemBuilder: (_) => [
                   const PopupMenuItem(
-                    value: 'folder',
+                    value: 'play',
                     child: ListTile(
-                      leading: Icon(Icons.folder_open_outlined),
-                      title: Text('Open folder'),
+                      leading: Icon(Icons.play_arrow_outlined),
+                      title: Text('Play'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                const PopupMenuDivider(),
-                if (showDownload)
                   const PopupMenuItem(
-                    value: 'download',
+                    value: 'playNext',
                     child: ListTile(
-                      leading: Icon(Icons.download_for_offline_outlined),
-                      title: Text('Download album'),
+                      leading: Icon(Icons.queue_play_next),
+                      title: Text('Play next'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                if (showRetry)
                   const PopupMenuItem(
-                    value: 'download',
+                    value: 'add',
                     child: ListTile(
-                      leading: Icon(Icons.replay_outlined),
-                      title: Text('Retry failed downloads'),
+                      leading: Icon(Icons.add_circle_outline),
+                      title: Text('Add to playing now'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                if (showCancel)
-                  const PopupMenuItem(
-                    value: 'cancelDownload',
-                    child: ListTile(
-                      leading: Icon(Icons.cancel_outlined),
-                      title: Text('Cancel downloads'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                if (showDelete)
-                  const PopupMenuItem(
-                    value: 'deleteDownload',
-                    child: ListTile(
-                      leading:
-                          Icon(Icons.delete_outline, color: AppColors.error),
-                      title: Text(
-                        'Delete downloads',
-                        style: TextStyle(color: AppColors.error),
+                  if (album.folderPath.isNotEmpty && !isOffline)
+                    const PopupMenuItem(
+                      value: 'folder',
+                      child: ListTile(
+                        leading: Icon(Icons.folder_open_outlined),
+                        title: Text('Open folder'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
                       ),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
                     ),
-                  ),
-              ],
-            ),
+                  const PopupMenuDivider(),
+                  if (showDownload)
+                    const PopupMenuItem(
+                      value: 'download',
+                      child: ListTile(
+                        leading: Icon(Icons.download_for_offline_outlined),
+                        title: Text('Download album'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  if (showRetry)
+                    const PopupMenuItem(
+                      value: 'download',
+                      child: ListTile(
+                        leading: Icon(Icons.replay_outlined),
+                        title: Text('Retry failed downloads'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  if (showCancel)
+                    const PopupMenuItem(
+                      value: 'cancelDownload',
+                      child: ListTile(
+                        leading: Icon(Icons.cancel_outlined),
+                        title: Text('Cancel downloads'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  if (showDelete)
+                    const PopupMenuItem(
+                      value: 'deleteDownload',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.error,
+                        ),
+                        title: Text(
+                          'Delete downloads',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                ],
+              ),
           ],
         ),
       ),
@@ -232,8 +251,13 @@ class AlbumRowTile extends ConsumerWidget {
 
     final downloadsRepo = getIt<DownloadsRepository>();
 
+    final isOffline = ref.read(isOfflineActiveProvider);
+    final albumGroupId = '${album.name}|${album.parentFolderPath}';
+
     if (action == 'cancelDownload' || action == 'deleteDownload') {
-      final tracks = await ref.read(albumTracksProvider(album).future);
+      final tracks = isOffline
+          ? await ref.read(downloadedAlbumTracksProvider(albumGroupId).future)
+          : await ref.read(albumTracksProvider(album).future);
       final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
       if (action == 'cancelDownload') {
         await downloadsRepo.cancelAll(trackKeys);
@@ -243,7 +267,9 @@ class AlbumRowTile extends ConsumerWidget {
       return;
     }
 
-    final tracks = await ref.read(albumTracksProvider(album).future);
+    final tracks = isOffline
+        ? await ref.read(downloadedAlbumTracksProvider(albumGroupId).future)
+        : await ref.read(albumTracksProvider(album).future);
 
     switch (action) {
       case 'play':

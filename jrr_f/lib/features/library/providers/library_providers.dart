@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
+import '../../offline/providers/downloaded_tracks_provider.dart';
+import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
 import '../data/models/browse_item.dart';
 import '../data/models/track.dart';
@@ -12,54 +14,69 @@ part 'library_providers.g.dart';
 @riverpod
 Future<Tracks> librarySearch(Ref ref, String query) async {
   if (query.trim().isEmpty) return Tracks.empty;
+  if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
   final result = await getIt<LibraryRepository>().search(query.trim());
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<String>> artists(Ref ref) async {
+  if (ref.watch(isOfflineActiveProvider)) return const [];
   final result = await getIt<LibraryRepository>().getArtists();
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<Album>> albumsByArtist(Ref ref, String artist) async {
+  if (ref.watch(isOfflineActiveProvider)) return const [];
   final result = await getIt<LibraryRepository>().getAlbumsByArtist(artist);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Tracks> albumTracks(Ref ref, Album album) async {
+  if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
   final result = await getIt<LibraryRepository>().getAlbumTracks(album);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Tracks> folderTracks(Ref ref, String folderPath) async {
+  if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
   final result = await getIt<LibraryRepository>().getTracksByFolder(folderPath);
   return result.getOrElse((e) => throw e);
 }
 
 @Riverpod(keepAlive: true)
 Future<List<Album>> randomAlbums(Ref ref) async {
+  if (ref.watch(isOfflineActiveProvider)) return const [];
   final result = await getIt<LibraryRepository>().getRandomAlbums();
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<BrowseItem>> browseChildren(Ref ref, String id) async {
+  if (ref.watch(isOfflineActiveProvider)) return const [];
   final result = await getIt<LibraryRepository>().browseChildren(id);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Tracks> browseFiles(Ref ref, String id) async {
+  if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
   final result = await getIt<LibraryRepository>().browseFiles(id);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Track?> searchByFileKey(Ref ref, int fileKey) async {
+  if (ref.watch(isOfflineActiveProvider)) {
+    final downloaded = await ref.watch(downloadedTracksProvider.future);
+    final match = downloaded
+        .where((t) => t.track.fileKey == fileKey)
+        .firstOrNull;
+    return match?.track;
+  }
   final result = await getIt<LibraryRepository>().searchByFileKey(fileKey);
   return result.getOrElse((e) => throw e);
 }

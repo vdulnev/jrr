@@ -32,7 +32,7 @@ final class QueueProvider extends $AsyncNotifierProvider<Queue, Tracks> {
   Queue create() => Queue();
 }
 
-String _$queueHash() => r'025f96048eb2a717c6879ab1a53229888722fd31';
+String _$queueHash() => r'5db8fe66a297913f56895380b83c755a40b544ce';
 
 abstract class _$Queue extends $AsyncNotifier<Tracks> {
   FutureOr<Tracks> build();

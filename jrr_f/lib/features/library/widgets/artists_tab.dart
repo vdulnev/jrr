@@ -24,7 +24,7 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
   @override
   Widget build(BuildContext context) {
     final talker = getIt<Talker>();
-    
+
     final artistsState = ref.watch(artistsProvider);
 
     talker.debug('[ArtistsTabScreen]: artistsState: $artistsState');

@@ -1,16 +1,27 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../zones/providers/active_zone_provider.dart';
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
 
-  static const _tabs = ['Artists', 'Random', 'Browse', 'Favorites', 'Downloads'];
+  static const _tabs = [
+    'Artists',
+    'Random',
+    'Browse',
+    'Favorites',
+    'Downloads',
+  ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(isOfflineActiveProvider);
+
     return AutoTabsRouter(
       routes: const [
         ArtistsTabRouterRoute(),
@@ -22,6 +33,13 @@ class LibraryScreen extends StatelessWidget {
       transitionBuilder: (context, child, animation) => child,
       builder: (context, child) {
         final tabsRouter = AutoTabsRouter.of(context);
+
+        if (isOffline && tabsRouter.activeIndex != 4) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            tabsRouter.setActiveIndex(4);
+          });
+        }
+
         return Scaffold(
           body: SafeArea(
             bottom: false,
@@ -42,14 +60,16 @@ class LibraryScreen extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final int activeIndex;
   final ValueChanged<int> onTabSelected;
 
   const _Header({required this.activeIndex, required this.onTabSelected});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(isOfflineActiveProvider);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Column(
@@ -57,7 +77,10 @@ class _Header extends StatelessWidget {
         children: [
           const Text('LIBRARY', style: AppTextStyles.sectionLabel),
           const SizedBox(height: 6),
-          const Text('Browse', style: AppTextStyles.screenTitle),
+          Text(
+            isOffline ? 'Offline' : 'Browse',
+            style: AppTextStyles.screenTitle,
+          ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(3),
@@ -68,9 +91,12 @@ class _Header extends StatelessWidget {
             child: Row(
               children: List.generate(LibraryScreen._tabs.length, (i) {
                 final isActive = activeIndex == i;
+                final isDownloads = i == 4;
+                final isDisabled = isOffline && !isDownloads;
+
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () => onTabSelected(i),
+                    onTap: isDisabled ? null : () => onTabSelected(i),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       height: 32,
@@ -82,7 +108,11 @@ class _Header extends StatelessWidget {
                       child: Text(
                         LibraryScreen._tabs[i],
                         style: AppTextStyles.labelLarge.copyWith(
-                          color: isActive ? AppColors.text : AppColors.text3,
+                          color: isActive
+                              ? AppColors.text
+                              : (isDisabled
+                                    ? AppColors.text3.withValues(alpha: 0.3)
+                                    : AppColors.text3),
                         ),
                       ),
                     ),

@@ -10,5 +10,6 @@ abstract class Zone with _$Zone {
     required String guid,
     required bool isDLNA,
     @Default(false) bool isLocal,
+    @Default(false) bool isOffline,
   }) = _Zone;
 }

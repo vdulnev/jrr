@@ -56,11 +56,10 @@ Future<List<Album>> downloadedAlbums(Ref ref, String artist) async {
 @riverpod
 Future<Tracks> downloadedAlbumTracks(Ref ref, String albumGroupId) async {
   final tracks = await ref.watch(downloadedTracksProvider.future);
-  final albumTracks =
-      tracks
-          .where((t) => t.albumGroupId == albumGroupId)
-          .map((t) => t.track)
-          .toList();
+  final albumTracks = tracks
+      .where((t) => t.albumGroupId == albumGroupId)
+      .map((t) => t.track)
+      .toList();
 
   // Sort by disc then track
   albumTracks.sort((a, b) {

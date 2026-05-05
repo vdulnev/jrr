@@ -28,17 +28,19 @@ class DownloadService {
   }) : _repository = repository,
        _connectionRepository = connectionRepository,
        _talker = talker,
-       _dio = dio ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
+       _dio =
+           dio ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
 
   void start() {
     if (_isRunning) return;
     _isRunning = true;
     _talker.info('[DownloadService] Started');
     _processQueue();
-    
+
     // Also listen for new jobs
     _repository.watchJobs().listen((jobs) {
-      if (_currentJob == null && jobs.any((j) => j.state == DownloadState.queued)) {
+      if (_currentJob == null &&
+          jobs.any((j) => j.state == DownloadState.queued)) {
         _processQueue();
       }
     });
@@ -85,8 +87,9 @@ class DownloadService {
 
       final baseUrl = 'http://${server.host}:${server.port}/MCWS/v1/';
       final token = _connectionRepository.currentToken;
-      
-      final downloadUrl = '${baseUrl}File/GetFile?File=${job.fileKey}&FileType=Key&Playback=0&Conversion=wav${token != null ? '&Token=$token' : ''}';
+
+      final downloadUrl =
+          '${baseUrl}File/GetFile?File=${job.fileKey}&FileType=Key&Playback=0&Conversion=wav${token != null ? '&Token=$token' : ''}';
 
       _talker.info('[DownloadService] Downloading: $downloadUrl');
 
@@ -111,7 +114,8 @@ class DownloadService {
       String? artworkPath;
       final albumArtPath = '${artworkDir.path}/${job.track.albumGroupId}.jpg';
       if (!await File(albumArtPath).exists()) {
-        final artUrl = '${baseUrl}File/GetImage?File=${job.fileKey}&Format=jpg&Width=512&Height=512${token != null ? '&Token=$token' : ''}';
+        final artUrl =
+            '${baseUrl}File/GetImage?File=${job.fileKey}&Format=jpg&Width=512&Height=512${token != null ? '&Token=$token' : ''}';
         try {
           await _dio.download(artUrl, albumArtPath, cancelToken: _cancelToken);
           artworkPath = albumArtPath;

@@ -66,8 +66,12 @@ class ActiveZone extends _$ActiveZone {
   }
 
   void setZone(Zone zone) {
+    final wasOffline = state?.isOffline == true;
     state = zone;
     _saveZone(zone);
+    if (wasOffline && !zone.isOffline) {
+      ref.read(zoneListProvider.notifier).refresh();
+    }
   }
 
   void _saveZone(Zone zone) {
@@ -84,4 +88,10 @@ class ActiveZone extends _$ActiveZone {
       '[activeZoneProvider] Zone is cleared from SharedPreferences',
     );
   }
+}
+
+@riverpod
+bool isOfflineActive(Ref ref) {
+  final zone = ref.watch(activeZoneProvider);
+  return zone?.isOffline == true;
 }

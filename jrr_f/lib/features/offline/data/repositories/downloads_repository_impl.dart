@@ -17,11 +17,9 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   final Talker _talker;
   final Map<int, String> _localPathCache = {};
 
-  DownloadsRepositoryImpl({
-    required AppDatabase db,
-    required Talker talker,
-  }) : _db = db,
-       _talker = talker {
+  DownloadsRepositoryImpl({required AppDatabase db, required Talker talker})
+    : _db = db,
+      _talker = talker {
     _initCache();
   }
 
@@ -30,8 +28,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     for (final t in tracks) {
       _localPathCache[t.fileKey] = t.localPath;
     }
-    _talker.info('[DownloadsRepository] Cache initialized with ${_localPathCache.length} tracks');
-    
+    _talker.info(
+      '[DownloadsRepository] Cache initialized with ${_localPathCache.length} tracks',
+    );
+
     // Listen for changes to keep cache in sync
     watchDownloadedTracks().listen((tracks) {
       _localPathCache.clear();
@@ -47,17 +47,19 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   @override
   Future<void> enqueue(Track track) async {
     _talker.info('[DownloadsRepository] Enqueuing track: ${track.fileKey}');
-    await _db.into(_db.downloadJobs).insert(
-      DownloadJobsCompanion.insert(
-        fileKey: track.fileKey,
-        trackJson: jsonEncode(track.toJson()),
-        state: DownloadState.queued.name,
-        bytesDone: 0,
-        bytesTotal: -1,
-        enqueuedAt: DateTime.now().millisecondsSinceEpoch,
-      ),
-      mode: InsertMode.insertOrReplace,
-    );
+    await _db
+        .into(_db.downloadJobs)
+        .insert(
+          DownloadJobsCompanion.insert(
+            fileKey: track.fileKey,
+            trackJson: jsonEncode(track.toJson()),
+            state: DownloadState.queued.name,
+            bytesDone: 0,
+            bytesTotal: -1,
+            enqueuedAt: DateTime.now().millisecondsSinceEpoch,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
   }
 
   @override
@@ -89,8 +91,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   @override
   Future<void> cancelAll(List<int> fileKeys) async {
     _talker.info('[DownloadsRepository] Cancelling ${fileKeys.length} jobs');
-    await (_db.update(_db.downloadJobs)..where((t) => t.fileKey.isIn(fileKeys)))
-        .write(DownloadJobsCompanion(state: Value(DownloadState.cancelled.name)));
+    await (_db.update(
+      _db.downloadJobs,
+    )..where((t) => t.fileKey.isIn(fileKeys))).write(
+      DownloadJobsCompanion(state: Value(DownloadState.cancelled.name)),
+    );
   }
 
   @override
@@ -101,9 +106,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   @override
   Future<void> deleteAll(List<int> fileKeys) async {
     _talker.info('[DownloadsRepository] Deleting ${fileKeys.length} tracks');
-    
-    final tracks = await (_db.select(_db.downloadedTracks)
-      ..where((t) => t.fileKey.isIn(fileKeys))).get();
+
+    final tracks = await (_db.select(
+      _db.downloadedTracks,
+    )..where((t) => t.fileKey.isIn(fileKeys))).get();
 
     if (tracks.isEmpty) return;
 
@@ -115,18 +121,22 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       }
     }
 
-    // Check artwork deletion: if an album has NO MORE tracks left in downloadedTracks 
+    // Check artwork deletion: if an album has NO MORE tracks left in downloadedTracks
     // after this delete, remove its artwork.
     final albumGroupIds = tracks.map((t) => t.albumGroupId).toSet();
     for (final albumGroupId in albumGroupIds) {
-      final remaining = await (_db.select(_db.downloadedTracks)
-        ..where((t) => t.albumGroupId.equals(albumGroupId))
-        ..where((t) => t.fileKey.isIn(fileKeys).not())
-        ..limit(1)).get();
+      final remaining =
+          await (_db.select(_db.downloadedTracks)
+                ..where((t) => t.albumGroupId.equals(albumGroupId))
+                ..where((t) => t.fileKey.isIn(fileKeys).not())
+                ..limit(1))
+              .get();
 
       if (remaining.isEmpty) {
         // Find one track from the deleted set to get the artwork path
-        final deletedTrack = tracks.firstWhere((t) => t.albumGroupId == albumGroupId);
+        final deletedTrack = tracks.firstWhere(
+          (t) => t.albumGroupId == albumGroupId,
+        );
         if (deletedTrack.artworkPath != null) {
           final artFile = File(deletedTrack.artworkPath!);
           if (await artFile.exists()) {
@@ -137,16 +147,23 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     }
 
     // Delete DB rows
-    await (_db.delete(_db.downloadedTracks)
-      ..where((t) => t.fileKey.isIn(fileKeys))).go();
+    await (_db.delete(
+      _db.downloadedTracks,
+    )..where((t) => t.fileKey.isIn(fileKeys))).go();
   }
 
   @override
   Future<void> clearAll() async {
     _talker.info('[DownloadsRepository] Clearing all downloads');
     // Cancel all running/queued
-    await (_db.update(_db.downloadJobs)..where((t) => t.state.equals(DownloadState.queued.name) | t.state.equals(DownloadState.running.name)))
-        .write(DownloadJobsCompanion(state: Value(DownloadState.cancelled.name)));
+    await (_db.update(_db.downloadJobs)..where(
+          (t) =>
+              t.state.equals(DownloadState.queued.name) |
+              t.state.equals(DownloadState.running.name),
+        ))
+        .write(
+          DownloadJobsCompanion(state: Value(DownloadState.cancelled.name)),
+        );
 
     // Delete all files
     final docs = await getApplicationDocumentsDirectory();
@@ -174,19 +191,22 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   @override
   Future<String?> getLocalPath(int fileKey) async {
-    final row = await (_db.select(_db.downloadedTracks)
-      ..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
+    final row = await (_db.select(
+      _db.downloadedTracks,
+    )..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
     return row?.localPath;
   }
 
   @override
   Future<DownloadState> getDownloadState(int fileKey) async {
-    final downloaded = await (_db.select(_db.downloadedTracks)
-      ..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
+    final downloaded = await (_db.select(
+      _db.downloadedTracks,
+    )..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
     if (downloaded != null) return DownloadState.downloaded;
 
-    final job = await (_db.select(_db.downloadJobs)
-      ..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
+    final job = await (_db.select(
+      _db.downloadJobs,
+    )..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
     if (job != null) {
       return DownloadState.values.firstWhere(
         (e) => e.name == job.state,
@@ -199,12 +219,18 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   @override
   Stream<List<model.DownloadJob>> watchJobs() {
-    return _db.select(_db.downloadJobs).watch().map((rows) => rows.map(_mapJob).toList());
+    return _db
+        .select(_db.downloadJobs)
+        .watch()
+        .map((rows) => rows.map(_mapJob).toList());
   }
 
   @override
   Stream<List<model.DownloadedTrack>> watchDownloadedTracks() {
-    return _db.select(_db.downloadedTracks).watch().map((rows) => rows.map(_mapDownloadedTrack).toList());
+    return _db
+        .select(_db.downloadedTracks)
+        .watch()
+        .map((rows) => rows.map(_mapDownloadedTrack).toList());
   }
 
   @override
@@ -214,32 +240,39 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     String? artworkPath,
     required int fileSizeBytes,
   }) async {
-    final jobRow = await (_db.select(_db.downloadJobs)
-      ..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
+    final jobRow = await (_db.select(
+      _db.downloadJobs,
+    )..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
 
     if (jobRow == null) return;
 
-    final track = Track.fromJson(jsonDecode(jobRow.trackJson) as Map<String, dynamic>);
+    final track = Track.fromJson(
+      jsonDecode(jobRow.trackJson) as Map<String, dynamic>,
+    );
 
     await _db.transaction(() async {
-      await _db.into(_db.downloadedTracks).insert(
-        DownloadedTracksCompanion.insert(
-          fileKey: fileKey,
-          trackJson: jobRow.trackJson,
-          localPath: localPath,
-          artworkPath: Value(artworkPath),
-          albumGroupId: track.albumGroupId,
-          albumArtist: track.albumArtist,
-          album: track.album,
-          dateReadable: track.date,
-          discNumber: track.discNumber,
-          totalDiscs: track.totalDiscs,
-          trackNumber: track.trackNumber,
-          fileSizeBytes: fileSizeBytes,
-          downloadedAt: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
-      await (_db.delete(_db.downloadJobs)..where((t) => t.fileKey.equals(fileKey))).go();
+      await _db
+          .into(_db.downloadedTracks)
+          .insert(
+            DownloadedTracksCompanion.insert(
+              fileKey: fileKey,
+              trackJson: jobRow.trackJson,
+              localPath: localPath,
+              artworkPath: Value(artworkPath),
+              albumGroupId: track.albumGroupId,
+              albumArtist: track.albumArtist,
+              album: track.album,
+              dateReadable: track.date,
+              discNumber: track.discNumber,
+              totalDiscs: track.totalDiscs,
+              trackNumber: track.trackNumber,
+              fileSizeBytes: fileSizeBytes,
+              downloadedAt: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
+      await (_db.delete(
+        _db.downloadJobs,
+      )..where((t) => t.fileKey.equals(fileKey))).go();
     });
   }
 
@@ -252,23 +285,31 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     String? error,
     DateTime? startedAt,
   }) async {
-    await (_db.update(_db.downloadJobs)..where((t) => t.fileKey.equals(fileKey))).write(
+    await (_db.update(
+      _db.downloadJobs,
+    )..where((t) => t.fileKey.equals(fileKey))).write(
       DownloadJobsCompanion(
         state: state != null ? Value(state.name) : const Value.absent(),
         bytesDone: bytesDone != null ? Value(bytesDone) : const Value.absent(),
-        bytesTotal: bytesTotal != null ? Value(bytesTotal) : const Value.absent(),
+        bytesTotal: bytesTotal != null
+            ? Value(bytesTotal)
+            : const Value.absent(),
         error: error != null ? Value(error) : const Value.absent(),
-        startedAt: startedAt != null ? Value(startedAt.millisecondsSinceEpoch) : const Value.absent(),
+        startedAt: startedAt != null
+            ? Value(startedAt.millisecondsSinceEpoch)
+            : const Value.absent(),
       ),
     );
   }
 
   @override
   Future<model.DownloadJob?> getNextQueuedJob() async {
-    final row = await (_db.select(_db.downloadJobs)
-      ..where((t) => t.state.equals(DownloadState.queued.name))
-      ..orderBy([(t) => OrderingTerm(expression: t.enqueuedAt)])
-      ..limit(1)).getSingleOrNull();
+    final row =
+        await (_db.select(_db.downloadJobs)
+              ..where((t) => t.state.equals(DownloadState.queued.name))
+              ..orderBy([(t) => OrderingTerm(expression: t.enqueuedAt)])
+              ..limit(1))
+            .getSingleOrNull();
 
     return row != null ? _mapJob(row) : null;
   }
@@ -281,7 +322,9 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       bytesDone: row.bytesDone,
       bytesTotal: row.bytesTotal,
       enqueuedAt: DateTime.fromMillisecondsSinceEpoch(row.enqueuedAt),
-      startedAt: row.startedAt != null ? DateTime.fromMillisecondsSinceEpoch(row.startedAt!) : null,
+      startedAt: row.startedAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(row.startedAt!)
+          : null,
       error: row.error,
     );
   }

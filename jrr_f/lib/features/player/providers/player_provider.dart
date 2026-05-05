@@ -33,17 +33,27 @@ class Player extends _$Player {
       return null;
     }
 
-    if (zone.isLocal) {
+    getIt<Talker>().debug(
+      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline})',
+    );
+
+    if (zone.isLocal || zone.isOffline) {
+      // Ensure LocalPlayer has finished loading/swapping the queue
+      await ref.watch(localPlayerProvider.future);
+
       // Watch the local player state provider and pipe its state into this one.
       final localPlaybackState = ref.watch(localPlaybackStateProvider);
-      return _calculateStatus(localPlaybackState);
+      return _calculateStatus(zone, localPlaybackState);
     }
 
     final result = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
     return result.getOrElse((e) => throw e);
   }
 
-  PlayerStatus _calculateStatus(LocalPlaybackState localPlaybackState) {
+  PlayerStatus _calculateStatus(
+    Zone zone,
+    LocalPlaybackState localPlaybackState,
+  ) {
     final seqState = localPlaybackState.sequenceState;
     final currentIndex = seqState?.currentIndex ?? -1;
     final sequence = seqState?.sequence ?? Tracks.empty;
@@ -70,8 +80,8 @@ class Player extends _$Player {
     }
 
     return PlayerStatus(
-      zoneId: 'local',
-      zoneName: 'Local',
+      zoneId: zone.id,
+      zoneName: zone.name,
       state: playbackState,
       fileKey: currentTrack?.fileKey ?? -1,
       positionMs: localPlaybackState.position.inMilliseconds,
@@ -111,7 +121,7 @@ class Player extends _$Player {
   /// Silently refreshes player status without showing a loading state.
   Future<void> refresh() async {
     final zone = ref.read(activeZoneProvider);
-    if (zone == null || zone.isLocal) return;
+    if (zone == null || zone.isLocal || zone.isOffline) return;
 
     final result = await AsyncValue.guard(() async {
       final r = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
@@ -248,7 +258,7 @@ class Player extends _$Player {
     final zone = zoneToRun ?? ref.read(activeZoneProvider);
     if (zone == null) return;
 
-    if (zone.isLocal) {
+    if (zone.isLocal || zone.isOffline) {
       await local();
       // state is updated automatically via localPlayerProvider watch
     } else {

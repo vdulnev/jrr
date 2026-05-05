@@ -15,8 +15,11 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:talker/talker.dart';
 
 class MockDownloadsRepository extends Mock implements DownloadsRepository {}
+
 class MockConnectionRepository extends Mock implements ConnectionRepository {}
+
 class MockDio extends Mock implements Dio {}
+
 class MockPathProvider extends Mock
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {}
@@ -38,8 +41,9 @@ void main() {
 
     final mockPathProvider = MockPathProvider();
     PathProviderPlatform.instance = mockPathProvider;
-    when(() => mockPathProvider.getApplicationDocumentsPath())
-        .thenAnswer((_) async => tempDir.path);
+    when(
+      () => mockPathProvider.getApplicationDocumentsPath(),
+    ).thenAnswer((_) async => tempDir.path);
 
     service = DownloadService(
       repository: repository,
@@ -91,9 +95,11 @@ void main() {
       friendlyName: 'Home',
     );
 
-    when(() => connectionRepository.getLastServerWithToken()).thenAnswer((_) async => server);
+    when(
+      () => connectionRepository.getLastServerWithToken(),
+    ).thenAnswer((_) async => server);
     when(() => connectionRepository.currentToken).thenReturn('secret-token');
-    
+
     // First call: get testJob, second call: null (stop loop)
     var callCount = 0;
     when(() => repository.getNextQueuedJob()).thenAnswer((_) async {
@@ -104,33 +110,39 @@ void main() {
       return null;
     });
 
-    when(() => repository.updateJob(
-      fileKey: any<int>(named: 'fileKey'),
-      state: any<DownloadState?>(named: 'state'),
-      startedAt: any<DateTime?>(named: 'startedAt'),
-      bytesDone: any<int?>(named: 'bytesDone'),
-      bytesTotal: any<int?>(named: 'bytesTotal'),
-      error: any<String?>(named: 'error'),
-    )).thenAnswer((_) async {});
+    when(
+      () => repository.updateJob(
+        fileKey: any<int>(named: 'fileKey'),
+        state: any<DownloadState?>(named: 'state'),
+        startedAt: any<DateTime?>(named: 'startedAt'),
+        bytesDone: any<int?>(named: 'bytesDone'),
+        bytesTotal: any<int?>(named: 'bytesTotal'),
+        error: any<String?>(named: 'error'),
+      ),
+    ).thenAnswer((_) async {});
 
-    when(() => dio.download(
-      any<String>(),
-      any<String>(),
-      cancelToken: any(named: 'cancelToken'),
-      onReceiveProgress: any(named: 'onReceiveProgress'),
-    )).thenAnswer((invocation) async {
+    when(
+      () => dio.download(
+        any<String>(),
+        any<String>(),
+        cancelToken: any(named: 'cancelToken'),
+        onReceiveProgress: any(named: 'onReceiveProgress'),
+      ),
+    ).thenAnswer((invocation) async {
       // Simulate file creation
       final path = invocation.positionalArguments[1] as String;
       await File(path).writeAsString('mock flac data');
       return Response(requestOptions: RequestOptions(path: ''));
     });
 
-    when(() => repository.markCompleted(
-      fileKey: any<int>(named: 'fileKey'),
-      localPath: any<String>(named: 'localPath'),
-      artworkPath: any<String?>(named: 'artworkPath'),
-      fileSizeBytes: any<int>(named: 'fileSizeBytes'),
-    )).thenAnswer((_) async {});
+    when(
+      () => repository.markCompleted(
+        fileKey: any<int>(named: 'fileKey'),
+        localPath: any<String>(named: 'localPath'),
+        artworkPath: any<String?>(named: 'artworkPath'),
+        fileSizeBytes: any<int>(named: 'fileSizeBytes'),
+      ),
+    ).thenAnswer((_) async {});
 
     service.start();
 
@@ -138,18 +150,22 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     verify(() => repository.getNextQueuedJob()).called(2);
-    verify(() => dio.download(
-      any<String>(that: contains('File/GetFile?File=123')),
-      any<String>(that: contains('123.part')),
-      cancelToken: any(named: 'cancelToken'),
-      onReceiveProgress: any(named: 'onReceiveProgress'),
-    )).called(1);
-    
-    verify(() => repository.markCompleted(
-      fileKey: 123,
-      localPath: any(named: 'localPath', that: contains('123.flac')),
-      artworkPath: any(named: 'artworkPath'),
-      fileSizeBytes: any(named: 'fileSizeBytes'),
-    )).called(1);
+    verify(
+      () => dio.download(
+        any<String>(that: contains('File/GetFile?File=123')),
+        any<String>(that: contains('123.part')),
+        cancelToken: any(named: 'cancelToken'),
+        onReceiveProgress: any(named: 'onReceiveProgress'),
+      ),
+    ).called(1);
+
+    verify(
+      () => repository.markCompleted(
+        fileKey: 123,
+        localPath: any(named: 'localPath', that: contains('123.flac')),
+        artworkPath: any(named: 'artworkPath'),
+        fileSizeBytes: any(named: 'fileSizeBytes'),
+      ),
+    ).called(1);
   });
 }

@@ -81,11 +81,9 @@ class ArtistAlbumsScreen extends ConsumerWidget {
 
           if (discs.length > 1) {
             final first = discs.first;
-            final latestDate = discs
-                .map((d) => d.date)
-                .where((d) => d.isNotEmpty)
-                .toList()
-              ..sort();
+            final latestDate =
+                discs.map((d) => d.date).where((d) => d.isNotEmpty).toList()
+                  ..sort();
             final parent = first.copyWith(
               folderPath: first.parentFolderPath,
               discNumber: 0,

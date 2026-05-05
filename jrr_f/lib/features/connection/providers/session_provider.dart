@@ -1,9 +1,12 @@
 import 'package:jrr_f/core/db/app_database.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/error/app_exception.dart';
+import '../../zones/providers/active_zone_provider.dart';
+import '../data/models/server_info.dart';
 import '../data/repositories/connection_repository.dart';
 import 'session_state.dart';
 
@@ -28,6 +31,25 @@ class Session extends _$Session {
     if (server == null) {
       _talker.debug('[Session] No saved server with token — showing login');
       state = const SessionState.unauthenticated();
+      return;
+    }
+
+    // NEW: If the last active zone was "offline", skip network reconnect
+    // and enter Authenticated state immediately using the cached info.
+    final prefs = getIt<SharedPreferences>();
+    final lastZoneGuid = prefs.getString(kActiveZoneGuidKey);
+    if (lastZoneGuid == 'offline-zone-guid') {
+      _talker.info('[Session] Last zone was Offline — skipping reconnect');
+      await repo.restoreSession(server);
+      state = SessionState.authenticated(
+        serverInfo: ServerInfo(
+          id: 'offline-cached-server',
+          name: server.friendlyName ?? 'JRiver (${server.host})',
+          version: 'offline',
+          platform: 'offline',
+          address: 'http://${server.host}:${server.port}',
+        ),
+      );
       return;
     }
 

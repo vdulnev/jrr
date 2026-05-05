@@ -296,7 +296,7 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'94a60f57722b293aa5771c0a297240cb7e7fbbe1';
+String _$localPlayerHash() => r'7e4694b5100d96a3f1d6c2b6c7ac3b1d9c8c073e';
 
 abstract class _$LocalPlayer extends $AsyncNotifier<void> {
   FutureOr<void> build();
