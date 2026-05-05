@@ -39,6 +39,19 @@ class DownloadedAlbumDetailScreen extends ConsumerWidget {
           ref.invalidate(downloadedAlbumTracksProvider(albumGroupId)),
       actionSheetTitle: 'Album',
       addedSnackbarLabel: 'Album',
+      emptyState: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.music_off_outlined, size: 56, color: AppColors.text3),
+            SizedBox(height: 16),
+            Text(
+              'Album has 0 tracks downloaded',
+              style: AppTextStyles.emptyState,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

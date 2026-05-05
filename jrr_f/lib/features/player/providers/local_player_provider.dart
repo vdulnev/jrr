@@ -235,16 +235,36 @@ class LocalPlayer extends _$LocalPlayer {
       }
     });
 
-    // Listen for new downloads to trigger a reload to prefer local files
+    // Listen for downloads-set changes:
+    // - If items were added: reload to prefer local files for current queue.
+    // - If items were removed: drop them from the local-player queue so the
+    //   stale local-file AudioSources don't linger (and offline mode never
+    //   tries to play a deleted file).
     ref.listen(downloadedTracksProvider, (prev, next) {
-      final prevCount = prev?.value?.length ?? 0;
-      final nextCount = next.value?.length ?? 0;
+      final prevTracks = prev?.value ?? const [];
+      final nextTracks = next.value ?? const [];
 
-      if (nextCount > prevCount) {
+      final prevKeys = prevTracks.map((t) => t.track.fileKey).toSet();
+      final nextKeys = nextTracks.map((t) => t.track.fileKey).toSet();
+
+      final addedCount = nextKeys.difference(prevKeys).length;
+      final removedKeys = prevKeys.difference(nextKeys);
+
+      if (addedCount > 0) {
         _talker.info(
-          '[LocalPlayer] [$_currentZoneId] New download detected ($nextCount tracks). Reloading queue to prefer local files...',
+          '[LocalPlayer] [$_currentZoneId] $addedCount new download(s). '
+          'Reloading queue to prefer local files...',
         );
         _reloadWithNewQuality();
+        return;
+      }
+
+      if (removedKeys.isNotEmpty) {
+        _talker.info(
+          '[LocalPlayer] [$_currentZoneId] ${removedKeys.length} download(s) '
+          'deleted. Removing from queue: $removedKeys',
+        );
+        _removeTracksByFileKeys(removedKeys);
       }
     });
 
@@ -341,6 +361,19 @@ class LocalPlayer extends _$LocalPlayer {
     _talker.debug(
       '[LocalPlayer] [$zoneId] Saved queue with ${tracks.length} tracks',
     );
+  }
+
+  Future<void> _removeTracksByFileKeys(Set<int> fileKeys) async {
+    final sequence = _service.sequence;
+    if (sequence.isEmpty) return;
+
+    // Walk in reverse so removals don't shift indices we still need to inspect.
+    for (var i = sequence.length - 1; i >= 0; i--) {
+      final tag = sequence[i].tag;
+      if (tag is Track && fileKeys.contains(tag.fileKey)) {
+        await _service.removeTrack(i);
+      }
+    }
   }
 
   Future<void> _reloadWithNewQuality() async {

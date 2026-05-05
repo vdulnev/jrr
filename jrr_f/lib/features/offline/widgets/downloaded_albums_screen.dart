@@ -39,7 +39,7 @@ class DownloadedAlbumsScreen extends ConsumerWidget {
                 ),
                 data: (albums) {
                   if (albums.isEmpty) {
-                    return const Center(child: Text('No albums found'));
+                    return const _EmptyAlbums();
                   }
                   return ListView.builder(
                     itemCount: albums.length,
@@ -62,6 +62,29 @@ class DownloadedAlbumsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyAlbums extends StatelessWidget {
+  const _EmptyAlbums();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.album_outlined, size: 56, color: AppColors.text3),
+          SizedBox(height: 16),
+          Text('No downloaded albums', style: AppTextStyles.emptyState),
+          SizedBox(height: 8),
+          Text(
+            'Downloads from this artist will appear here',
+            style: AppTextStyles.itemSubtitle,
+          ),
+        ],
       ),
     );
   }

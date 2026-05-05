@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../offline/data/models/download_state.dart';
+import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../../core/di/injection.dart';
@@ -51,6 +53,8 @@ class ServerManagerScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 32),
                     const _StorageSection(),
+                    const SizedBox(height: 32),
+                    const _FailedDownloadsSection(),
                     const SizedBox(height: 32),
                     FilledButton.icon(
                       onPressed: isOffline
@@ -222,6 +226,121 @@ class _StorageSection extends ConsumerWidget {
               'Clear All',
               style: TextStyle(color: AppColors.error),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FailedDownloadsSection extends ConsumerWidget {
+  const _FailedDownloadsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final jobsState = ref.watch(downloadJobsProvider);
+
+    final failed = jobsState.value
+        ?.where((j) => j.state == DownloadState.failed)
+        .toList();
+
+    if (failed == null || failed.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final repo = getIt<DownloadsRepository>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'FAILED DOWNLOADS (${failed.length})',
+          style: AppTextStyles.sectionLabel,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.bg2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < failed.length; i++) ...[
+                if (i > 0) const Divider(height: 1, color: AppColors.line),
+                _FailedRow(
+                  fileKey: failed[i].fileKey,
+                  title: failed[i].track.name,
+                  subtitle: [
+                    failed[i].track.artist,
+                    if (failed[i].error != null) failed[i].error!,
+                  ].where((s) => s.isNotEmpty).join(' • '),
+                  onRetry: () => repo.enqueue(failed[i].track),
+                  onRemove: () => repo.removeJob(failed[i].fileKey),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FailedRow extends StatelessWidget {
+  final int fileKey;
+  final String title;
+  final String subtitle;
+  final VoidCallback onRetry;
+  final VoidCallback onRemove;
+
+  const _FailedRow({
+    required this.fileKey,
+    required this.title,
+    required this.subtitle,
+    required this.onRetry,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.itemTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.itemSubtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.replay, size: 20),
+            color: AppColors.text,
+            tooltip: 'Retry',
+            onPressed: onRetry,
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20),
+            color: AppColors.error,
+            tooltip: 'Remove',
+            onPressed: onRemove,
           ),
         ],
       ),

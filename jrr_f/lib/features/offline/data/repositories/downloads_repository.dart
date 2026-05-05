@@ -25,6 +25,9 @@ abstract class DownloadsRepository {
   /// Cancels all jobs and deletes all downloaded files.
   Future<void> clearAll();
 
+  /// Removes a job row from history (used to clear failed/cancelled entries).
+  Future<void> removeJob(int fileKey);
+
   /// Gets all current download jobs (queued, running, failed, cancelled).
   Future<List<DownloadJob>> getJobs();
 

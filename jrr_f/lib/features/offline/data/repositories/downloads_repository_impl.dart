@@ -153,6 +153,14 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   }
 
   @override
+  Future<void> removeJob(int fileKey) async {
+    _talker.info('[DownloadsRepository] Removing job: $fileKey');
+    await (_db.delete(
+      _db.downloadJobs,
+    )..where((t) => t.fileKey.equals(fileKey))).go();
+  }
+
+  @override
   Future<void> clearAll() async {
     _talker.info('[DownloadsRepository] Clearing all downloads');
     // Cancel all running/queued

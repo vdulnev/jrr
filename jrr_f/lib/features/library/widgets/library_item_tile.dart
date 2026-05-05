@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_status_provider.dart';
+import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
@@ -198,7 +199,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
     );
   }
 
-  void _handleAction(String action, Track item) {
+  Future<void> _handleAction(String action, Track item) async {
     final tracks = Tracks(tracks: [item]);
     final downloadsRepo = getIt<DownloadsRepository>();
 
@@ -222,7 +223,14 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
       case 'cancelDownload':
         downloadsRepo.cancel(item.fileKey);
       case 'deleteDownload':
-        downloadsRepo.delete(item.fileKey);
+        if (!mounted) return;
+        final confirmed = await showConfirmDeleteDialog(
+          context: context,
+          title: 'Delete download?',
+          message: 'Delete the downloaded copy of "${item.name}"?',
+        );
+        if (!confirmed) return;
+        await downloadsRepo.delete(item.fileKey);
     }
   }
 }

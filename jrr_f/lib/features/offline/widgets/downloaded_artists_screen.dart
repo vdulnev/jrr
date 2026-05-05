@@ -11,6 +11,7 @@ import '../../library/data/models/tracks.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../providers/downloaded_tracks_provider.dart';
+import 'confirm_delete_dialog.dart';
 
 @RoutePage()
 class DownloadedArtistsScreen extends ConsumerWidget {
@@ -166,6 +167,14 @@ class _ArtistRow extends ConsumerWidget {
       case 'add':
         ref.read(playerProvider.notifier).addToQueue(tracks);
       case 'deleteDownload':
+        if (!context.mounted) return;
+        final confirmed = await showConfirmDeleteDialog(
+          context: context,
+          title: 'Delete downloads?',
+          message:
+              'Delete all ${artistTracks.length} downloaded tracks for "$artist"?',
+        );
+        if (!confirmed) return;
         await getIt<DownloadsRepository>().deleteAll(
           artistTracks.map((t) => t.fileKey).toList(),
         );

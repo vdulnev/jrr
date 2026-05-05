@@ -19,6 +19,7 @@ class TrackListScaffold extends ConsumerWidget {
   final String addedSnackbarLabel;
   final Widget? headerContent;
   final VoidCallback? onBack;
+  final Widget? emptyState;
 
   const TrackListScaffold({
     required this.title,
@@ -29,6 +30,7 @@ class TrackListScaffold extends ConsumerWidget {
     required this.addedSnackbarLabel,
     this.headerContent,
     this.onBack,
+    this.emptyState,
     super.key,
   });
 
@@ -58,7 +60,8 @@ class TrackListScaffold extends ConsumerWidget {
                 error: (e, _) => ErrorView(error: e, onRetry: onRetry),
                 data: (tracks) {
                   if (tracks.isEmpty) {
-                    return const Center(child: Text('No tracks found'));
+                    return emptyState ??
+                        const Center(child: Text('No tracks found'));
                   }
                   final isMultiDisc = tracks.tracks.any(
                     (t) => t.totalDiscs > 1 || t.discNumber > 1,

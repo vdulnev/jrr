@@ -10,6 +10,7 @@ import '../../offline/data/models/download_state.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
+import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
@@ -262,6 +263,14 @@ class AlbumRowTile extends ConsumerWidget {
       if (action == 'cancelDownload') {
         await downloadsRepo.cancelAll(trackKeys);
       } else {
+        if (!context.mounted) return;
+        final confirmed = await showConfirmDeleteDialog(
+          context: context,
+          title: 'Delete downloads?',
+          message:
+              'Delete ${trackKeys.length} downloaded tracks from "${album.name}"?',
+        );
+        if (!confirmed) return;
         await downloadsRepo.deleteAll(trackKeys);
       }
       return;
