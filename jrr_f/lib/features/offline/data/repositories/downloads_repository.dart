@@ -13,8 +13,14 @@ abstract class DownloadsRepository {
   /// Cancels a queued or running download.
   Future<void> cancel(int fileKey);
 
+  /// Cancels multiple queued or running downloads.
+  Future<void> cancelAll(List<int> fileKeys);
+
   /// Deletes a downloaded track and its associated file.
   Future<void> delete(int fileKey);
+
+  /// Deletes multiple downloaded tracks and their associated files.
+  Future<void> deleteAll(List<int> fileKeys);
 
   /// Cancels all jobs and deletes all downloaded files.
   Future<void> clearAll();

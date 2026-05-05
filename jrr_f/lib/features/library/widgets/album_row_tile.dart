@@ -2,9 +2,14 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
+import '../../offline/data/models/download_state.dart';
+import '../../offline/data/repositories/downloads_repository.dart';
+import '../../offline/providers/download_jobs_provider.dart';
+import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/album.dart';
 import '../providers/library_providers.dart';
@@ -33,6 +38,27 @@ class AlbumRowTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
+    final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
+
+    final albumGroupId = '${album.name}|${album.parentFolderPath}';
+
+    final downloadedInAlbum =
+        downloadedTracks.where((t) => t.albumGroupId == albumGroupId);
+    final jobsInAlbum =
+        downloadJobs.where((j) => j.track.albumGroupId == albumGroupId);
+
+    final activeJobs = jobsInAlbum.where(
+      (j) =>
+          j.state == DownloadState.queued || j.state == DownloadState.running,
+    );
+    final failedJobs = jobsInAlbum.where((j) => j.state == DownloadState.failed);
+
+    final showDownload = activeJobs.isEmpty;
+    final showCancel = activeJobs.isNotEmpty;
+    final showDelete = downloadedInAlbum.isNotEmpty;
+    final showRetry = failedJobs.isNotEmpty && activeJobs.isEmpty;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap ?? () => context.router.push(AlbumDetailRoute(album: album)),
@@ -141,6 +167,51 @@ class AlbumRowTile extends ConsumerWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
+                const PopupMenuDivider(),
+                if (showDownload)
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: ListTile(
+                      leading: Icon(Icons.download_for_offline_outlined),
+                      title: Text('Download album'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (showRetry)
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: ListTile(
+                      leading: Icon(Icons.replay_outlined),
+                      title: Text('Retry failed downloads'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (showCancel)
+                  const PopupMenuItem(
+                    value: 'cancelDownload',
+                    child: ListTile(
+                      leading: Icon(Icons.cancel_outlined),
+                      title: Text('Cancel downloads'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (showDelete)
+                  const PopupMenuItem(
+                    value: 'deleteDownload',
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.delete_outline, color: AppColors.error),
+                      title: Text(
+                        'Delete downloads',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
               ],
             ),
           ],
@@ -159,6 +230,19 @@ class AlbumRowTile extends ConsumerWidget {
       return;
     }
 
+    final downloadsRepo = getIt<DownloadsRepository>();
+
+    if (action == 'cancelDownload' || action == 'deleteDownload') {
+      final tracks = await ref.read(albumTracksProvider(album).future);
+      final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
+      if (action == 'cancelDownload') {
+        await downloadsRepo.cancelAll(trackKeys);
+      } else {
+        await downloadsRepo.deleteAll(trackKeys);
+      }
+      return;
+    }
+
     final tracks = await ref.read(albumTracksProvider(album).future);
 
     switch (action) {
@@ -168,6 +252,8 @@ class AlbumRowTile extends ConsumerWidget {
         ref.read(playerProvider.notifier).playNext(tracks);
       case 'add':
         ref.read(playerProvider.notifier).addToQueue(tracks);
+      case 'download':
+        downloadsRepo.enqueueAll(tracks.tracks);
     }
     ref.read(playerProvider.notifier).refresh();
   }

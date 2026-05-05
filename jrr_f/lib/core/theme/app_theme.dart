@@ -17,6 +17,7 @@ abstract final class AppColors {
 
   static const accent = Color(0xFFC8922A);
   static const accentDim = Color(0x22C8922A); // ~13%
+  static const error = Color(0xFFE5484D);
 }
 
 abstract final class AppFonts {

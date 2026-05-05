@@ -61,40 +61,62 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   @override
   Future<void> cancel(int fileKey) async {
-    _talker.info('[DownloadsRepository] Cancelling job: $fileKey');
-    await (_db.update(_db.downloadJobs)..where((t) => t.fileKey.equals(fileKey)))
+    await cancelAll([fileKey]);
+  }
+
+  @override
+  Future<void> cancelAll(List<int> fileKeys) async {
+    _talker.info('[DownloadsRepository] Cancelling ${fileKeys.length} jobs');
+    await (_db.update(_db.downloadJobs)..where((t) => t.fileKey.isIn(fileKeys)))
         .write(DownloadJobsCompanion(state: Value(DownloadState.cancelled.name)));
   }
 
   @override
   Future<void> delete(int fileKey) async {
-    _talker.info('[DownloadsRepository] Deleting track: $fileKey');
-    final track = await (_db.select(_db.downloadedTracks)
-      ..where((t) => t.fileKey.equals(fileKey))).getSingleOrNull();
+    await deleteAll([fileKey]);
+  }
 
-    if (track != null) {
+  @override
+  Future<void> deleteAll(List<int> fileKeys) async {
+    _talker.info('[DownloadsRepository] Deleting ${fileKeys.length} tracks');
+    
+    final tracks = await (_db.select(_db.downloadedTracks)
+      ..where((t) => t.fileKey.isIn(fileKeys))).get();
+
+    if (tracks.isEmpty) return;
+
+    for (final track in tracks) {
       // Delete file
       final file = File(track.localPath);
       if (await file.exists()) {
         await file.delete();
       }
+    }
 
-      // If last track of album, delete artwork
-      final otherTracks = await (_db.select(_db.downloadedTracks)
-        ..where((t) => t.albumGroupId.equals(track.albumGroupId))
-        ..where((t) => t.fileKey.equals(fileKey).not())).get();
+    // Check artwork deletion: if an album has NO MORE tracks left in downloadedTracks 
+    // after this delete, remove its artwork.
+    final albumGroupIds = tracks.map((t) => t.albumGroupId).toSet();
+    for (final albumGroupId in albumGroupIds) {
+      final remaining = await (_db.select(_db.downloadedTracks)
+        ..where((t) => t.albumGroupId.equals(albumGroupId))
+        ..where((t) => t.fileKey.isIn(fileKeys).not())
+        ..limit(1)).get();
 
-      if (otherTracks.isEmpty && track.artworkPath != null) {
-        final artFile = File(track.artworkPath!);
-        if (await artFile.exists()) {
-          await artFile.delete();
+      if (remaining.isEmpty) {
+        // Find one track from the deleted set to get the artwork path
+        final deletedTrack = tracks.firstWhere((t) => t.albumGroupId == albumGroupId);
+        if (deletedTrack.artworkPath != null) {
+          final artFile = File(deletedTrack.artworkPath!);
+          if (await artFile.exists()) {
+            await artFile.delete();
+          }
         }
       }
-
-      // Delete DB row
-      await (_db.delete(_db.downloadedTracks)
-        ..where((t) => t.fileKey.equals(fileKey))).go();
     }
+
+    // Delete DB rows
+    await (_db.delete(_db.downloadedTracks)
+      ..where((t) => t.fileKey.isIn(fileKeys))).go();
   }
 
   @override

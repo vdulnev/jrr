@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../offline/data/models/download_state.dart';
+import '../../offline/data/repositories/downloads_repository.dart';
+import '../../offline/providers/download_status_provider.dart';
+import '../../offline/widgets/download_progress_indicator.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/models/track.dart';
 import '../data/models/tracks.dart';
@@ -79,37 +84,92 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         ],
       ),
       onTap: () => setState(() => _expanded = !_expanded),
-      trailing: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
-        padding: EdgeInsets.zero,
-        onSelected: (action) => _handleAction(action, item),
-        itemBuilder: (_) => const [
-          PopupMenuItem(
-            value: 'play',
-            child: ListTile(
-              leading: Icon(Icons.play_arrow_outlined),
-              title: Text('Play'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          PopupMenuItem(
-            value: 'playNext',
-            child: ListTile(
-              leading: Icon(Icons.queue_play_next),
-              title: Text('Play next'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          PopupMenuItem(
-            value: 'add',
-            child: ListTile(
-              leading: Icon(Icons.add_circle_outline),
-              title: Text('Add to playing now'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DownloadProgressIndicator(fileKey: item.fileKey),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
+            padding: EdgeInsets.zero,
+            onSelected: (action) => _handleAction(action, item),
+            itemBuilder: (context) {
+              final downloadState =
+                  ref.watch(downloadStatusProvider(item.fileKey));
+              return [
+                const PopupMenuItem(
+                  value: 'play',
+                  child: ListTile(
+                    leading: Icon(Icons.play_arrow_outlined),
+                    title: Text('Play'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'playNext',
+                  child: ListTile(
+                    leading: Icon(Icons.queue_play_next),
+                    title: Text('Play next'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'add',
+                  child: ListTile(
+                    leading: Icon(Icons.add_circle_outline),
+                    title: Text('Add to playing now'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const PopupMenuDivider(),
+                if (downloadState == DownloadState.notDownloaded)
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: ListTile(
+                      leading: Icon(Icons.download_for_offline_outlined),
+                      title: Text('Download'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (downloadState == DownloadState.queued ||
+                    downloadState == DownloadState.running)
+                  const PopupMenuItem(
+                    value: 'cancelDownload',
+                    child: ListTile(
+                      leading: Icon(Icons.cancel_outlined),
+                      title: Text('Cancel download'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (downloadState == DownloadState.downloaded)
+                  const PopupMenuItem(
+                    value: 'deleteDownload',
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.delete_outline, color: AppColors.error),
+                      title: Text('Delete download',
+                          style: TextStyle(color: AppColors.error)),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                if (downloadState == DownloadState.failed)
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: ListTile(
+                      leading: Icon(Icons.replay_outlined),
+                      title: Text('Retry download'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+              ];
+            },
           ),
         ],
       ),
@@ -118,6 +178,8 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
 
   void _handleAction(String action, Track item) {
     final tracks = Tracks(tracks: [item]);
+    final downloadsRepo = getIt<DownloadsRepository>();
+
     switch (action) {
       case 'play':
         ref.read(playerProvider.notifier).playNow(tracks);
@@ -125,7 +187,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
         ref.read(playerProvider.notifier).playNext(tracks);
       case 'add':
         ref.read(playerProvider.notifier).addToQueue(tracks);
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Added to playing now'),
@@ -133,6 +195,12 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             ),
           );
         }
+      case 'download':
+        downloadsRepo.enqueue(item);
+      case 'cancelDownload':
+        downloadsRepo.cancel(item.fileKey);
+      case 'deleteDownload':
+        downloadsRepo.delete(item.fileKey);
     }
   }
 }
