@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../shared/extensions/string_extensions.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
 
@@ -32,7 +33,9 @@ Future<List<String>> downloadedArtists(Ref ref) async {
 Future<List<Album>> downloadedAlbums(Ref ref, String artist) async {
   final tracks = await ref.watch(downloadedTracksProvider.future);
   final artistTracks = tracks.where(
-    (t) => (t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist) == artist,
+    (t) =>
+        (t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist)
+            .equalsIgnoreCase(artist),
   );
 
   final albumGroups = <String, Album>{};

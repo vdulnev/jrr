@@ -9,7 +9,7 @@ spec.
 If anything here conflicts with the parent spec, the parent spec wins for
 behavior and this file wins for Flutter-specific implementation details.
 
-**Version:** 2.2.0
+**Version:** 2.3.0
 **Status:** Phases 1–8 implemented (remote control, library, design
 system, multi-platform layouts, local playback, favorites)
 
@@ -887,6 +887,12 @@ code should follow them by default; review should call out deviations.
     framework errors, `PlatformDispatcher.instance.onError` for async
     errors that escape the framework.
 
+### Case-Insensitivity
+25. **String equality for models is case-insensitive where appropriate.** Many MCWS tags (Artist, Album, Genre) are inconsistent in their casing. The `Track`, `Album`, and `DownloadedTrack` models override `operator ==` and `hashCode` to use case-insensitive comparison for these fields.
+26. **Use `equalsIgnoreCase` extension.** For consistency, always use the `equalsIgnoreCase` extension (from `lib/shared/extensions/string_extensions.dart`) instead of `toLowerCase() == toLowerCase()`.
+27. **Normalize grouping keys to lowercase.** The `albumGroupId` getter on `Track` and the `id` on `AlbumGroup` must be fully lowercased: `'${name.toLowerCase()}|${parentFolderPath.toLowerCase()}'`. This ensures consistent grouping across different track entries and filesystem paths.
+28. **Filter offline data case-insensitively.** When filtering `downloaded_tracks` in providers (e.g. by artist name), use `equalsIgnoreCase`.
+
 ---
 
 ## 13. Changelog
@@ -901,3 +907,4 @@ code should follow them by default; review should call out deviations.
 | 0.3.0 | 2026-04-21 | Browse tree (Browse/Children + Browse/Files); `BrowseFilesView` flat/grouped toggle |
 | 0.4.0 | 2026-04-21 | UI design system (Phase 7): `AppTextStyles`, kebab popup menus everywhere, bottom tabs, `MiniPlayerPanel` in Column flow, `SubScreenHeader`, segmented Library tabs |
 | 2.2.0 | 2026-05-05 | Phase 8: adaptive narrow/wide layouts (`AdaptiveLayoutBuilder` + `TwoPanelShell` + `Sidebar`), Settings tab, JRiver Access Key lookup, silent reconnect with persisted `auth_token`, **local playback** (just_audio + audio_session, `LocalPlayerService`, persisted local queue via Drift, `LocalAudioQuality` selector), Favorites tab + Drift-backed `favorites` table, nested `AutoTabsRouter` per Library sub-tab, top-level error handlers in `main`, `Tracks`/`Zones` Freezed wrappers, AlbumGroup multi-disc helper, `Track.fileType`, `Track.albumArtistAuto`. Schema bumped to v4 (favorites, local_queue_tracks, local_queue_state). Added Best Practices section. Imperative `context.router.push` allowed inside library sub-routers. |
+| 2.3.0 | 2026-05-06 | Case-insensitive string comparison for Track/Album fields; `StringExtensions.equalsIgnoreCase`; lowercase normalization for `albumGroupId` and `AlbumGroup.id`. |

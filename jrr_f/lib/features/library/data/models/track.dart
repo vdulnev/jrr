@@ -1,9 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../shared/extensions/string_extensions.dart';
 
 part 'track.freezed.dart';
 part 'track.g.dart';
 
-@freezed
+@Freezed(equal: false)
 abstract class Track with _$Track {
   @JsonSerializable()
   const factory Track({
@@ -42,7 +43,57 @@ abstract class Track with _$Track {
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
-  String get albumGroupId => '$album|$parentFolderPath';
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Track) return false;
+    return other.fileKey == fileKey &&
+        other.name.equalsIgnoreCase(name) &&
+        other.artist.equalsIgnoreCase(artist) &&
+        other.album.equalsIgnoreCase(album) &&
+        other.albumArtist == albumArtist &&
+        other.albumArtistAuto == albumArtistAuto &&
+        other.genre.equalsIgnoreCase(genre) &&
+        other.duration == duration &&
+        other.trackNumber == trackNumber &&
+        other.discNumber == discNumber &&
+        other.totalDiscs == totalDiscs &&
+        other.imageUrl == imageUrl &&
+        other.bitrate == bitrate &&
+        other.bitDepth == bitDepth &&
+        other.sampleRate == sampleRate &&
+        other.fileType.equalsIgnoreCase(fileType) &&
+        other.channels == channels &&
+        other.totalTracks == totalTracks &&
+        other.filePath == filePath &&
+        other.dateReadable == dateReadable;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        fileKey,
+        name.toLowerCase(),
+        artist.toLowerCase(),
+        album.toLowerCase(),
+        albumArtist,
+        albumArtistAuto,
+        genre.toLowerCase(),
+        duration,
+        trackNumber,
+        discNumber,
+        totalDiscs,
+        imageUrl,
+        bitrate,
+        bitDepth,
+        sampleRate,
+        fileType.toLowerCase(),
+        channels,
+        totalTracks,
+        filePath,
+        dateReadable,
+      ]);
+
+  String get albumGroupId => '${album.toLowerCase()}|${parentFolderPath.toLowerCase()}';
 
   String get date => dateReadable;
 

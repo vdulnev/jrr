@@ -23,14 +23,7 @@ $AlbumCopyWith<Album> get copyWith => _$AlbumCopyWithImpl<Album>(this as Album, 
 
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Album&&(identical(other.name, name) || other.name == name)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath)&&(identical(other.parentFolderPath, parentFolderPath) || other.parentFolderPath == parentFolderPath)&&(identical(other.date, date) || other.date == date)&&(identical(other.artworkFileKey, artworkFileKey) || other.artworkFileKey == artworkFileKey)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber));
-}
 
-
-@override
-int get hashCode => Object.hash(runtimeType,name,albumArtist,folderPath,parentFolderPath,date,artworkFileKey,totalDiscs,discNumber);
 
 @override
 String toString() {
@@ -212,8 +205,8 @@ return $default(_that.name,_that.albumArtist,_that.folderPath,_that.parentFolder
 /// @nodoc
 
 
-class _Album implements Album {
-  const _Album({required this.name, required this.albumArtist, required this.folderPath, required this.parentFolderPath, this.date = '', this.artworkFileKey = -1, this.totalDiscs = 0, this.discNumber = 0});
+class _Album extends Album {
+  const _Album({required this.name, required this.albumArtist, required this.folderPath, required this.parentFolderPath, this.date = '', this.artworkFileKey = -1, this.totalDiscs = 0, this.discNumber = 0}): super._();
   
 
 @override final  String name;
@@ -233,14 +226,7 @@ _$AlbumCopyWith<_Album> get copyWith => __$AlbumCopyWithImpl<_Album>(this, _$ide
 
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Album&&(identical(other.name, name) || other.name == name)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.folderPath, folderPath) || other.folderPath == folderPath)&&(identical(other.parentFolderPath, parentFolderPath) || other.parentFolderPath == parentFolderPath)&&(identical(other.date, date) || other.date == date)&&(identical(other.artworkFileKey, artworkFileKey) || other.artworkFileKey == artworkFileKey)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber));
-}
 
-
-@override
-int get hashCode => Object.hash(runtimeType,name,albumArtist,folderPath,parentFolderPath,date,artworkFileKey,totalDiscs,discNumber);
 
 @override
 String toString() {

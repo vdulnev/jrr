@@ -26,14 +26,7 @@ $DownloadedTrackCopyWith<DownloadedTrack> get copyWith => _$DownloadedTrackCopyW
   Map<String, dynamic> toJson();
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DownloadedTrack&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.track, track) || other.track == track)&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.artworkPath, artworkPath) || other.artworkPath == artworkPath)&&(identical(other.albumGroupId, albumGroupId) || other.albumGroupId == albumGroupId)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.album, album) || other.album == album)&&(identical(other.dateReadable, dateReadable) || other.dateReadable == dateReadable)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.fileSizeBytes, fileSizeBytes) || other.fileSizeBytes == fileSizeBytes)&&(identical(other.downloadedAt, downloadedAt) || other.downloadedAt == downloadedAt));
-}
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,fileKey,track,localPath,artworkPath,albumGroupId,albumArtist,album,dateReadable,discNumber,totalDiscs,trackNumber,fileSizeBytes,downloadedAt);
 
 @override
 String toString() {
@@ -229,8 +222,8 @@ return $default(_that.fileKey,_that.track,_that.localPath,_that.artworkPath,_tha
 /// @nodoc
 @JsonSerializable()
 
-class _DownloadedTrack implements DownloadedTrack {
-  const _DownloadedTrack({required this.fileKey, required this.track, required this.localPath, this.artworkPath, required this.albumGroupId, required this.albumArtist, required this.album, required this.dateReadable, required this.discNumber, required this.totalDiscs, required this.trackNumber, required this.fileSizeBytes, required this.downloadedAt});
+class _DownloadedTrack extends DownloadedTrack {
+  const _DownloadedTrack({required this.fileKey, required this.track, required this.localPath, this.artworkPath, required this.albumGroupId, required this.albumArtist, required this.album, required this.dateReadable, required this.discNumber, required this.totalDiscs, required this.trackNumber, required this.fileSizeBytes, required this.downloadedAt}): super._();
   factory _DownloadedTrack.fromJson(Map<String, dynamic> json) => _$DownloadedTrackFromJson(json);
 
 @override final  int fileKey;
@@ -258,14 +251,7 @@ Map<String, dynamic> toJson() {
   return _$DownloadedTrackToJson(this, );
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DownloadedTrack&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.track, track) || other.track == track)&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.artworkPath, artworkPath) || other.artworkPath == artworkPath)&&(identical(other.albumGroupId, albumGroupId) || other.albumGroupId == albumGroupId)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.album, album) || other.album == album)&&(identical(other.dateReadable, dateReadable) || other.dateReadable == dateReadable)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.fileSizeBytes, fileSizeBytes) || other.fileSizeBytes == fileSizeBytes)&&(identical(other.downloadedAt, downloadedAt) || other.downloadedAt == downloadedAt));
-}
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,fileKey,track,localPath,artworkPath,albumGroupId,albumArtist,album,dateReadable,discNumber,totalDiscs,trackNumber,fileSizeBytes,downloadedAt);
 
 @override
 String toString() {

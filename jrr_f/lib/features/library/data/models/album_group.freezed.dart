@@ -23,14 +23,7 @@ $AlbumGroupCopyWith<AlbumGroup> get copyWith => _$AlbumGroupCopyWithImpl<AlbumGr
 
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlbumGroup&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other.discs, discs));
-}
 
-
-@override
-int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(discs));
 
 @override
 String toString() {
@@ -236,14 +229,7 @@ _$AlbumGroupCopyWith<_AlbumGroup> get copyWith => __$AlbumGroupCopyWithImpl<_Alb
 
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlbumGroup&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other._discs, _discs));
-}
 
-
-@override
-int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(_discs));
 
 @override
 String toString() {

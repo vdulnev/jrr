@@ -325,7 +325,6 @@ class McwsClient {
     (tracks) => right(
       Albums(
         albums: tracks
-            .where((t) => t.albumArtistAuto == artist && t.album.isNotEmpty)
             .map(Album.fromTrack)
             .toList(),
       ),

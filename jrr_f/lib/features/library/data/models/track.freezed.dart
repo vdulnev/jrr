@@ -26,14 +26,7 @@ $TrackCopyWith<Track> get copyWith => _$TrackCopyWithImpl<Track>(this as Track, 
   Map<String, dynamic> toJson();
 
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.albumArtistAuto, albumArtistAuto) || other.albumArtistAuto == albumArtistAuto)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.totalTracks, totalTracks) || other.totalTracks == totalTracks)&&(identical(other.filePath, filePath) || other.filePath == filePath)&&(identical(other.dateReadable, dateReadable) || other.dateReadable == dateReadable));
-}
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hashAll([runtimeType,fileKey,name,artist,album,albumArtist,albumArtistAuto,genre,duration,trackNumber,discNumber,totalDiscs,imageUrl,bitrate,bitDepth,sampleRate,fileType,channels,totalTracks,filePath,dateReadable]);
 
 @override
 String toString() {
@@ -263,14 +256,7 @@ Map<String, dynamic> toJson() {
   return _$TrackToJson(this, );
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Track&&(identical(other.fileKey, fileKey) || other.fileKey == fileKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.album, album) || other.album == album)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.albumArtistAuto, albumArtistAuto) || other.albumArtistAuto == albumArtistAuto)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.trackNumber, trackNumber) || other.trackNumber == trackNumber)&&(identical(other.discNumber, discNumber) || other.discNumber == discNumber)&&(identical(other.totalDiscs, totalDiscs) || other.totalDiscs == totalDiscs)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.bitrate, bitrate) || other.bitrate == bitrate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.totalTracks, totalTracks) || other.totalTracks == totalTracks)&&(identical(other.filePath, filePath) || other.filePath == filePath)&&(identical(other.dateReadable, dateReadable) || other.dateReadable == dateReadable));
-}
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hashAll([runtimeType,fileKey,name,artist,album,albumArtist,albumArtistAuto,genre,duration,trackNumber,discNumber,totalDiscs,imageUrl,bitrate,bitDepth,sampleRate,fileType,channels,totalTracks,filePath,dateReadable]);
 
 @override
 String toString() {

@@ -69,7 +69,8 @@ List<AlbumGroup> _buildAlbumGroups(String artist, Albums albums) {
         album.discNumber > 0 &&
         album.parentFolderPath.isNotEmpty;
     if (isMultiDiscRow) {
-      final key = '${album.name}|${album.parentFolderPath}';
+      final key =
+          '${album.name.toLowerCase()}|${album.parentFolderPath.toLowerCase()}';
       discBuckets.putIfAbsent(key, () => []).add(album);
       talker.debug(
         '$tag [$artist] disc-bucket "$key" '

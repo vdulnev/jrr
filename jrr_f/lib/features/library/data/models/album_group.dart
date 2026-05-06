@@ -4,7 +4,7 @@ import 'album.dart';
 
 part 'album_group.freezed.dart';
 
-@freezed
+@Freezed(equal: false)
 abstract class AlbumGroup with _$AlbumGroup {
   const factory AlbumGroup({
     required Album album,
@@ -27,7 +27,7 @@ abstract class AlbumGroup with _$AlbumGroup {
 
   bool get isMultiDisc => discs.length > 1;
 
-  String get id => '${album.name}|${album.parentFolderPath}';
+  String get id => '${album.name.toLowerCase()}|${album.parentFolderPath.toLowerCase()}';
 
   String get date {
     if (discs.isEmpty) return album.date;
@@ -35,4 +35,18 @@ abstract class AlbumGroup with _$AlbumGroup {
       ..sort();
     return dates.isNotEmpty ? dates.last : album.date;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AlbumGroup) return false;
+    return other.album == album &&
+        const DeepCollectionEquality().equals(other.discs, discs);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        album,
+        const DeepCollectionEquality().hash(discs),
+      );
 }

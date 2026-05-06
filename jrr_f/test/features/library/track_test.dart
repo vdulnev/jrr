@@ -50,4 +50,44 @@ void main() {
       );
     });
   });
+
+  group('Track equality', () {
+    test('Track equality is case-insensitive for specified fields', () {
+      const t1 = Track(
+        fileKey: 1,
+        name: 'Song',
+        artist: 'Artist',
+        album: 'Album',
+        genre: 'Rock',
+        fileType: 'FLAC',
+      );
+      const t2 = Track(
+        fileKey: 1,
+        name: 'song',
+        artist: 'ARTIST',
+        album: 'album',
+        genre: 'rock',
+        fileType: 'flac',
+      );
+
+      expect(t1 == t2, isTrue);
+      expect(t1.hashCode == t2.hashCode, isTrue);
+    });
+
+    test('Track equality is case-sensitive for other fields', () {
+      const t1 = Track(
+        fileKey: 1,
+        name: 'Song',
+        albumArtist: 'Artist',
+      );
+      const t2 = Track(
+        fileKey: 1,
+        name: 'Song',
+        albumArtist: 'artist',
+      );
+
+      expect(t1 == t2, isFalse);
+      expect(t1.hashCode == t2.hashCode, isFalse);
+    });
+  });
 }
