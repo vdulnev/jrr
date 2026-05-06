@@ -26,7 +26,6 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
   final Talker _talker;
 
   String? _token;
-  bool _hasSessionScope = false;
 
   ConnectionRepositoryImpl({
     required AppDatabase db,
@@ -159,7 +158,6 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       scopeName: _sessionScopeName,
       init: (gi) => gi.registerSingleton<McwsClient>(client),
     );
-    _hasSessionScope = true;
 
     try {
       await _persistServer(
@@ -179,10 +177,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
 
   @override
   Future<void> restoreSession(SavedServer server) async {
-    if (_hasSessionScope) {
-      _hasSessionScope = false;
-      await getIt.popScope();
-    }
+    await _popScope();
 
     final baseUrl = 'http://${server.host}:${server.port}/MCWS/v1/';
     _token = server.authToken;
@@ -192,7 +187,6 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       scopeName: _sessionScopeName,
       init: (gi) => gi.registerSingleton<McwsClient>(client),
     );
-    _hasSessionScope = true;
   }
 
   @override
@@ -208,8 +202,11 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       // Ignore database errors (e.g., in tests with mocks)
     }
 
-    if (_hasSessionScope) {
-      _hasSessionScope = false;
+    await _popScope();
+  }
+
+  FutureOr<void> _popScope() async {
+    if (getIt.currentScopeName == _sessionScopeName) {
       await getIt.popScope();
     }
   }
