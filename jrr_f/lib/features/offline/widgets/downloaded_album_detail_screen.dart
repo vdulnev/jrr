@@ -28,7 +28,7 @@ class DownloadedAlbumDetailScreen extends ConsumerWidget {
       subtitle: tracksState.maybeWhen(
         data: (tracks) => tracks.tracks.isNotEmpty
             ? [
-                tracks.tracks.first.albumArtist,
+                tracks.tracks.first.albumArtistAuto,
                 tracks.tracks.first.dateReadable,
               ].where((s) => s.isNotEmpty).join(' \u00b7 ')
             : 'Downloaded Album',

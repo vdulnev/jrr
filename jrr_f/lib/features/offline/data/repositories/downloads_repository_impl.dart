@@ -268,7 +268,7 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
               localPath: localPath,
               artworkPath: Value(artworkPath),
               albumGroupId: track.albumGroupId,
-              albumArtist: track.albumArtist,
+              albumArtist: track.albumArtistAuto,
               album: track.album,
               dateReadable: track.date,
               discNumber: track.discNumber,

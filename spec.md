@@ -623,9 +623,19 @@ Extended track metadata returned by `Files/Search?Action=JSON&Fields=Calculated`
 MCWS as JSON numbers in some queries and strings in others. Clients
 should coerce both shapes to the declared type instead of failing.
 
-**`Album Artist (auto)`** is JRiver's computed album-artist field and
-is the preferred display value when grouping by artist. Fall back to
-`Album Artist`, then `Artist`.
+**Album artist field — always use `Album Artist (auto)`.**
+JRiver populates two related fields per track: the user-set
+`Album Artist` (frequently empty) and the computed `Album Artist (auto)`
+which is **always populated** (JRiver's own fallback chain through
+compilation/album/track artist runs server-side). Clients must use
+`albumArtistAuto` everywhere a canonical album artist is needed —
+MCWS query construction (`~limit=…,[Album Artist (auto)]`,
+`[Album Artist (auto)]=…`), client-side grouping/filtering, the
+`Album` domain model, persistence (offline downloads), and UI display.
+Never use the raw `albumArtist` for grouping or display: it can be
+empty and will fragment albums under "Unknown Artist". When an `Album`
+is in hand its album-artist field already holds the auto value (set
+when constructing the model from a track).
 
 ### 4.17 AlbumGroup (Multi-Disc)
 

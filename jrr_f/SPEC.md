@@ -520,6 +520,23 @@ fetches a single track via `File/GetInfo`.
 All repositories resolve `McwsClient` from get_it; never `McwsApi`
 directly.
 
+### Album artist field
+
+JRiver exposes two related fields per track:
+
+- `Album Artist` — user-set tag, frequently empty.
+- `Album Artist (auto)` — JRiver's computed value, **always populated**
+  (falls back through compilation/album/track artist rules).
+
+The app uses **`Album Artist (auto)`** (`Track.albumArtistAuto`)
+everywhere a canonical album artist is needed: MCWS query construction,
+client-side filtering, `Album.fromTrack`, persistence
+(`downloaded_tracks.albumArtist`), and UI display. Never use the raw
+`Track.albumArtist` for grouping or display — it can be empty and will
+fragment albums under "Unknown Artist". When an `Album` is in hand, its
+`albumArtist` field already holds the auto value (assigned in
+`Album.fromTrack`).
+
 ### Local zone
 
 `ZoneRepositoryImpl.getZones()` appends a synthetic `Zone(id: 'local',
