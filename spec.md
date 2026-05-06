@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.5.0
+**Version:** 0.6.0
 **Status:** Draft — implemented in `jrr_f/` (Flutter)
 
 ---
@@ -114,6 +114,28 @@ The client must handle:
 - `Status="Failure"` — command rejected by server
 
 ---
+
+### 3.9 Case-Insensitivity 
+
+Many MCWS metadata tags (Artist, Album, Genre, Name) are inconsistent in their 
+casing across different files or server responses. Clients should treat these 
+fields case-insensitively for comparison and grouping. 
+
+| Field             | Comparison Policy | Used In                       | 
+|-------------------|-------------------|-------------------------------| 
+| name              | Case-Insensitive  | Track/Album equality, grouping| 
+| artist            | Case-Insensitive  | Track/Album equality, filtering| 
+| album             | Case-Insensitive  | Track/Album equality, grouping| 
+| genre             | Case-Insensitive  | Track equality, filtering     | 
+| fileType          | Case-Insensitive  | Track equality                | 
+| albumArtist       | Case-Insensitive  | Album equality, filtering     | 
+| folderPath        | Case-Insensitive  | Album equality, grouping      | 
+| parentFolderPath  | Case-Insensitive  | Album/Track grouping          | 
+
+Normalization. Values used as keys for internal grouping or identification 
+(e.g., albumGroupId) must be normalized to a consistent case (prefer 
+lowercase) before use. 
+
 
 ## 3. Domain Model
 
@@ -1005,3 +1027,4 @@ This spec follows semantic versioning.
 | Endpoint                                   | Purpose                                      |
 |--------------------------------------------|----------------------------------------------|
 | `webplay.jriver.com/libraryserver/lookup`  | Resolve JRiver Access Key → server host/port |
+17. Treat core metadata as case-insensitive. MCWS tags are often inconsistently cased. Comparison and grouping (especially for albums) must use case-insensitive logic to avoid fragmented results.
