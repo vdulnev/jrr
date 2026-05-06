@@ -236,10 +236,11 @@ class LocalPlayer extends _$LocalPlayer {
     });
 
     // Listen for downloads-set changes:
-    // - If items were added: reload to prefer local files for current queue.
-    // - If items were removed: drop them from the local-player queue so the
-    //   stale local-file AudioSources don't linger (and offline mode never
-    //   tries to play a deleted file).
+    // - Additions: reload so the queue switches to local-file sources.
+    // - Removals on the Local zone: reload so the queue swaps the deleted
+    //   local files back to streaming URLs (the track stays playable).
+    // - Removals on the Offline zone: drop the tracks from the queue —
+    //   there is no streaming fallback offline.
     ref.listen(downloadedTracksProvider, (prev, next) {
       final prevTracks = prev?.value ?? const [];
       final nextTracks = next.value ?? const [];
@@ -260,11 +261,21 @@ class LocalPlayer extends _$LocalPlayer {
       }
 
       if (removedKeys.isNotEmpty) {
-        _talker.info(
-          '[LocalPlayer] [$_currentZoneId] ${removedKeys.length} download(s) '
-          'deleted. Removing from queue: $removedKeys',
-        );
-        _removeTracksByFileKeys(removedKeys);
+        if (_currentZoneId == 'offline') {
+          _talker.info(
+            '[LocalPlayer] [offline] ${removedKeys.length} download(s) '
+            'deleted. Removing from queue (no streaming fallback): '
+            '$removedKeys',
+          );
+          _removeTracksByFileKeys(removedKeys);
+        } else {
+          _talker.info(
+            '[LocalPlayer] [$_currentZoneId] ${removedKeys.length} '
+            'download(s) deleted. Reloading queue to swap to streaming '
+            'URLs: $removedKeys',
+          );
+          _reloadWithNewQuality();
+        }
       }
     });
 
