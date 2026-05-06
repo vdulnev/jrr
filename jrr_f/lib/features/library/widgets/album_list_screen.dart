@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/sub_screen_header.dart';
-import '../data/models/album.dart';
+import '../data/models/album_group.dart';
 import 'album_row_tile.dart';
 
 class AlbumListScreen extends ConsumerStatefulWidget {

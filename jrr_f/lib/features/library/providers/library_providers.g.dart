@@ -121,13 +121,8 @@ String _$artistsHash() => r'5e78bc5f6ae8a53c2beffecd4d2819c1f5891b39';
 final albumsByArtistProvider = AlbumsByArtistFamily._();
 
 final class AlbumsByArtistProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Album>>,
-          List<Album>,
-          FutureOr<List<Album>>
-        >
-    with $FutureModifier<List<Album>>, $FutureProvider<List<Album>> {
+    extends $FunctionalProvider<AsyncValue<Albums>, Albums, FutureOr<Albums>>
+    with $FutureModifier<Albums>, $FutureProvider<Albums> {
   AlbumsByArtistProvider._({
     required AlbumsByArtistFamily super.from,
     required String super.argument,
@@ -151,12 +146,11 @@ final class AlbumsByArtistProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Album>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<Albums> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<Album>> create(Ref ref) {
+  FutureOr<Albums> create(Ref ref) {
     final argument = this.argument as String;
     return albumsByArtist(ref, argument);
   }
@@ -172,10 +166,10 @@ final class AlbumsByArtistProvider
   }
 }
 
-String _$albumsByArtistHash() => r'dd5af60fc13fff1bacbf8a58a9ed7ebd8a518bcd';
+String _$albumsByArtistHash() => r'86aeda4284e1bf5e13de6ee7b96077d0ecc0e1c0';
 
 final class AlbumsByArtistFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Album>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<Albums>, String> {
   AlbumsByArtistFamily._()
     : super(
         retry: null,
@@ -190,6 +184,82 @@ final class AlbumsByArtistFamily extends $Family
 
   @override
   String toString() => r'albumsByArtistProvider';
+}
+
+@ProviderFor(albumGroupsByArtist)
+final albumGroupsByArtistProvider = AlbumGroupsByArtistFamily._();
+
+final class AlbumGroupsByArtistProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AlbumGroup>>,
+          List<AlbumGroup>,
+          FutureOr<List<AlbumGroup>>
+        >
+    with $FutureModifier<List<AlbumGroup>>, $FutureProvider<List<AlbumGroup>> {
+  AlbumGroupsByArtistProvider._({
+    required AlbumGroupsByArtistFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'albumGroupsByArtistProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$albumGroupsByArtistHash();
+
+  @override
+  String toString() {
+    return r'albumGroupsByArtistProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AlbumGroup>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AlbumGroup>> create(Ref ref) {
+    final argument = this.argument as String;
+    return albumGroupsByArtist(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AlbumGroupsByArtistProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$albumGroupsByArtistHash() =>
+    r'015d774c68ce6ee926226b19c3135bd704b241ee';
+
+final class AlbumGroupsByArtistFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AlbumGroup>>, String> {
+  AlbumGroupsByArtistFamily._()
+    : super(
+        retry: null,
+        name: r'albumGroupsByArtistProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AlbumGroupsByArtistProvider call(String artist) =>
+      AlbumGroupsByArtistProvider._(argument: artist, from: this);
+
+  @override
+  String toString() => r'albumGroupsByArtistProvider';
 }
 
 @ProviderFor(albumTracks)
@@ -334,13 +404,8 @@ final class FolderTracksFamily extends $Family
 final randomAlbumsProvider = RandomAlbumsProvider._();
 
 final class RandomAlbumsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Album>>,
-          List<Album>,
-          FutureOr<List<Album>>
-        >
-    with $FutureModifier<List<Album>>, $FutureProvider<List<Album>> {
+    extends $FunctionalProvider<AsyncValue<Albums>, Albums, FutureOr<Albums>>
+    with $FutureModifier<Albums>, $FutureProvider<Albums> {
   RandomAlbumsProvider._()
     : super(
         from: null,
@@ -357,17 +422,16 @@ final class RandomAlbumsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Album>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<Albums> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<Album>> create(Ref ref) {
+  FutureOr<Albums> create(Ref ref) {
     return randomAlbums(ref);
   }
 }
 
-String _$randomAlbumsHash() => r'4d51381d45edf18a5872bf2ff01b65014b8772d2';
+String _$randomAlbumsHash() => r'b472cbe09b073daf43b07a2d1583a76d0aa2a732';
 
 @ProviderFor(browseChildren)
 final browseChildrenProvider = BrowseChildrenFamily._();

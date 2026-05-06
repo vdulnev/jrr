@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
+import '../../features/library/data/models/albums.dart';
 import '../../features/library/data/models/browse_item.dart';
 import '../../features/library/data/models/track.dart';
 import '../../features/library/data/models/tracks.dart';
@@ -314,7 +315,7 @@ class McwsClient {
     ),
   );
 
-  Future<Either<AppException, List<Album>>> getAlbumsByArtist(
+  Future<Either<AppException, Albums>> getAlbumsByArtist(
     String artist,
   ) => _request(
     () => _api.filesSearch(
@@ -322,10 +323,12 @@ class McwsClient {
           '[Media Type]=Audio [Album Artist (auto)]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
     ),
     (tracks) => right(
-      tracks
-          .where((t) => t.albumArtistAuto == artist && t.album.isNotEmpty)
-          .map(Album.fromTrack)
-          .toList(),
+      Albums(
+        albums: tracks
+            .where((t) => t.albumArtistAuto == artist && t.album.isNotEmpty)
+            .map(Album.fromTrack)
+            .toList(),
+      ),
     ),
   );
 
@@ -350,12 +353,12 @@ class McwsClient {
     (tracks) => right(Tracks(tracks: tracks)),
   );
 
-  Future<Either<AppException, List<Album>>> getRandomAlbums() => _request(
+  Future<Either<AppException, Albums>> getRandomAlbums() => _request(
     () => _api.filesSearch(
       query:
           '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
     ),
-    (tracks) => right(tracks.map(Album.fromTrack).toList()),
+    (tracks) => right(Albums(albums: tracks.map(Album.fromTrack).toList())),
   );
 
   // -------------------------------------------------------------------------

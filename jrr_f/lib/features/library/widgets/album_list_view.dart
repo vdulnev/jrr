@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/models/album.dart';
+import '../data/models/album_group.dart';
 import 'album_row_tile.dart';
 
 /// Reusable album list for embedded use (Random tab, etc.)

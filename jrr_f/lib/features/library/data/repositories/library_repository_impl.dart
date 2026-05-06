@@ -4,6 +4,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../models/album.dart';
+import '../models/albums.dart';
 import '../models/browse_item.dart';
 import '../models/track.dart';
 import '../models/tracks.dart';
@@ -28,7 +29,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().getArtists();
 
   @override
-  Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist) =>
+  Future<Either<AppException, Albums>> getAlbumsByArtist(String artist) =>
       getIt<McwsClient>().getAlbumsByArtist(artist);
 
   @override
@@ -40,7 +41,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
       getIt<McwsClient>().getTracksByFolder(folderPath);
 
   @override
-  Future<Either<AppException, List<Album>>> getRandomAlbums({int count = 10}) =>
+  Future<Either<AppException, Albums>> getRandomAlbums({int count = 10}) =>
       getIt<McwsClient>().getRandomAlbums();
 
   @override

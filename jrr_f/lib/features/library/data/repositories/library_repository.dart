@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/app_exception.dart';
 import '../models/album.dart';
+import '../models/albums.dart';
 import '../models/browse_item.dart';
 import '../models/track.dart';
 import '../models/tracks.dart';
@@ -14,7 +15,7 @@ abstract interface class LibraryRepository {
 
   Future<Either<AppException, List<String>>> getArtists();
 
-  Future<Either<AppException, List<Album>>> getAlbumsByArtist(String artist);
+  Future<Either<AppException, Albums>> getAlbumsByArtist(String artist);
 
   Future<Either<AppException, Tracks>> getAlbumTracks(Album album);
 
@@ -22,7 +23,7 @@ abstract interface class LibraryRepository {
 
   Future<Either<AppException, Track?>> searchByFileKey(int fileKey);
 
-  Future<Either<AppException, List<Album>>> getRandomAlbums({int count});
+  Future<Either<AppException, Albums>> getRandomAlbums({int count});
 
   /// Replaces the Playing Now queue and starts playback immediately.
   Future<Either<AppException, Unit>> playNow(String zoneId, List<int> fileKeys);

@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/features/library/data/models/album.dart';
+import 'package:jrr_f/features/library/data/models/album_group.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -52,7 +52,7 @@ class RandomTabScreen extends ConsumerWidget {
           ),
           Expanded(
             child: AlbumListView(
-              groups: albums.map((a) => AlbumGroup(album: a)).toList(),
+              groups: albums.albums.map((a) => AlbumGroup(album: a)).toList(),
             ),
           ),
         ],
