@@ -34,10 +34,15 @@ class DownloadProgressIndicator extends ConsumerWidget {
       return SizedBox(
         width: size,
         height: size,
-        child: CircularProgressIndicator(
-          value: progress > 0 ? progress : null,
-          strokeWidth: 2,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+        child: TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+          builder: (_, value, _) => CircularProgressIndicator(
+            value: value > 0 ? value : null,
+            strokeWidth: 2,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+          ),
         ),
       );
     }
