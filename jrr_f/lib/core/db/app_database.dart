@@ -23,6 +23,14 @@ class SavedServers extends Table {
 
   /// Cached auth token from the last successful authentication.
   TextColumn get authToken => text().nullable()();
+
+  /// Connect over HTTPS instead of HTTP. JRiver MC's HTTPS uses a self-signed
+  /// certificate, so the network layer must be configured to accept it.
+  BoolColumn get useSsl => boolean().withDefault(const Constant(false))();
+
+  /// HTTPS port (default JRiver MC SSL port is 52200). Used only when
+  /// [useSsl] is true.
+  IntColumn get sslPort => integer().withDefault(const Constant(52200))();
 }
 
 /// Favorite items from the browse screen.
@@ -108,7 +116,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -137,6 +145,10 @@ class AppDatabase extends _$AppDatabase {
           // Recreate localQueueState because of primary key change
           await m.deleteTable('local_queue_state');
           await m.createTable(localQueueState);
+        }
+        if (from < 7 && to >= 7) {
+          await m.addColumn(savedServers, savedServers.useSsl);
+          await m.addColumn(savedServers, savedServers.sslPort);
         }
       },
     );

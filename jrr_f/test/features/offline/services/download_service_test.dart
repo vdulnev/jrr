@@ -93,6 +93,8 @@ void main() {
       username: 'user',
       passwordKey: 'pw',
       friendlyName: 'Home',
+      useSsl: false,
+      sslPort: 52200,
     );
 
     when(

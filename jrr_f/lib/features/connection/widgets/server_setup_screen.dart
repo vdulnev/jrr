@@ -22,10 +22,12 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   final _accessKeyController = TextEditingController();
   final _hostController = TextEditingController();
   final _portController = TextEditingController(text: '52199');
+  final _sslPortController = TextEditingController(text: '52200');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   _ConnectMode _mode = _ConnectMode.accessKey;
+  bool _useSsl = false;
   bool _prefilled = false;
 
   @override
@@ -39,6 +41,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     _accessKeyController.dispose();
     _hostController.dispose();
     _portController.dispose();
+    _sslPortController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -51,12 +54,14 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     _prefilled = true;
     _hostController.text = data.host;
     _portController.text = data.port.toString();
+    _sslPortController.text = data.sslPort.toString();
     _usernameController.text = data.username;
     final password = data.password;
     if (password != null) _passwordController.text = password;
-    if (data.host.isNotEmpty) {
-      setState(() => _mode = _ConnectMode.manual);
-    }
+    setState(() {
+      _useSsl = data.useSsl;
+      if (data.host.isNotEmpty) _mode = _ConnectMode.manual;
+    });
   }
 
   Future<void> _connect() async {
@@ -70,6 +75,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
           accessKey: _accessKeyController.text.trim(),
           username: username,
           password: password,
+          useSsl: _useSsl,
         );
       case _ConnectMode.manual:
         await notifier.connectWithHost(
@@ -77,6 +83,8 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
           port: int.parse(_portController.text.trim()),
           username: username,
           password: password,
+          useSsl: _useSsl,
+          sslPort: int.tryParse(_sslPortController.text.trim()) ?? 52200,
         );
     }
   }
@@ -182,8 +190,46 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                               return null;
                             },
                           ),
+                          if (_useSsl) ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _sslPortController,
+                              enabled: !isLoading,
+                              decoration: const InputDecoration(
+                                labelText: 'SSL Port',
+                                helperText: 'JRiver MC default: 52200',
+                              ),
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              validator: (v) {
+                                if (!_useSsl) return null;
+                                final n = int.tryParse(v ?? '');
+                                if (n == null || n < 1 || n > 65535) {
+                                  return 'Port must be 1–65535';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
                         ],
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          value: _useSsl,
+                          onChanged: isLoading
+                              ? null
+                              : (v) => setState(() => _useSsl = v),
+                          title: const Text(
+                            'Use SSL (HTTPS)',
+                            style: AppTextStyles.itemTitle,
+                          ),
+                          subtitle: const Text(
+                            'Trust self-signed JRiver certificates',
+                            style: AppTextStyles.itemSubtitle,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         TextFormField(
                           controller: _usernameController,
                           enabled: !isLoading,

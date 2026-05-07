@@ -33,9 +33,8 @@ Future<List<String>> downloadedArtists(Ref ref) async {
 Future<List<Album>> downloadedAlbums(Ref ref, String artist) async {
   final tracks = await ref.watch(downloadedTracksProvider.future);
   final artistTracks = tracks.where(
-    (t) =>
-        (t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist)
-            .equalsIgnoreCase(artist),
+    (t) => (t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist)
+        .equalsIgnoreCase(artist),
   );
 
   final albumGroups = <String, Album>{};

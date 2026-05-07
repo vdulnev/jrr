@@ -8,7 +8,16 @@ part 'last_server_provider.g.dart';
 /// Loads the most recently used saved server and its password.
 /// Returns null when no server has been saved yet.
 @riverpod
-Future<({String host, int port, String username, String? password})?>
+Future<
+  ({
+    String host,
+    int port,
+    String username,
+    String? password,
+    bool useSsl,
+    int sslPort,
+  })?
+>
 lastServer(Ref ref) async {
   final repo = getIt<ConnectionRepository>();
   final servers = await repo.getSavedServers();
@@ -20,5 +29,7 @@ lastServer(Ref ref) async {
     port: last.port,
     username: last.username,
     password: password,
+    useSsl: last.useSsl,
+    sslPort: last.sslPort,
   );
 }

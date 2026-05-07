@@ -49,18 +49,18 @@ abstract class DownloadedTrack with _$DownloadedTrack {
 
   @override
   int get hashCode => Object.hash(
-        fileKey,
-        track,
-        localPath,
-        artworkPath,
-        albumGroupId,
-        albumArtist.toLowerCase(),
-        album.toLowerCase(),
-        dateReadable,
-        discNumber,
-        totalDiscs,
-        trackNumber,
-        fileSizeBytes,
-        downloadedAt,
-      );
+    fileKey,
+    track,
+    localPath,
+    artworkPath,
+    albumGroupId,
+    albumArtist.toLowerCase(),
+    album.toLowerCase(),
+    dateReadable,
+    discNumber,
+    totalDiscs,
+    trackNumber,
+    fileSizeBytes,
+    downloadedAt,
+  );
 }

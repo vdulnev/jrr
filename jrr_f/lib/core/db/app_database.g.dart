@@ -96,6 +96,31 @@ class $SavedServersTable extends SavedServers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _useSslMeta = const VerificationMeta('useSsl');
+  @override
+  late final GeneratedColumn<bool> useSsl = GeneratedColumn<bool>(
+    'use_ssl',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("use_ssl" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sslPortMeta = const VerificationMeta(
+    'sslPort',
+  );
+  @override
+  late final GeneratedColumn<int> sslPort = GeneratedColumn<int>(
+    'ssl_port',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(52200),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -106,6 +131,8 @@ class $SavedServersTable extends SavedServers
     friendlyName,
     lastUsedAt,
     authToken,
+    useSsl,
+    sslPort,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -179,6 +206,18 @@ class $SavedServersTable extends SavedServers
         authToken.isAcceptableOrUnknown(data['auth_token']!, _authTokenMeta),
       );
     }
+    if (data.containsKey('use_ssl')) {
+      context.handle(
+        _useSslMeta,
+        useSsl.isAcceptableOrUnknown(data['use_ssl']!, _useSslMeta),
+      );
+    }
+    if (data.containsKey('ssl_port')) {
+      context.handle(
+        _sslPortMeta,
+        sslPort.isAcceptableOrUnknown(data['ssl_port']!, _sslPortMeta),
+      );
+    }
     return context;
   }
 
@@ -220,6 +259,14 @@ class $SavedServersTable extends SavedServers
         DriftSqlType.string,
         data['${effectivePrefix}auth_token'],
       ),
+      useSsl: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}use_ssl'],
+      )!,
+      sslPort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ssl_port'],
+      )!,
     );
   }
 
@@ -246,6 +293,14 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
 
   /// Cached auth token from the last successful authentication.
   final String? authToken;
+
+  /// Connect over HTTPS instead of HTTP. JRiver MC's HTTPS uses a self-signed
+  /// certificate, so the network layer must be configured to accept it.
+  final bool useSsl;
+
+  /// HTTPS port (default JRiver MC SSL port is 52200). Used only when
+  /// [useSsl] is true.
+  final int sslPort;
   const SavedServer({
     required this.id,
     required this.host,
@@ -255,6 +310,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     this.friendlyName,
     this.lastUsedAt,
     this.authToken,
+    required this.useSsl,
+    required this.sslPort,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -273,6 +330,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     if (!nullToAbsent || authToken != null) {
       map['auth_token'] = Variable<String>(authToken);
     }
+    map['use_ssl'] = Variable<bool>(useSsl);
+    map['ssl_port'] = Variable<int>(sslPort);
     return map;
   }
 
@@ -292,6 +351,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       authToken: authToken == null && nullToAbsent
           ? const Value.absent()
           : Value(authToken),
+      useSsl: Value(useSsl),
+      sslPort: Value(sslPort),
     );
   }
 
@@ -309,6 +370,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       friendlyName: serializer.fromJson<String?>(json['friendlyName']),
       lastUsedAt: serializer.fromJson<int?>(json['lastUsedAt']),
       authToken: serializer.fromJson<String?>(json['authToken']),
+      useSsl: serializer.fromJson<bool>(json['useSsl']),
+      sslPort: serializer.fromJson<int>(json['sslPort']),
     );
   }
   @override
@@ -323,6 +386,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
       'friendlyName': serializer.toJson<String?>(friendlyName),
       'lastUsedAt': serializer.toJson<int?>(lastUsedAt),
       'authToken': serializer.toJson<String?>(authToken),
+      'useSsl': serializer.toJson<bool>(useSsl),
+      'sslPort': serializer.toJson<int>(sslPort),
     };
   }
 
@@ -335,6 +400,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     Value<String?> friendlyName = const Value.absent(),
     Value<int?> lastUsedAt = const Value.absent(),
     Value<String?> authToken = const Value.absent(),
+    bool? useSsl,
+    int? sslPort,
   }) => SavedServer(
     id: id ?? this.id,
     host: host ?? this.host,
@@ -344,6 +411,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     friendlyName: friendlyName.present ? friendlyName.value : this.friendlyName,
     lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
     authToken: authToken.present ? authToken.value : this.authToken,
+    useSsl: useSsl ?? this.useSsl,
+    sslPort: sslPort ?? this.sslPort,
   );
   SavedServer copyWithCompanion(SavedServersCompanion data) {
     return SavedServer(
@@ -361,6 +430,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
           ? data.lastUsedAt.value
           : this.lastUsedAt,
       authToken: data.authToken.present ? data.authToken.value : this.authToken,
+      useSsl: data.useSsl.present ? data.useSsl.value : this.useSsl,
+      sslPort: data.sslPort.present ? data.sslPort.value : this.sslPort,
     );
   }
 
@@ -374,7 +445,9 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
           ..write('passwordKey: $passwordKey, ')
           ..write('friendlyName: $friendlyName, ')
           ..write('lastUsedAt: $lastUsedAt, ')
-          ..write('authToken: $authToken')
+          ..write('authToken: $authToken, ')
+          ..write('useSsl: $useSsl, ')
+          ..write('sslPort: $sslPort')
           ..write(')'))
         .toString();
   }
@@ -389,6 +462,8 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
     friendlyName,
     lastUsedAt,
     authToken,
+    useSsl,
+    sslPort,
   );
   @override
   bool operator ==(Object other) =>
@@ -401,7 +476,9 @@ class SavedServer extends DataClass implements Insertable<SavedServer> {
           other.passwordKey == this.passwordKey &&
           other.friendlyName == this.friendlyName &&
           other.lastUsedAt == this.lastUsedAt &&
-          other.authToken == this.authToken);
+          other.authToken == this.authToken &&
+          other.useSsl == this.useSsl &&
+          other.sslPort == this.sslPort);
 }
 
 class SavedServersCompanion extends UpdateCompanion<SavedServer> {
@@ -413,6 +490,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
   final Value<String?> friendlyName;
   final Value<int?> lastUsedAt;
   final Value<String?> authToken;
+  final Value<bool> useSsl;
+  final Value<int> sslPort;
   const SavedServersCompanion({
     this.id = const Value.absent(),
     this.host = const Value.absent(),
@@ -422,6 +501,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     this.friendlyName = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
     this.authToken = const Value.absent(),
+    this.useSsl = const Value.absent(),
+    this.sslPort = const Value.absent(),
   });
   SavedServersCompanion.insert({
     this.id = const Value.absent(),
@@ -432,6 +513,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     this.friendlyName = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
     this.authToken = const Value.absent(),
+    this.useSsl = const Value.absent(),
+    this.sslPort = const Value.absent(),
   }) : host = Value(host),
        username = Value(username),
        passwordKey = Value(passwordKey);
@@ -444,6 +527,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     Expression<String>? friendlyName,
     Expression<int>? lastUsedAt,
     Expression<String>? authToken,
+    Expression<bool>? useSsl,
+    Expression<int>? sslPort,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -454,6 +539,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
       if (friendlyName != null) 'friendly_name': friendlyName,
       if (lastUsedAt != null) 'last_used_at': lastUsedAt,
       if (authToken != null) 'auth_token': authToken,
+      if (useSsl != null) 'use_ssl': useSsl,
+      if (sslPort != null) 'ssl_port': sslPort,
     });
   }
 
@@ -466,6 +553,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     Value<String?>? friendlyName,
     Value<int?>? lastUsedAt,
     Value<String?>? authToken,
+    Value<bool>? useSsl,
+    Value<int>? sslPort,
   }) {
     return SavedServersCompanion(
       id: id ?? this.id,
@@ -476,6 +565,8 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
       friendlyName: friendlyName ?? this.friendlyName,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
       authToken: authToken ?? this.authToken,
+      useSsl: useSsl ?? this.useSsl,
+      sslPort: sslPort ?? this.sslPort,
     );
   }
 
@@ -506,6 +597,12 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
     if (authToken.present) {
       map['auth_token'] = Variable<String>(authToken.value);
     }
+    if (useSsl.present) {
+      map['use_ssl'] = Variable<bool>(useSsl.value);
+    }
+    if (sslPort.present) {
+      map['ssl_port'] = Variable<int>(sslPort.value);
+    }
     return map;
   }
 
@@ -519,7 +616,9 @@ class SavedServersCompanion extends UpdateCompanion<SavedServer> {
           ..write('passwordKey: $passwordKey, ')
           ..write('friendlyName: $friendlyName, ')
           ..write('lastUsedAt: $lastUsedAt, ')
-          ..write('authToken: $authToken')
+          ..write('authToken: $authToken, ')
+          ..write('useSsl: $useSsl, ')
+          ..write('sslPort: $sslPort')
           ..write(')'))
         .toString();
   }
@@ -2880,6 +2979,8 @@ typedef $$SavedServersTableCreateCompanionBuilder =
       Value<String?> friendlyName,
       Value<int?> lastUsedAt,
       Value<String?> authToken,
+      Value<bool> useSsl,
+      Value<int> sslPort,
     });
 typedef $$SavedServersTableUpdateCompanionBuilder =
     SavedServersCompanion Function({
@@ -2891,6 +2992,8 @@ typedef $$SavedServersTableUpdateCompanionBuilder =
       Value<String?> friendlyName,
       Value<int?> lastUsedAt,
       Value<String?> authToken,
+      Value<bool> useSsl,
+      Value<int> sslPort,
     });
 
 class $$SavedServersTableFilterComposer
@@ -2939,6 +3042,16 @@ class $$SavedServersTableFilterComposer
 
   ColumnFilters<String> get authToken => $composableBuilder(
     column: $table.authToken,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get useSsl => $composableBuilder(
+    column: $table.useSsl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sslPort => $composableBuilder(
+    column: $table.sslPort,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2991,6 +3104,16 @@ class $$SavedServersTableOrderingComposer
     column: $table.authToken,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get useSsl => $composableBuilder(
+    column: $table.useSsl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sslPort => $composableBuilder(
+    column: $table.sslPort,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SavedServersTableAnnotationComposer
@@ -3031,6 +3154,12 @@ class $$SavedServersTableAnnotationComposer
 
   GeneratedColumn<String> get authToken =>
       $composableBuilder(column: $table.authToken, builder: (column) => column);
+
+  GeneratedColumn<bool> get useSsl =>
+      $composableBuilder(column: $table.useSsl, builder: (column) => column);
+
+  GeneratedColumn<int> get sslPort =>
+      $composableBuilder(column: $table.sslPort, builder: (column) => column);
 }
 
 class $$SavedServersTableTableManager
@@ -3072,6 +3201,8 @@ class $$SavedServersTableTableManager
                 Value<String?> friendlyName = const Value.absent(),
                 Value<int?> lastUsedAt = const Value.absent(),
                 Value<String?> authToken = const Value.absent(),
+                Value<bool> useSsl = const Value.absent(),
+                Value<int> sslPort = const Value.absent(),
               }) => SavedServersCompanion(
                 id: id,
                 host: host,
@@ -3081,6 +3212,8 @@ class $$SavedServersTableTableManager
                 friendlyName: friendlyName,
                 lastUsedAt: lastUsedAt,
                 authToken: authToken,
+                useSsl: useSsl,
+                sslPort: sslPort,
               ),
           createCompanionCallback:
               ({
@@ -3092,6 +3225,8 @@ class $$SavedServersTableTableManager
                 Value<String?> friendlyName = const Value.absent(),
                 Value<int?> lastUsedAt = const Value.absent(),
                 Value<String?> authToken = const Value.absent(),
+                Value<bool> useSsl = const Value.absent(),
+                Value<int> sslPort = const Value.absent(),
               }) => SavedServersCompanion.insert(
                 id: id,
                 host: host,
@@ -3101,6 +3236,8 @@ class $$SavedServersTableTableManager
                 friendlyName: friendlyName,
                 lastUsedAt: lastUsedAt,
                 authToken: authToken,
+                useSsl: useSsl,
+                sslPort: sslPort,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

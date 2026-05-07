@@ -49,13 +49,13 @@ abstract class Album with _$Album {
 
   @override
   int get hashCode => Object.hash(
-        name.toLowerCase(),
-        albumArtist.toLowerCase(),
-        folderPath.toLowerCase(),
-        parentFolderPath.toLowerCase(),
-        date,
-        artworkFileKey,
-        totalDiscs,
-        discNumber,
-      );
+    name.toLowerCase(),
+    albumArtist.toLowerCase(),
+    folderPath.toLowerCase(),
+    parentFolderPath.toLowerCase(),
+    date,
+    artworkFileKey,
+    totalDiscs,
+    discNumber,
+  );
 }

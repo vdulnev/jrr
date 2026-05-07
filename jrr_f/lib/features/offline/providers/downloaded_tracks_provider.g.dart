@@ -153,7 +153,7 @@ final class DownloadedAlbumsProvider
   }
 }
 
-String _$downloadedAlbumsHash() => r'2c30b81f61a8f37b60ebe8df2db3ba1ae7eaa242';
+String _$downloadedAlbumsHash() => r'5759f5be8058a5b9ed9845af73c7c5dbe9c37b03';
 
 final class DownloadedAlbumsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Album>>, String> {

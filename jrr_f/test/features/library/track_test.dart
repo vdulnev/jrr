@@ -75,16 +75,8 @@ void main() {
     });
 
     test('Track equality is case-sensitive for other fields', () {
-      const t1 = Track(
-        fileKey: 1,
-        name: 'Song',
-        albumArtist: 'Artist',
-      );
-      const t2 = Track(
-        fileKey: 1,
-        name: 'Song',
-        albumArtist: 'artist',
-      );
+      const t1 = Track(fileKey: 1, name: 'Song', albumArtist: 'Artist');
+      const t2 = Track(fileKey: 1, name: 'Song', albumArtist: 'artist');
 
       expect(t1 == t2, isFalse);
       expect(t1.hashCode == t2.hashCode, isFalse);

@@ -27,7 +27,8 @@ abstract class AlbumGroup with _$AlbumGroup {
 
   bool get isMultiDisc => discs.length > 1;
 
-  String get id => '${album.name.toLowerCase()}|${album.parentFolderPath.toLowerCase()}';
+  String get id =>
+      '${album.name.toLowerCase()}|${album.parentFolderPath.toLowerCase()}';
 
   String get date {
     if (discs.isEmpty) return album.date;
@@ -45,8 +46,6 @@ abstract class AlbumGroup with _$AlbumGroup {
   }
 
   @override
-  int get hashCode => Object.hash(
-        album,
-        const DeepCollectionEquality().hash(discs),
-      );
+  int get hashCode =>
+      Object.hash(album, const DeepCollectionEquality().hash(discs));
 }

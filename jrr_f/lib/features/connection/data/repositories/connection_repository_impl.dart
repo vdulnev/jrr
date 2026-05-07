@@ -14,6 +14,7 @@ import '../../../../core/network/dio_factory.dart';
 import '../../../../core/network/jriver_lookup_api.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../../../../core/network/mcws_xml_parser.dart';
+import '../../../../core/network/ssl_trust.dart';
 import '../models/server_info.dart';
 import 'connection_repository.dart';
 
@@ -54,6 +55,19 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         ),
         parser: _parser,
       );
+
+  String _buildBaseUrl({
+    required String host,
+    required int port,
+    required bool useSsl,
+    required int sslPort,
+    required bool includeMcwsPath,
+  }) {
+    final scheme = useSsl ? 'https' : 'http';
+    final effectivePort = useSsl ? sslPort : port;
+    final suffix = includeMcwsPath ? '/MCWS/v1/' : '';
+    return '$scheme://$host:$effectivePort$suffix';
+  }
 
   @override
   Future<Either<AppException, AccessKeyLookupResult>> lookupAccessKey(
@@ -96,6 +110,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         element('ip'),
       ]);
       final port = int.tryParse(element('port') ?? '');
+      final httpsPort = int.tryParse(element('httpsport') ?? '');
       if (host == null || port == null) {
         return left(
           const AppException.parseError(
@@ -103,7 +118,9 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
           ),
         );
       }
-      return right(AccessKeyLookupResult(host: host, port: port));
+      return right(
+        AccessKeyLookupResult(host: host, port: port, httpsPort: httpsPort),
+      );
     } on DioException catch (e) {
       _talker.warning('[ConnectionRepo] Access key lookup failed: $e');
       return left(
@@ -122,10 +139,22 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     required int port,
     required String username,
     required String password,
+    bool useSsl = false,
+    int sslPort = 52200,
   }) async {
     await clearSession();
 
-    final baseUrl = 'http://$host:$port/MCWS/v1/';
+    if (useSsl) {
+      JRiverHttpOverrides.instance.trustHost(host);
+    }
+
+    final baseUrl = _buildBaseUrl(
+      host: host,
+      port: port,
+      useSsl: useSsl,
+      sslPort: sslPort,
+      includeMcwsPath: true,
+    );
     final client = buildClient(baseUrl, () => _token);
 
     final authResult = await client.authenticate(
@@ -151,7 +180,13 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       name: 'JRiver ($host)',
       version: 'unknown',
       platform: 'unknown',
-      address: 'http://$host:$port',
+      address: _buildBaseUrl(
+        host: host,
+        port: port,
+        useSsl: useSsl,
+        sslPort: sslPort,
+        includeMcwsPath: false,
+      ),
     );
 
     getIt.pushNewScope(
@@ -167,6 +202,8 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
         password,
         serverInfo.name,
         _token,
+        useSsl: useSsl,
+        sslPort: sslPort,
       );
     } catch (e) {
       _talker.warning('Failed to persist server: $e');
@@ -179,7 +216,17 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
   Future<void> restoreSession(SavedServer server) async {
     await _popScope();
 
-    final baseUrl = 'http://${server.host}:${server.port}/MCWS/v1/';
+    if (server.useSsl) {
+      JRiverHttpOverrides.instance.trustHost(server.host);
+    }
+
+    final baseUrl = _buildBaseUrl(
+      host: server.host,
+      port: server.port,
+      useSsl: server.useSsl,
+      sslPort: server.sslPort,
+      includeMcwsPath: true,
+    );
     _token = server.authToken;
     final client = buildClient(baseUrl, () => _token);
 
@@ -244,8 +291,10 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     String username,
     String password,
     String friendlyName,
-    String? authToken,
-  ) async {
+    String? authToken, {
+    required bool useSsl,
+    required int sslPort,
+  }) async {
     final key = 'server_${host}_${port}_$username';
     await _secureStorage.write(key: key, value: password);
 
@@ -268,6 +317,8 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
           friendlyName: Value(friendlyName),
           lastUsedAt: Value(now),
           authToken: Value(authToken),
+          useSsl: Value(useSsl),
+          sslPort: Value(sslPort),
         ),
       );
     } else {
@@ -282,6 +333,8 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
               friendlyName: Value(friendlyName),
               lastUsedAt: Value(now),
               authToken: Value(authToken),
+              useSsl: Value(useSsl),
+              sslPort: Value(sslPort),
             ),
           );
     }

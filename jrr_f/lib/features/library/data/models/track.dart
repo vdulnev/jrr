@@ -71,29 +71,30 @@ abstract class Track with _$Track {
 
   @override
   int get hashCode => Object.hashAll([
-        fileKey,
-        name.toLowerCase(),
-        artist.toLowerCase(),
-        album.toLowerCase(),
-        albumArtist,
-        albumArtistAuto,
-        genre.toLowerCase(),
-        duration,
-        trackNumber,
-        discNumber,
-        totalDiscs,
-        imageUrl,
-        bitrate,
-        bitDepth,
-        sampleRate,
-        fileType.toLowerCase(),
-        channels,
-        totalTracks,
-        filePath,
-        dateReadable,
-      ]);
+    fileKey,
+    name.toLowerCase(),
+    artist.toLowerCase(),
+    album.toLowerCase(),
+    albumArtist,
+    albumArtistAuto,
+    genre.toLowerCase(),
+    duration,
+    trackNumber,
+    discNumber,
+    totalDiscs,
+    imageUrl,
+    bitrate,
+    bitDepth,
+    sampleRate,
+    fileType.toLowerCase(),
+    channels,
+    totalTracks,
+    filePath,
+    dateReadable,
+  ]);
 
-  String get albumGroupId => '${album.toLowerCase()}|${parentFolderPath.toLowerCase()}';
+  String get albumGroupId =>
+      '${album.toLowerCase()}|${parentFolderPath.toLowerCase()}';
 
   String get date => dateReadable;
 

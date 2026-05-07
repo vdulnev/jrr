@@ -8,7 +8,16 @@ import '../models/server_info.dart';
 class AccessKeyLookupResult {
   final String host;
   final int port;
-  const AccessKeyLookupResult({required this.host, required this.port});
+
+  /// Server-reported HTTPS port from the lookup response (`<httpsport>`),
+  /// when present. Null if the server doesn't advertise SSL.
+  final int? httpsPort;
+
+  const AccessKeyLookupResult({
+    required this.host,
+    required this.port,
+    this.httpsPort,
+  });
 }
 
 abstract interface class ConnectionRepository {
@@ -17,6 +26,8 @@ abstract interface class ConnectionRepository {
     required int port,
     required String username,
     required String password,
+    bool useSsl = false,
+    int sslPort = 52200,
   });
 
   /// Resolves a 6-character JRiver Access Key to the server's host/port via

@@ -7,9 +7,13 @@ import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
 import 'app.dart';
 import 'core/di/injection.dart';
+import 'core/network/ssl_trust.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Install before any HttpClient is constructed so saved-server SSL hosts
+  // can be added to the trust list as the session is restored.
+  JRiverHttpOverrides.install();
   await configureDependencies();
 
   final talker = getIt<Talker>();

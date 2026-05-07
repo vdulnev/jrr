@@ -21,19 +21,54 @@ final class LastServerProvider
     extends
         $FunctionalProvider<
           AsyncValue<
-            ({String host, String? password, int port, String username})?
+            ({
+              String host,
+              String? password,
+              int port,
+              int sslPort,
+              bool useSsl,
+              String username,
+            })?
           >,
-          ({String host, String? password, int port, String username})?,
+          ({
+            String host,
+            String? password,
+            int port,
+            int sslPort,
+            bool useSsl,
+            String username,
+          })?,
           FutureOr<
-            ({String host, String? password, int port, String username})?
+            ({
+              String host,
+              String? password,
+              int port,
+              int sslPort,
+              bool useSsl,
+              String username,
+            })?
           >
         >
     with
         $FutureModifier<
-          ({String host, String? password, int port, String username})?
+          ({
+            String host,
+            String? password,
+            int port,
+            int sslPort,
+            bool useSsl,
+            String username,
+          })?
         >,
         $FutureProvider<
-          ({String host, String? password, int port, String username})?
+          ({
+            String host,
+            String? password,
+            int port,
+            int sslPort,
+            bool useSsl,
+            String username,
+          })?
         > {
   /// Loads the most recently used saved server and its password.
   /// Returns null when no server has been saved yet.
@@ -54,15 +89,31 @@ final class LastServerProvider
   @$internal
   @override
   $FutureProviderElement<
-    ({String host, String? password, int port, String username})?
+    ({
+      String host,
+      String? password,
+      int port,
+      int sslPort,
+      bool useSsl,
+      String username,
+    })?
   >
   $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<({String host, String? password, int port, String username})?>
+  FutureOr<
+    ({
+      String host,
+      String? password,
+      int port,
+      int sslPort,
+      bool useSsl,
+      String username,
+    })?
+  >
   create(Ref ref) {
     return lastServer(ref);
   }
 }
 
-String _$lastServerHash() => r'9d1ebd2fc58f246a6a83c9aa2568ffa346a14a5f';
+String _$lastServerHash() => r'8e3d91b2ff2259bfd89558b7c2af9705ee94aac9';

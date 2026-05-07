@@ -322,13 +322,7 @@ class McwsClient {
       query:
           '[Media Type]=Audio [Album Artist (auto)]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
     ),
-    (tracks) => right(
-      Albums(
-        albums: tracks
-            .map(Album.fromTrack)
-            .toList(),
-      ),
-    ),
+    (tracks) => right(Albums(albums: tracks.map(Album.fromTrack).toList())),
   );
 
   Future<Either<AppException, Tracks>> getAlbumTracks(Album album) {

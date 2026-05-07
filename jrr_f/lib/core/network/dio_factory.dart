@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:talker/talker.dart';
+
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 
 /// Builds a Dio for unauthenticated public endpoints (e.g. the JRiver
 /// access-key lookup service). No auth interceptor — only logging.
+///
+/// HTTPS connections to self-signed servers (JRiver MC's SSL port) are
+/// handled by the global `JRiverHttpOverrides` rather than per-Dio
+/// configuration; callers must register the host via
+/// `JRiverHttpOverrides.instance.trustHost(...)` before issuing requests.
 Dio createPublicDio({String baseUrl = '', required Talker talker}) {
   final dio = Dio(
     BaseOptions(

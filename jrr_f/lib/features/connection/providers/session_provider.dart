@@ -41,13 +41,15 @@ class Session extends _$Session {
     if (lastZoneGuid == 'offline-zone-guid') {
       _talker.info('[Session] Last zone was Offline — skipping reconnect');
       await repo.restoreSession(server);
+      final scheme = server.useSsl ? 'https' : 'http';
+      final activePort = server.useSsl ? server.sslPort : server.port;
       state = SessionState.authenticated(
         serverInfo: ServerInfo(
           id: 'offline-cached-server',
           name: server.friendlyName ?? 'JRiver (${server.host})',
           version: 'offline',
           platform: 'offline',
-          address: 'http://${server.host}:${server.port}',
+          address: '$scheme://${server.host}:$activePort',
         ),
       );
       return;
@@ -66,6 +68,8 @@ class Session extends _$Session {
       port: server.port,
       username: server.username,
       password: password,
+      useSsl: server.useSsl,
+      sslPort: server.sslPort,
     );
 
     result.fold(
@@ -102,13 +106,20 @@ class Session extends _$Session {
     required int port,
     required String username,
     required String password,
+    bool useSsl = false,
+    int sslPort = 52200,
   }) async {
-    _talker.info('[Session] Connecting to $host:$port as $username');
+    _talker.info(
+      '[Session] Connecting to $host:$port as $username '
+      '(ssl=$useSsl, sslPort=$sslPort)',
+    );
     final result = await getIt<ConnectionRepository>().connect(
       host: host,
       port: port,
       username: username,
       password: password,
+      useSsl: useSsl,
+      sslPort: sslPort,
     );
     return result.fold(
       (e) {
