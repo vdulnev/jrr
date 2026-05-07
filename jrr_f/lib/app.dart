@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'core/di/injection.dart';
+import 'core/orientation/orientation_lock.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
@@ -32,6 +33,8 @@ class _AppState extends ConsumerState<App> {
       routerConfig: _router.config(
         navigatorObservers: () => [TalkerRouteObserver(getIt<Talker>())],
       ),
+      builder: (context, child) =>
+          OrientationLock(child: child ?? const SizedBox.shrink()),
     );
   }
 }
