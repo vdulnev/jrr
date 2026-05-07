@@ -69,13 +69,15 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build macos --release
-        env:
-          CODE_SIGNING_REQUIRED: NO
-          CODE_SIGNING_ALLOWED: NO
-          CODE_SIGN_IDENTITY: ""
-          CODE_SIGN_STYLE: Manual
-          DEVELOPMENT_TEAM: ""
+      - run: flutter build macos --release --config-only
+      - name: Build macOS (unsigned)
+        run: |
+          xcodebuild -workspace macos/Runner.xcworkspace \
+            -scheme Runner -configuration Release \
+            -derivedDataPath build/macos \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+            build
       - name: Archive Release
         run: |
           cd build/macos/Build/Products/Release
