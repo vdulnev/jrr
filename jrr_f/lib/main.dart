@@ -24,9 +24,15 @@ void main() async {
   final talker = getIt<Talker>();
 
   // Flutter framework errors (widget build exceptions, layout overflows, etc.)
+  // Use details.toStringDeep() so the diagnostic property tree is captured —
+  // for layout errors that includes the offending RenderFlex, its parents,
+  // and constraint details. Without this we only get the headline message.
   FlutterError.onError = (FlutterErrorDetails details) {
+    final diagnostics = details.toDiagnosticsNode().toStringDeep(
+      minLevel: DiagnosticLevel.debug,
+    );
     talker.error(
-      'Flutter error: ${details.exceptionAsString()}',
+      'Flutter error: ${details.exceptionAsString()}\n$diagnostics',
       details.exception,
       details.stack,
     );
