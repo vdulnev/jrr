@@ -105,8 +105,12 @@ class _Header extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
                         LibraryScreen._tabs[i],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                         style: AppTextStyles.labelLarge.copyWith(
                           color: isActive
                               ? AppColors.text
