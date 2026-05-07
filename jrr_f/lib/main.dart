@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart' show PlayerInterruptedException;
 import 'package:talker/talker.dart';
 import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
@@ -29,6 +30,14 @@ void main() async {
 
   // Errors thrown outside the Flutter framework (async gaps, platform channels)
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    // just_audio reports load cancellations (e.g. when a second setAudioSources
+    // call supersedes an in-flight one) as PlayerInterruptedException. The
+    // service-layer try/catch handles them, but they also surface here through
+    // just_audio's internal pipeline. Treat as expected and log at info.
+    if (error is PlayerInterruptedException) {
+      talker.info('just_audio load interrupted: ${error.message}');
+      return true;
+    }
     talker.error('Uncaught platform error', error, stack);
     return true; // mark as handled
   };
