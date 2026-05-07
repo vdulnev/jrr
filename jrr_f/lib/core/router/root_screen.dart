@@ -118,46 +118,51 @@ class _TabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      height: 82,
       decoration: BoxDecoration(
         color: AppColors.bg1.withValues(alpha: 0.94),
         border: const Border(top: BorderSide(color: AppColors.line)),
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            _TabItem(
-              icon: _playingIcon,
-              label: 'Playing',
-              isActive: active == AppTab.nowPlaying,
-              onTap: () => onSelect(AppTab.nowPlaying),
-            ),
-            _TabItem(
-              icon: _queueIcon,
-              label: 'Queue',
-              isActive: active == AppTab.queue,
-              onTap: () => onSelect(AppTab.queue),
-            ),
-            _TabItem(
-              icon: _libraryIcon,
-              label: 'Library',
-              isActive: active == AppTab.library,
-              onTap: () => onSelect(AppTab.library),
-            ),
-            _TabItem(
-              icon: _zonesIcon,
-              label: 'Zones',
-              isActive: active == AppTab.zones,
-              onTap: () => onSelect(AppTab.zones),
-            ),
-            _TabItem(
-              icon: (c) => Icon(Icons.settings_outlined, color: c),
-              label: 'Settings',
-              isActive: active == AppTab.settings,
-              onTap: () => onSelect(AppTab.settings),
-            ),
-          ],
+        child: SizedBox(
+          // Fixed content height — safe-area insets are added on top by the
+          // SafeArea, so the actual tab content height stays constant across
+          // devices regardless of nav-bar/home-indicator size.
+          height: 56,
+          child: Row(
+            children: [
+              _TabItem(
+                icon: _playingIcon,
+                label: 'Playing',
+                isActive: active == AppTab.nowPlaying,
+                onTap: () => onSelect(AppTab.nowPlaying),
+              ),
+              _TabItem(
+                icon: _queueIcon,
+                label: 'Queue',
+                isActive: active == AppTab.queue,
+                onTap: () => onSelect(AppTab.queue),
+              ),
+              _TabItem(
+                icon: _libraryIcon,
+                label: 'Library',
+                isActive: active == AppTab.library,
+                onTap: () => onSelect(AppTab.library),
+              ),
+              _TabItem(
+                icon: _zonesIcon,
+                label: 'Zones',
+                isActive: active == AppTab.zones,
+                onTap: () => onSelect(AppTab.zones),
+              ),
+              _TabItem(
+                icon: (c) => Icon(Icons.settings_outlined, color: c),
+                label: 'Settings',
+                isActive: active == AppTab.settings,
+                onTap: () => onSelect(AppTab.settings),
+              ),
+            ],
+          ),
         ),
       ),
     );
