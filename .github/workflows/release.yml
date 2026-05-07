@@ -70,13 +70,13 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build macos --release --config-only
-      - name: Build macOS (unsigned)
+      - name: Build macOS (ad-hoc signed)
         run: |
           xcodebuild -workspace macos/Runner.xcworkspace \
             -scheme Runner -configuration Release \
             -derivedDataPath build/macos \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER="" \
             build
       - name: Archive Release
         run: |
