@@ -84,10 +84,9 @@ jobs:
       - name: Archive Release
         run: |
           set -euo pipefail
-          APP_PATH="$(find build/macos -type d -name 'Runner.app' -path '*/Release/*' | head -n1)"
+          APP_PATH="$(find build/macos/Build/Products/Release -maxdepth 1 -type d -name '*.app' | head -n1)"
           if [ -z "$APP_PATH" ]; then
-            echo "Runner.app not found under build/macos. Tree:"
-            find build/macos -maxdepth 6 -type d
+            echo "No .app bundle found in build/macos/Build/Products/Release"
             exit 1
           fi
           echo "Found app at: $APP_PATH"
