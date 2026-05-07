@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' show PlayerInterruptedException;
 import 'package:talker/talker.dart';
@@ -13,6 +14,19 @@ import 'core/network/ssl_trust.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock phones (shortest side < 600dp) to portrait. Tablets/desktop keep
+  // all orientations. The check uses the platform view so it runs before
+  // any widget tree exists.
+  final view = WidgetsBinding.instance.platformDispatcher.views.first;
+  final shortestSide = (view.physicalSize / view.devicePixelRatio).shortestSide;
+  if (shortestSide < 600) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
+
   // Install before any HttpClient is constructed so saved-server SSL hosts
   // can be added to the trust list as the session is restored.
   JRiverHttpOverrides.install();
