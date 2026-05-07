@@ -83,8 +83,16 @@ jobs:
             build
       - name: Archive Release
         run: |
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../JRiverRemote-macOS.zip *.app
+          set -euo pipefail
+          APP_PATH="$(find build/macos -type d -name 'Runner.app' -path '*/Release/*' | head -n1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "Runner.app not found under build/macos. Tree:"
+            find build/macos -maxdepth 6 -type d
+            exit 1
+          fi
+          echo "Found app at: $APP_PATH"
+          cp -R "$APP_PATH" "JRiverRemote.app"
+          zip -ry JRiverRemote-macOS.zip JRiverRemote.app
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -155,6 +163,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Verify all artifacts present
+        run: |
+          set -e
+          for f in \
+            artifacts/android-apk/app-release.apk \
+            artifacts/android-aab/app-release.aab \
+            artifacts/windows/JRiverRemote-Windows.zip \
+            artifacts/macos/JRiverRemote-macOS.zip \
+            artifacts/ios/JRiverRemote-iOS.ipa \
+            artifacts/linux/JRiverRemote-Linux.tar.gz; do
+            test -f "$f" || { echo "MISSING: $f"; exit 1; }
+          done
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
