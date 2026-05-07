@@ -64,6 +64,9 @@ jobs:
         working-directory: jrr_f
     steps:
       - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -95,6 +98,9 @@ jobs:
         working-directory: jrr_f
     steps:
       - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
