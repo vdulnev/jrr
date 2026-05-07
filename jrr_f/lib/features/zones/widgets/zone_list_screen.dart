@@ -56,7 +56,7 @@ class ZoneListScreen extends ConsumerWidget {
                   onRetry: () => ref.invalidate(zoneListProvider),
                 ),
                 data: (zones) => ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 148),
+                  padding: const EdgeInsets.only(bottom: 16),
                   itemCount: zones.zones.length,
                   itemBuilder: (_, i) {
                     final zone = zones.zones[i];

@@ -26,7 +26,7 @@ class BrowseItemList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 148),
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];

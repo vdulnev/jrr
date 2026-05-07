@@ -89,7 +89,7 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 148),
+                      padding: const EdgeInsets.only(bottom: 16),
                       itemCount: filtered.length,
                       itemBuilder: (_, i) {
                         final artist = filtered[i];

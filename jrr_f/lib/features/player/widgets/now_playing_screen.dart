@@ -53,134 +53,131 @@ class NowPlayingScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 88),
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'NOW PLAYING',
-                            style: AppTextStyles.sectionLabel,
-                          ),
-                          const SizedBox(height: 4),
-                          _FormatQuality(
-                            activeZoneName: activeZone.name,
-                            fileType: track?.fileType ?? '',
-                            bitDepth: track?.bitDepth ?? 0,
-                            sampleRate: track?.sampleRate ?? 0,
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'NOW PLAYING',
+                          style: AppTextStyles.sectionLabel,
+                        ),
+                        const SizedBox(height: 4),
+                        _FormatQuality(
+                          activeZoneName: activeZone.name,
+                          fileType: track?.fileType ?? '',
+                          bitDepth: track?.bitDepth ?? 0,
+                          sampleRate: track?.sampleRate ?? 0,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const _PlayingNowPosition(),
+                ],
+              ),
+            ),
+
+            // Album art
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        maxWidth: 280,
+                        maxHeight: 280,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.line2),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0xCC000000),
+                            blurRadius: 60,
+                            offset: Offset(0, 16),
                           ),
                         ],
                       ),
-                    ),
-                    const _PlayingNowPosition(),
-                  ],
-                ),
-              ),
-
-              // Album art
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          maxWidth: 280,
-                          maxHeight: 280,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.line2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0xCC000000),
-                              blurRadius: 60,
-                              offset: Offset(0, 16),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: const _ArtworkConsumerWidget(),
-                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: const _ArtworkConsumerWidget(),
                     ),
                   ),
                 ),
               ),
+            ),
 
-              // Track info + controls
-              Padding(
-                padding: const EdgeInsets.only(top: 16, left: 24, right: 24),
-                child: Column(
-                  children: [
-                    // Track info
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const _TrackTitle(),
-                          if (fileKey >= 0) ...[
-                            const SizedBox(height: 3),
-                            const _TrackArtist(),
-                            const SizedBox(height: 2),
-                            const _TrackAlbumLine(),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    // Progress bar
-                    const SizedBox(height: 16),
-                    const _ProgressSection(),
-                    // Transport controls
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Track info + controls
+            Padding(
+              padding: const EdgeInsets.only(top: 16, left: 24, right: 24),
+              child: Column(
+                children: [
+                  // Track info
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _ShuffleButton(),
-                        TransportButton(
-                          size: 44,
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).previous(),
-                          child: const Icon(
-                            Icons.skip_previous_rounded,
-                            size: 28,
-                          ),
-                        ),
-                        TransportButton(
-                          size: 60,
-                          accent: true,
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).playPause(),
-                          child: const _PlayPauseIcon(),
-                        ),
-                        TransportButton(
-                          size: 44,
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).next(),
-                          child: const Icon(Icons.skip_next_rounded, size: 28),
-                        ),
-                        const _RepeatButton(),
+                        const _TrackTitle(),
+                        if (fileKey >= 0) ...[
+                          const SizedBox(height: 3),
+                          const _TrackArtist(),
+                          const SizedBox(height: 2),
+                          const _TrackAlbumLine(),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    const _VolumeControl(),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                  ),
+
+                  // Progress bar
+                  const SizedBox(height: 16),
+                  const _ProgressSection(),
+                  // Transport controls
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const _ShuffleButton(),
+                      TransportButton(
+                        size: 44,
+                        onPressed: () =>
+                            ref.read(playerProvider.notifier).previous(),
+                        child: const Icon(
+                          Icons.skip_previous_rounded,
+                          size: 28,
+                        ),
+                      ),
+                      TransportButton(
+                        size: 60,
+                        accent: true,
+                        onPressed: () =>
+                            ref.read(playerProvider.notifier).playPause(),
+                        child: const _PlayPauseIcon(),
+                      ),
+                      TransportButton(
+                        size: 44,
+                        onPressed: () =>
+                            ref.read(playerProvider.notifier).next(),
+                        child: const Icon(Icons.skip_next_rounded, size: 28),
+                      ),
+                      const _RepeatButton(),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const _VolumeControl(),
+                  const SizedBox(height: 16),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -503,68 +500,61 @@ class _NowPlayingEmptyState extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 88),
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'NOW PLAYING',
-                      style: AppTextStyles.sectionLabel,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(zone.name, style: AppTextStyles.itemSubtitle),
-                  ],
-                ),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('NOW PLAYING', style: AppTextStyles.sectionLabel),
+                  const SizedBox(height: 4),
+                  Text(zone.name, style: AppTextStyles.itemSubtitle),
+                ],
               ),
             ),
+          ),
 
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.music_note_outlined,
-                      size: 64,
-                      color: AppColors.text3.withValues(alpha: 0.3),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Nothing playing',
-                      style: AppTextStyles.nowPlayingArtist,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Select a track from the library',
-                      style: AppTextStyles.monoLabel.copyWith(fontSize: 13),
-                    ),
-                  ],
-                ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.music_note_outlined,
+                    size: 64,
+                    color: AppColors.text3.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Nothing playing',
+                    style: AppTextStyles.nowPlayingArtist,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select a track from the library',
+                    style: AppTextStyles.monoLabel.copyWith(fontSize: 13),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // Volume control still useful even if nothing playing
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: VolumeSlider(
-                value: 0,
-                isMuted: false,
-                onChanged: (v) =>
-                    ref.read(playerProvider.notifier).setVolume(v),
-                onMuteToggle: () =>
-                    ref.read(playerProvider.notifier).toggleMute(),
-              ),
+          // Volume control still useful even if nothing playing
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: VolumeSlider(
+              value: 0,
+              isMuted: false,
+              onChanged: (v) => ref.read(playerProvider.notifier).setVolume(v),
+              onMuteToggle: () =>
+                  ref.read(playerProvider.notifier).toggleMute(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

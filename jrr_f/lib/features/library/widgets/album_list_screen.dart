@@ -99,7 +99,7 @@ class _AlbumListScreenState extends ConsumerState<AlbumListScreen> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 148),
+                      padding: const EdgeInsets.only(bottom: 16),
                       itemCount: filtered.length,
                       itemBuilder: (_, i) {
                         final group = filtered[i];

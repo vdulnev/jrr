@@ -181,7 +181,7 @@ class _Data extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 148),
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: tracks.length,
       itemBuilder: (context, i) {
         final track = tracks[i];
