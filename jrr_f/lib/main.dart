@@ -8,6 +8,7 @@ import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
 import 'app.dart';
 import 'core/di/injection.dart';
+import 'core/logging/file_log_observer.dart';
 import 'core/network/ssl_trust.dart';
 
 void main() async {
@@ -15,6 +16,9 @@ void main() async {
   // Install before any HttpClient is constructed so saved-server SSL hosts
   // can be added to the trust list as the session is restored.
   JRiverHttpOverrides.install();
+  // Truncate-and-open the log file before Talker is constructed so every
+  // log from this session lands in the file.
+  await FileLogObserver.init();
   await configureDependencies();
 
   final talker = getIt<Talker>();

@@ -1,6 +1,12 @@
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../../../core/logging/file_log_observer.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/providers/download_jobs_provider.dart';
@@ -55,6 +61,8 @@ class ServerManagerScreen extends ConsumerWidget {
                     const _StorageSection(),
                     const SizedBox(height: 32),
                     const _FailedDownloadsSection(),
+                    const SizedBox(height: 32),
+                    const _DiagnosticsSection(),
                     const SizedBox(height: 32),
                     FilledButton.icon(
                       onPressed: isOffline
@@ -345,5 +353,170 @@ class _FailedRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _DiagnosticsSection extends StatelessWidget {
+  const _DiagnosticsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('DIAGNOSTICS', style: AppTextStyles.sectionLabel),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.bg2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Builder(
+                    builder: (btnContext) => OutlinedButton.icon(
+                      onPressed: () => _exportLogs(btnContext),
+                      icon: const Icon(Icons.ios_share_rounded, size: 18),
+                      label: const Text('Export Logs'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.text,
+                        side: const BorderSide(color: AppColors.line2),
+                      ),
+                    ),
+                  ),
+                ),
+                if (Platform.isMacOS) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _saveLogTo(context),
+                      icon: const Icon(Icons.save_alt_rounded, size: 18),
+                      label: const Text('Save Log As…'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.text,
+                        side: const BorderSide(color: AppColors.line2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openLogInTextEdit(context),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: const Text('Open in TextEdit'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.text,
+                        side: const BorderSide(color: AppColors.line2),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveLogTo(BuildContext context) async {
+    final path = FileLogObserver.logFilePath;
+    if (path == null || !File(path).existsSync()) {
+      _showSnack(context, 'Log file not ready yet');
+      return;
+    }
+    final ts = DateTime.now()
+        .toIso8601String()
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+    // NSSavePanel — granted via Powerbox, so writing to the chosen path is
+    // permitted even though our app is sandboxed.
+    final location = await getSaveLocation(
+      suggestedName: 'jrr_log_$ts.txt',
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'Text', extensions: ['txt', 'log']),
+      ],
+    );
+    if (location == null) return; // user cancelled
+    try {
+      await File(path).copy(location.path);
+      if (context.mounted) _showSnack(context, 'Saved to ${location.path}');
+    } catch (e) {
+      if (context.mounted) _showSnack(context, 'Save failed: $e');
+    }
+  }
+
+  Future<void> _openLogInTextEdit(BuildContext context) async {
+    final path = FileLogObserver.logFilePath;
+    if (path == null || !File(path).existsSync()) {
+      _showSnack(context, 'Log file not ready yet');
+      return;
+    }
+    // /usr/bin/open routes through Launch Services, which grants TextEdit
+    // a security-scoped read permission to our sandboxed log file via
+    // Powerbox. Direct File access from TextEdit would otherwise be denied.
+    final result = await Process.run('/usr/bin/open', ['-a', 'TextEdit', path]);
+    if (result.exitCode != 0 && context.mounted) {
+      _showSnack(context, 'Could not open: ${result.stderr}');
+    }
+  }
+
+  Future<void> _exportLogs(BuildContext context) async {
+    // Capture the popover anchor synchronously, before any await. iPad/macOS
+    // share sheets are presented as popovers and require this rect.
+    Rect? originRect;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      originRect = box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    final path = FileLogObserver.logFilePath;
+    if (path == null) {
+      _showSnack(context, 'Log file not ready yet');
+      return;
+    }
+    final src = File(path);
+    if (!src.existsSync()) {
+      _showSnack(context, 'Log file not found at $path');
+      return;
+    }
+
+    // Copy the live log file to a temp file with a fresh, timestamped name.
+    // Sharing a clean independent file (not the active log) is more
+    // compatible with iOS share targets like Files and AirDrop.
+    final ts = DateTime.now()
+        .toIso8601String()
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+    final tmpDir = await getTemporaryDirectory();
+    // macOS sandbox does not pre-create the per-bundle subdirectory under
+    // Caches; create it before writing into it.
+    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
+    final exportPath = '${tmpDir.path}/jrr_log_$ts.txt';
+    await src.copy(exportPath);
+
+    final params = ShareParams(
+      files: [
+        XFile(exportPath, mimeType: 'text/plain', name: 'jrr_log_$ts.txt'),
+      ],
+      subject: 'JRR application logs',
+      sharePositionOrigin: originRect,
+    );
+    await SharePlus.instance.share(params);
+  }
+
+  void _showSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

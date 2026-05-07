@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import '../db/app_database.dart';
+import '../logging/file_log_observer.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/connection/data/repositories/connection_repository_impl.dart';
@@ -30,12 +31,15 @@ import '../../features/zones/data/repositories/zone_repository_impl.dart';
 final getIt = GetIt.instance;
 
 Future<void> configureDependencies() async {
-  // Talker — single instance, shared by all loggers
+  // Talker — single instance, shared by all loggers. The FileLogObserver
+  // mirrors every log line to the on-disk session log so the user can
+  // export it from the Server Manager screen.
   getIt.registerSingleton<Talker>(
     Talker(
       logger: TalkerLogger(
         settings: TalkerLoggerSettings(enableColors: !Platform.isIOS),
       ),
+      observer: FileLogObserver(),
     ),
   );
 

@@ -7,7 +7,7 @@ void main() {
     test(
       'DownloadedTrack equality is case-insensitive for artist and album',
       () {
-        final track = const Track(fileKey: 1, name: 'Song');
+        const track = Track(fileKey: 1, name: 'Song');
         final dt1 = DownloadedTrack(
           fileKey: 1,
           track: track,
