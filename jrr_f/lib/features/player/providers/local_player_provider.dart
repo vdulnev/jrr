@@ -76,9 +76,34 @@ class LocalPlayerSequence extends _$LocalPlayerSequence {
 
     final sub = service.sequenceStateStream.listen((s) {
       if (s == null) {
+        talker.debug('[localPlayerSequenceProvider] SequenceState: null');
         state = null;
         return;
       }
+      String trackInfo;
+      if (s.currentIndex != null &&
+          s.currentIndex! >= 0 &&
+          s.currentIndex! < s.sequence.length) {
+        final element = s.sequence[s.currentIndex!];
+        if (element.tag is Track) {
+          final track = element.tag as Track;
+          trackInfo =
+              'name: ${track.name}, uri: ${(element is UriAudioSource) ? element.uri : 'none for ${s.runtimeType}'}';
+        } else {
+          trackInfo = 'none';
+        }
+      } else {
+        trackInfo = 'none';
+      }
+      talker.debug(
+        '[localPlayerSequenceProvider] SequenceState updated: '
+        'currentIndex=${s.currentIndex}, '
+        'sequenceLength=${s.sequence.length}, '
+        'shuffleModeEnabled=${s.shuffleModeEnabled}, '
+        'shuffleIndices=${s.shuffleIndices}, '
+        'loopMode=${s.loopMode}, '
+        'currentTrack=$trackInfo',
+      );
       state = SequenceStateData(
         sequence: Tracks(
           tracks: s.sequence.map((e) => e.tag as Track).toList(),
@@ -264,8 +289,9 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
 
       if (addedKeys.isNotEmpty) {
         // Optimization: only reload if one of the added tracks is in our current queue
-        final currentQueueKeys =
-            _service.sequence.map((s) => (s.tag as Track).fileKey).toSet();
+        final currentQueueKeys = _service.sequence
+            .map((s) => (s.tag as Track).fileKey)
+            .toSet();
 
         final hasRelevantAddition = addedKeys.any(
           (key) => currentQueueKeys.contains(key),
@@ -520,7 +546,14 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
 
       _talker.debug(
         '[LocalPlayer] [$_currentZoneId] Reloading queue. '
-        'Current track: $currentIndex, position: $currentPositionMs ms, playing: $wasPlaying',
+        'currentIndex=$currentIndex, '
+        'sequenceLength=${sequence.sequence.length}, '
+        'shuffleModeEnabled=${sequence.shuffleModeEnabled}, '
+        'shuffleIndices=${sequence.shuffleIndices}, '
+        'loopMode=${sequence.loopMode}, '
+        'currentTrack=${sequence.currentTrack?.name ?? 'none'}, '
+        'position=$currentPositionMs ms, '
+        'playing=$wasPlaying',
       );
 
       // Stop and reload
@@ -538,7 +571,9 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
     } finally {
       _isReloading = false;
       if (_reloadRequestedDuringReload) {
-        _talker.debug('[LocalPlayer] [$_currentZoneId] Executing queued reload...');
+        _talker.debug(
+          '[LocalPlayer] [$_currentZoneId] Executing queued reload...',
+        );
         _reloadRequestedDuringReload = false;
         // Schedule next reload
         Future.microtask(() => _reloadWithNewQuality());
@@ -603,12 +638,12 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
   Future<void> playNext(Tracks tracks) async {
     final currentIndex = _service.sequenceState?.currentIndex ?? -1;
     final insertIndex = currentIndex + 1;
-    _service.insertTracksAt(tracks: tracks, index: insertIndex);
+    await _service.insertTracksAt(tracks: tracks, index: insertIndex);
   }
 
   @override
   Future<void> addToQueue(Tracks tracks) async {
-    _service.addToQueue(tracks);
+    await _service.addToQueue(tracks);
   }
 
   /// State updates push via stream subscriptions, so there's nothing to pull.

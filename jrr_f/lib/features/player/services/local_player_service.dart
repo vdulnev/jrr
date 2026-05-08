@@ -203,11 +203,11 @@ class LocalPlayerService {
     await _player.play();
   }
 
-  void insertTracksAt({required Tracks tracks, required int index}) {
+  Future<void> insertTracksAt({required Tracks tracks, required int index}) async {
     _talker.debug(
       '[LocalPlayerService] insertTracksAt: ${tracks.length} tracks at index $index',
     );
-    _player.insertAudioSources(
+    await _player.insertAudioSources(
       index,
       tracks.tracks.map((t) => _createSource(t)).toList(),
     );
@@ -240,11 +240,11 @@ class LocalPlayerService {
     _talker.debug(
       '[LocalPlayerService] Moving track from index $source to $target',
     );
-    _player.moveAudioSource(source, target);
+    await _player.moveAudioSource(source, target);
   }
 
   Future<void> removeTrack(int index) async {
     _talker.debug('[LocalPlayerService] Removing track at index $index');
-    _player.removeAudioSourceAt(index);
+    await _player.removeAudioSourceAt(index);
   }
 }
