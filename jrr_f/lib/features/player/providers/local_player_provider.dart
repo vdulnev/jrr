@@ -160,6 +160,9 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
 
   String _currentZoneId = '';
 
+  bool _isReloading = false;
+  bool _reloadRequestedDuringReload = false;
+
   @override
   FutureOr<PlayerStatus?> build() async {
     _service = getIt<LocalPlayerService>();
@@ -256,16 +259,31 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
       final prevKeys = prevTracks.map((t) => t.track.fileKey).toSet();
       final nextKeys = nextTracks.map((t) => t.track.fileKey).toSet();
 
-      final addedCount = nextKeys.difference(prevKeys).length;
+      final addedKeys = nextKeys.difference(prevKeys);
       final removedKeys = prevKeys.difference(nextKeys);
 
-      if (addedCount > 0) {
-        _talker.info(
-          '[LocalPlayer] [$_currentZoneId] $addedCount new download(s). '
-          'Reloading queue to prefer local files...',
+      if (addedKeys.isNotEmpty) {
+        // Optimization: only reload if one of the added tracks is in our current queue
+        final currentQueueKeys =
+            _service.sequence.map((s) => (s.tag as Track).fileKey).toSet();
+
+        final hasRelevantAddition = addedKeys.any(
+          (key) => currentQueueKeys.contains(key),
         );
-        _reloadWithNewQuality();
-        return;
+
+        if (hasRelevantAddition) {
+          _talker.info(
+            '[LocalPlayer] [$_currentZoneId] ${addedKeys.length} new download(s). '
+            'Reloading queue to prefer local files...',
+          );
+          _reloadWithNewQuality();
+          return;
+        } else {
+          _talker.debug(
+            '[LocalPlayer] [$_currentZoneId] ${addedKeys.length} new download(s), '
+            'none in current queue. Skipping reload.',
+          );
+        }
       }
 
       if (removedKeys.isNotEmpty) {
@@ -483,29 +501,48 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
   }
 
   Future<void> _reloadWithNewQuality() async {
-    final sequence = ref.read(localPlayerSequenceProvider);
-    if (sequence == null) return;
-
-    final wasPlaying = ref.read(localPlayerStateProvider).playing;
-    final currentIndex = sequence.currentIndex;
-    final currentPositionMs = _service.position.inMilliseconds;
-
-    _talker.debug(
-      '[LocalPlayer] Reloading with new quality. '
-      'Current track: $currentIndex, position: $currentPositionMs ms, playing: $wasPlaying',
-    );
-
-    // Stop and reload
-    await _service.stop();
-    await _service.setTracks(sequence.sequence);
-
-    // Restore state
-    if (currentIndex >= 0 && currentIndex < sequence.sequence.length) {
-      await _service.seekTo(currentPositionMs, index: currentIndex);
+    if (_isReloading) {
+      _talker.debug(
+        '[LocalPlayer] Reload already in progress. Queueing another...',
+      );
+      _reloadRequestedDuringReload = true;
+      return;
     }
 
-    if (wasPlaying) {
-      await _service.play();
+    _isReloading = true;
+    try {
+      final sequence = ref.read(localPlayerSequenceProvider);
+      if (sequence == null) return;
+
+      final wasPlaying = ref.read(localPlayerStateProvider).playing;
+      final currentIndex = sequence.currentIndex;
+      final currentPositionMs = _service.position.inMilliseconds;
+
+      _talker.debug(
+        '[LocalPlayer] [$_currentZoneId] Reloading queue. '
+        'Current track: $currentIndex, position: $currentPositionMs ms, playing: $wasPlaying',
+      );
+
+      // Stop and reload
+      await _service.stop();
+      await _service.setTracks(sequence.sequence);
+
+      // Restore state
+      if (currentIndex >= 0 && currentIndex < sequence.sequence.length) {
+        await _service.seekTo(currentPositionMs, index: currentIndex);
+      }
+
+      if (wasPlaying) {
+        await _service.play();
+      }
+    } finally {
+      _isReloading = false;
+      if (_reloadRequestedDuringReload) {
+        _talker.debug('[LocalPlayer] [$_currentZoneId] Executing queued reload...');
+        _reloadRequestedDuringReload = false;
+        // Schedule next reload
+        Future.microtask(() => _reloadWithNewQuality());
+      }
     }
   }
 
