@@ -1,9 +1,6 @@
 import 'dart:async' hide Zone;
 import 'package:jrr_f/features/library/data/models/tracks.dart';
-import 'package:jrr_f/features/player/data/models/local_palyback_state.dart';
-import 'package:jrr_f/features/player/data/models/playback_state.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
@@ -44,86 +41,13 @@ class Player extends _$Player {
       '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline})',
     );
 
+    // Pipe state through the appropriate transport. Both branches return
+    // AsyncValue<PlayerStatus?>; awaiting `.future` re-fires this build
+    // whenever the underlying notifier emits a new value.
     if (zone.isLocal || zone.isOffline) {
-      // Ensure LocalPlayer has finished loading/swapping the queue
-      await ref.watch(localPlayerProvider.future);
-
-      // Watch the local player state provider and pipe its state into this one.
-      final localPlaybackState = ref.watch(localPlaybackStateProvider);
-      return _calculateStatus(zone, localPlaybackState);
+      return await ref.watch(localPlayerProvider.future);
     }
-
-    // Remote zones: pipe state through the MCWS provider so commands and
-    // polling-driven refreshes propagate automatically.
     return await ref.watch(mcwsPlayerProvider.future);
-  }
-
-  PlayerStatus _calculateStatus(
-    Zone zone,
-    LocalPlaybackState localPlaybackState,
-  ) {
-    final seqState = localPlaybackState.sequenceState;
-    final currentIndex = seqState?.currentIndex ?? -1;
-    final sequence = seqState?.sequence ?? Tracks.empty;
-
-    final currentTrack = seqState?.currentTrack;
-
-    final processingState = localPlaybackState.playerState.processingState;
-    final playing = localPlaybackState.playerState.playing;
-
-    PlaybackState playbackState;
-    if (processingState == ProcessingState.idle) {
-      playbackState = PlaybackState.stopped;
-    } else if (playing) {
-      playbackState = PlaybackState.playing;
-    } else {
-      playbackState = PlaybackState.paused;
-    }
-
-    String statusText = '';
-    if (processingState == ProcessingState.buffering) {
-      statusText = 'Buffering...';
-    } else if (processingState == ProcessingState.loading) {
-      statusText = 'Loading...';
-    }
-
-    return PlayerStatus(
-      zoneId: zone.id,
-      zoneName: zone.name,
-      state: playbackState,
-      fileKey: currentTrack?.fileKey ?? -1,
-      positionMs: localPlaybackState.position.inMilliseconds,
-      durationMs: localPlaybackState.duration?.inMilliseconds ?? 0,
-      positionDisplay: _formatDuration(localPlaybackState.position),
-      playingNowPosition: currentIndex,
-      playingNowTracks: sequence.length,
-      playingNowPositionDisplay: currentIndex > -1
-          ? '${currentIndex + 1} of ${sequence.length}'
-          : '',
-      playingNowChangeCounter: 0,
-      volume: localPlaybackState.volume,
-      volumeDisplay: '${(localPlaybackState.volume * 100).toInt()}%',
-      isMuted: localPlaybackState.volume == 0,
-      name: currentTrack?.name ?? '',
-      artist: currentTrack?.artist ?? '',
-      album: currentTrack?.album ?? '',
-      imageUrl: currentTrack?.imageUrl ?? '',
-      status: statusText,
-      shuffleMode: (seqState?.shuffleModeEnabled ?? false)
-          ? ShuffleMode.on
-          : ShuffleMode.off,
-      repeatMode: switch (seqState?.loopMode ?? LoopMode.off) {
-        LoopMode.off => RepeatMode.off,
-        LoopMode.one => RepeatMode.track,
-        LoopMode.all => RepeatMode.playlist,
-      },
-    );
-  }
-
-  String _formatDuration(Duration d) {
-    final m = d.inMinutes;
-    final s = d.inSeconds % 60;
-    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   /// Silently refreshes player status without showing a loading state.

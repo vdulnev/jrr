@@ -48,7 +48,7 @@ final class PlayerProvider
   Player create() => Player();
 }
 
-String _$playerHash() => r'bf76d6cf958ca6eda9f7a69271830b4a93d6759c';
+String _$playerHash() => r'd0357777de15f66ef28a0586457acbfb832e91cd';
 
 /// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
 /// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.

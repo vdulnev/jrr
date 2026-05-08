@@ -9,8 +9,11 @@ import '../../../core/di/injection.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../queue/data/repositories/local_queue_repository.dart';
+import '../../zones/data/models/zone.dart';
 import '../data/models/local_palyback_state.dart';
+import '../data/models/playback_state.dart';
 import '../data/models/player_state_data.dart';
+import '../data/models/player_status.dart';
 import '../data/models/sequence_state_data.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
@@ -139,6 +142,10 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
   }
 }
 
+/// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
+///
+/// Returns `null` when the active zone is missing or remote. The unified
+/// [Player] provider watches this one for the local/offline branch.
 @Riverpod(keepAlive: true)
 class LocalPlayer extends _$LocalPlayer {
   static String _kIndexKey(String zoneId) => 'local_player_${zoneId}_index';
@@ -153,7 +160,7 @@ class LocalPlayer extends _$LocalPlayer {
   String _currentZoneId = '';
 
   @override
-  Future<void> build() async {
+  FutureOr<PlayerStatus?> build() async {
     _service = getIt<LocalPlayerService>();
     _prefs = getIt<SharedPreferences>();
     _talker = getIt<Talker>();
@@ -279,6 +286,19 @@ class LocalPlayer extends _$LocalPlayer {
       }
     });
 
+    // Push status updates whenever local playback state changes. Using
+    // `ref.listen` (not `ref.watch`) so position ticks don't re-run build —
+    // re-running would re-attach all the listeners above and re-load the
+    // queue.
+    ref.listen(localPlaybackStateProvider, (_, next) {
+      final currentZone = ref.read(activeZoneProvider);
+      if (currentZone == null ||
+          (!currentZone.isLocal && !currentZone.isOffline)) {
+        return;
+      }
+      state = AsyncData(_calculateStatus(currentZone, next));
+    });
+
     final sub = _service.playbackEventStream.listen(
       (event) {
         final icy = event.icyMetadata;
@@ -330,6 +350,80 @@ class LocalPlayer extends _$LocalPlayer {
       },
     );
     ref.onDispose(sub.cancel);
+
+    // Initial status snapshot.
+    if (activeZone == null || (!activeZone.isLocal && !activeZone.isOffline)) {
+      return null;
+    }
+    return _calculateStatus(activeZone, ref.read(localPlaybackStateProvider));
+  }
+
+  PlayerStatus _calculateStatus(
+    Zone zone,
+    LocalPlaybackState localPlaybackState,
+  ) {
+    final seqState = localPlaybackState.sequenceState;
+    final currentIndex = seqState?.currentIndex ?? -1;
+    final sequence = seqState?.sequence ?? Tracks.empty;
+
+    final currentTrack = seqState?.currentTrack;
+
+    final processingState = localPlaybackState.playerState.processingState;
+    final playing = localPlaybackState.playerState.playing;
+
+    PlaybackState playbackState;
+    if (processingState == ProcessingState.idle) {
+      playbackState = PlaybackState.stopped;
+    } else if (playing) {
+      playbackState = PlaybackState.playing;
+    } else {
+      playbackState = PlaybackState.paused;
+    }
+
+    String statusText = '';
+    if (processingState == ProcessingState.buffering) {
+      statusText = 'Buffering...';
+    } else if (processingState == ProcessingState.loading) {
+      statusText = 'Loading...';
+    }
+
+    return PlayerStatus(
+      zoneId: zone.id,
+      zoneName: zone.name,
+      state: playbackState,
+      fileKey: currentTrack?.fileKey ?? -1,
+      positionMs: localPlaybackState.position.inMilliseconds,
+      durationMs: localPlaybackState.duration?.inMilliseconds ?? 0,
+      positionDisplay: _formatDuration(localPlaybackState.position),
+      playingNowPosition: currentIndex,
+      playingNowTracks: sequence.length,
+      playingNowPositionDisplay: currentIndex > -1
+          ? '${currentIndex + 1} of ${sequence.length}'
+          : '',
+      playingNowChangeCounter: 0,
+      volume: localPlaybackState.volume,
+      volumeDisplay: '${(localPlaybackState.volume * 100).toInt()}%',
+      isMuted: localPlaybackState.volume == 0,
+      name: currentTrack?.name ?? '',
+      artist: currentTrack?.artist ?? '',
+      album: currentTrack?.album ?? '',
+      imageUrl: currentTrack?.imageUrl ?? '',
+      status: statusText,
+      shuffleMode: (seqState?.shuffleModeEnabled ?? false)
+          ? ShuffleMode.on
+          : ShuffleMode.off,
+      repeatMode: switch (seqState?.loopMode ?? LoopMode.off) {
+        LoopMode.off => RepeatMode.off,
+        LoopMode.one => RepeatMode.track,
+        LoopMode.all => RepeatMode.playlist,
+      },
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes;
+    final s = d.inSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadQueue(String zoneId) async {

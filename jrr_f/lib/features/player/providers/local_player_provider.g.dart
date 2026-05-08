@@ -272,11 +272,24 @@ abstract class _$LocalPlayerDuration extends $Notifier<Duration?> {
   }
 }
 
+/// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
+///
+/// Returns `null` when the active zone is missing or remote. The unified
+/// [Player] provider watches this one for the local/offline branch.
+
 @ProviderFor(LocalPlayer)
 final localPlayerProvider = LocalPlayerProvider._();
 
+/// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
+///
+/// Returns `null` when the active zone is missing or remote. The unified
+/// [Player] provider watches this one for the local/offline branch.
 final class LocalPlayerProvider
-    extends $AsyncNotifierProvider<LocalPlayer, void> {
+    extends $AsyncNotifierProvider<LocalPlayer, PlayerStatus?> {
+  /// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
+  ///
+  /// Returns `null` when the active zone is missing or remote. The unified
+  /// [Player] provider watches this one for the local/offline branch.
   LocalPlayerProvider._()
     : super(
         from: null,
@@ -296,19 +309,24 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'dc1c3ed891bca849c341bafd97c8218c5681097f';
+String _$localPlayerHash() => r'f8245a31dce0d4e6742b1c7ea70be81757d18c63';
 
-abstract class _$LocalPlayer extends $AsyncNotifier<void> {
-  FutureOr<void> build();
+/// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
+///
+/// Returns `null` when the active zone is missing or remote. The unified
+/// [Player] provider watches this one for the local/offline branch.
+
+abstract class _$LocalPlayer extends $AsyncNotifier<PlayerStatus?> {
+  FutureOr<PlayerStatus?> build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<void>, void>;
+    final ref = this.ref as $Ref<AsyncValue<PlayerStatus?>, PlayerStatus?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<void>, void>,
-              AsyncValue<void>,
+              AnyNotifier<AsyncValue<PlayerStatus?>, PlayerStatus?>,
+              AsyncValue<PlayerStatus?>,
               Object?,
               Object?
             >;
