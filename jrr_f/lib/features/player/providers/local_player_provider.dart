@@ -19,6 +19,7 @@ import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../services/local_player_service.dart';
 import 'local_audio_quality_provider.dart';
+import 'player_controller.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 
@@ -147,7 +148,7 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
 /// Returns `null` when the active zone is missing or remote. The unified
 /// [Player] provider watches this one for the local/offline branch.
 @Riverpod(keepAlive: true)
-class LocalPlayer extends _$LocalPlayer {
+class LocalPlayer extends _$LocalPlayer implements PlayerController {
   static String _kIndexKey(String zoneId) => 'local_player_${zoneId}_index';
   static String _kPositionMsKey(String zoneId) =>
       'local_player_${zoneId}_position_ms';
@@ -508,31 +509,76 @@ class LocalPlayer extends _$LocalPlayer {
     }
   }
 
-  // Actions only
+  // ---- PlayerController surface --------------------------------------------
+
+  @override
   Future<void> playPause() => _service.playPause();
-  Future<void> stop() => _service.stop();
+
+  /// [zoneToRun] is ignored — there's only one local audio service.
+  @override
+  Future<void> stop({Zone? zoneToRun}) => _service.stop();
+
+  @override
   Future<void> next() async => _service.next();
+
+  @override
   Future<void> previous() async => _service.previous();
+
+  @override
   Future<void> seekTo(int positionMs) => _service.seekTo(positionMs);
+
+  @override
   Future<void> setVolume(double level) => _service.setVolume(level);
-  Future<void> setMute(bool mute) => _service.setMute(mute);
-  Future<void> setShuffle(ShuffleMode mode) => _service.setShuffle(mode);
-  Future<void> setRepeat(RepeatMode mode) => _service.setRepeat(mode);
+
+  @override
   Future<void> playByIndex(int index) => _service.playByIndex(index);
 
-  Future<void> playNow(Tracks tracks) async {
-    await _service.playNow(tracks);
+  @override
+  Future<void> toggleMute() async {
+    final isMuted = state.asData?.value?.isMuted ?? false;
+    await _service.setMute(!isMuted);
   }
 
+  @override
+  Future<void> toggleShuffle() async {
+    final current = state.asData?.value?.shuffleMode ?? ShuffleMode.off;
+    final nextMode = current == ShuffleMode.off
+        ? ShuffleMode.on
+        : ShuffleMode.off;
+    await _service.setShuffle(nextMode);
+  }
+
+  @override
+  Future<void> cycleRepeat() async {
+    final current = state.asData?.value?.repeatMode ?? RepeatMode.off;
+    final nextMode = switch (current) {
+      RepeatMode.off => RepeatMode.playlist,
+      RepeatMode.playlist => RepeatMode.track,
+      RepeatMode.track => RepeatMode.off,
+    };
+    await _service.setRepeat(nextMode);
+  }
+
+  @override
+  Future<void> playNow(Tracks tracks) => _service.playNow(tracks);
+
+  @override
   Future<void> playNext(Tracks tracks) async {
     final currentIndex = _service.sequenceState?.currentIndex ?? -1;
     final insertIndex = currentIndex + 1;
     _service.insertTracksAt(tracks: tracks, index: insertIndex);
   }
 
+  @override
   Future<void> addToQueue(Tracks tracks) async {
     _service.addToQueue(tracks);
   }
+
+  /// State updates push via stream subscriptions, so there's nothing to pull.
+  @override
+  Future<void> refresh() async {}
+
+  // ---- Queue ops (not part of PlayerController) ----------------------------
 
   Future<void> setTracks(Tracks tracks) async {
     await _service.setTracks(tracks);
