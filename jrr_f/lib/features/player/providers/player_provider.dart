@@ -1,6 +1,5 @@
 import 'dart:async' hide Zone;
 import 'package:jrr_f/features/library/data/models/tracks.dart';
-import 'package:jrr_f/features/library/data/repositories/library_repository.dart';
 import 'package:jrr_f/features/player/data/models/local_palyback_state.dart';
 import 'package:jrr_f/features/player/data/models/playback_state.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
@@ -13,11 +12,16 @@ import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
-import '../data/repositories/player_repository.dart';
 import 'local_player_provider.dart';
+import 'mcws_player_provider.dart';
 
 part 'player_provider.g.dart';
 
+/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
+/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
+///
+/// Public surface is preserved so consumers don't need to know which transport
+/// is active.
 @Riverpod(keepAlive: true)
 class Player extends _$Player {
   @override
@@ -49,8 +53,9 @@ class Player extends _$Player {
       return _calculateStatus(zone, localPlaybackState);
     }
 
-    final result = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
-    return result.getOrElse((e) => throw e);
+    // Remote zones: pipe state through the MCWS provider so commands and
+    // polling-driven refreshes propagate automatically.
+    return await ref.watch(mcwsPlayerProvider.future);
   }
 
   PlayerStatus _calculateStatus(
@@ -122,140 +127,107 @@ class Player extends _$Player {
   }
 
   /// Silently refreshes player status without showing a loading state.
+  /// Used by [PlayerPolling] to drive periodic updates for remote zones.
   Future<void> refresh() async {
     final zone = ref.read(activeZoneProvider);
     if (zone == null || zone.isLocal || zone.isOffline) return;
-
-    final result = await AsyncValue.guard(() async {
-      final r = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
-      return r.getOrElse((e) => throw e);
-    });
-    state = result;
+    await ref.read(mcwsPlayerProvider.notifier).refresh();
   }
 
   // -------------------------------------------------------------------------
-  // Commands — each fires the command then refreshes state.
+  // Commands — dispatch to the local or MCWS notifier based on active zone.
   // -------------------------------------------------------------------------
 
   Future<void> playPause() => _run(
-    remote: (id) => getIt<PlayerRepository>().playPause(id),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).playPause(),
     local: () => ref.read(localPlayerProvider.notifier).playPause(),
   );
 
   Future<void> stop({Zone? zoneToRun}) => _run(
-    remote: (id) => getIt<PlayerRepository>().stop(id),
+    remote: () =>
+        ref.read(mcwsPlayerProvider.notifier).stop(zoneToRun: zoneToRun),
     local: () => ref.read(localPlayerProvider.notifier).stop(),
     zoneToRun: zoneToRun,
   );
 
   Future<void> next() => _run(
-    remote: (id) => getIt<PlayerRepository>().next(id),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).next(),
     local: () => ref.read(localPlayerProvider.notifier).next(),
   );
 
   Future<void> previous() => _run(
-    remote: (id) => getIt<PlayerRepository>().previous(id),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).previous(),
     local: () => ref.read(localPlayerProvider.notifier).previous(),
   );
 
   Future<void> seekTo(int positionMs) => _run(
-    remote: (id) => getIt<PlayerRepository>().setPosition(id, positionMs),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).seekTo(positionMs),
     local: () => ref.read(localPlayerProvider.notifier).seekTo(positionMs),
   );
 
   Future<void> setVolume(double level) => _run(
-    remote: (id) => getIt<PlayerRepository>().setVolume(id, level),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).setVolume(level),
     local: () => ref.read(localPlayerProvider.notifier).setVolume(level),
   );
 
-  Future<void> toggleMute() async {
-    final isMuted = state.asData?.value?.isMuted ?? false;
-    await _run(
-      remote: (id) => getIt<PlayerRepository>().setMute(id, mute: !isMuted),
-      local: () => ref.read(localPlayerProvider.notifier).setMute(!isMuted),
-    );
-  }
+  Future<void> toggleMute() => _run(
+    remote: () => ref.read(mcwsPlayerProvider.notifier).toggleMute(),
+    local: () {
+      final isMuted = state.asData?.value?.isMuted ?? false;
+      return ref.read(localPlayerProvider.notifier).setMute(!isMuted);
+    },
+  );
 
-  Future<void> toggleShuffle() async {
-    final current = state.asData?.value?.shuffleMode ?? ShuffleMode.off;
-    final nextMode = current == ShuffleMode.off
-        ? ShuffleMode.on
-        : ShuffleMode.off;
-    await _run(
-      remote: (id) => getIt<PlayerRepository>().setShuffle(id, nextMode),
-      local: () => ref.read(localPlayerProvider.notifier).setShuffle(nextMode),
-    );
-  }
+  Future<void> toggleShuffle() => _run(
+    remote: () => ref.read(mcwsPlayerProvider.notifier).toggleShuffle(),
+    local: () {
+      final current = state.asData?.value?.shuffleMode ?? ShuffleMode.off;
+      final nextMode = current == ShuffleMode.off
+          ? ShuffleMode.on
+          : ShuffleMode.off;
+      return ref.read(localPlayerProvider.notifier).setShuffle(nextMode);
+    },
+  );
 
   Future<void> playByIndex(int index) => _run(
-    remote: (id) => getIt<PlayerRepository>().playByIndex(id, index),
+    remote: () => ref.read(mcwsPlayerProvider.notifier).playByIndex(index),
     local: () => ref.read(localPlayerProvider.notifier).playByIndex(index),
   );
 
-  Future<void> cycleRepeat() async {
-    final current = state.asData?.value?.repeatMode ?? RepeatMode.off;
-    final nextMode = switch (current) {
-      RepeatMode.off => RepeatMode.playlist,
-      RepeatMode.playlist => RepeatMode.track,
-      RepeatMode.track => RepeatMode.off,
-    };
-    await _run(
-      remote: (id) => getIt<PlayerRepository>().setRepeat(id, nextMode),
-      local: () => ref.read(localPlayerProvider.notifier).setRepeat(nextMode),
-    );
-  }
+  Future<void> cycleRepeat() => _run(
+    remote: () => ref.read(mcwsPlayerProvider.notifier).cycleRepeat(),
+    local: () {
+      final current = state.asData?.value?.repeatMode ?? RepeatMode.off;
+      final nextMode = switch (current) {
+        RepeatMode.off => RepeatMode.playlist,
+        RepeatMode.playlist => RepeatMode.track,
+        RepeatMode.track => RepeatMode.off,
+      };
+      return ref.read(localPlayerProvider.notifier).setRepeat(nextMode);
+    },
+  );
 
   /// Replaces the Playing Now queue and starts playback immediately.
   Future<void> playNow(Tracks tracks) => _run(
-    remote: (_) {
-      final zone = ref.read(activeZoneProvider);
-      getIt<Talker>().debug(
-        '[PlayerProvider] playNow: zone=$zone, tracks=$tracks',
-      );
-      if (zone == null) return Future.value();
-      return getIt<LibraryRepository>().playNow(
-        zone.id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      );
-    },
+    remote: () => ref.read(mcwsPlayerProvider.notifier).playNow(tracks),
     local: () => ref.read(localPlayerProvider.notifier).playNow(tracks),
   );
 
-  /// Inserts [fileKeys] immediately after the current track.
+  /// Inserts [tracks] immediately after the current track.
   Future<void> playNext(Tracks tracks) => _run(
-    remote: (_) {
-      final zone = ref.read(activeZoneProvider);
-      getIt<Talker>().debug(
-        '[PlayerProvider] playNext: zone=$zone, tracks=$tracks',
-      );
-      if (zone == null) return Future.value();
-      return getIt<LibraryRepository>().playNext(
-        zone.id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      );
-    },
+    remote: () => ref.read(mcwsPlayerProvider.notifier).playNext(tracks),
     local: () => ref.read(localPlayerProvider.notifier).playNext(tracks),
   );
 
-  /// Appends [fileKeys] to the end of the Playing Now queue.
-  Future<void> addToQueue(Tracks tracks) {
-    final zone = ref.read(activeZoneProvider);
-    getIt<Talker>().debug(
-      '[PlayerProvider] addToQueue: zone=$zone, tracks=$tracks',
-    );
-    if (zone == null) return Future.value();
-    return _run(
-      remote: (_) => getIt<LibraryRepository>().addToQueue(
-        zone.id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      ),
-      local: () => ref.read(localPlayerProvider.notifier).addToQueue(tracks),
-    );
-  }
+  /// Appends [tracks] to the end of the Playing Now queue.
+  Future<void> addToQueue(Tracks tracks) => _run(
+    remote: () => ref.read(mcwsPlayerProvider.notifier).addToQueue(tracks),
+    local: () => ref.read(localPlayerProvider.notifier).addToQueue(tracks),
+  );
 
   Future<void> _run({
-    required Future<dynamic> Function(String zoneId) remote,
-    required Future<dynamic> Function() local,
+    required Future<void> Function() remote,
+    required Future<void> Function() local,
     Zone? zoneToRun,
   }) async {
     final zone = zoneToRun ?? ref.read(activeZoneProvider);
@@ -263,10 +235,10 @@ class Player extends _$Player {
 
     if (zone.isLocal || zone.isOffline) {
       await local();
-      // state is updated automatically via localPlayerProvider watch
+      // state is updated automatically via localPlaybackStateProvider watch
     } else {
-      await remote(zone.id);
-      await refresh();
+      await remote();
+      // state is updated automatically via mcwsPlayerProvider watch
     }
   }
 }

@@ -8,12 +8,27 @@ part of 'player_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
+/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
+///
+/// Public surface is preserved so consumers don't need to know which transport
+/// is active.
 
 @ProviderFor(Player)
 final playerProvider = PlayerProvider._();
 
+/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
+/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
+///
+/// Public surface is preserved so consumers don't need to know which transport
+/// is active.
 final class PlayerProvider
     extends $AsyncNotifierProvider<Player, PlayerStatus?> {
+  /// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
+  /// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
+  ///
+  /// Public surface is preserved so consumers don't need to know which transport
+  /// is active.
   PlayerProvider._()
     : super(
         from: null,
@@ -33,7 +48,13 @@ final class PlayerProvider
   Player create() => Player();
 }
 
-String _$playerHash() => r'c71f8527a7751c8608fb261b511a9bc358b49b03';
+String _$playerHash() => r'bf76d6cf958ca6eda9f7a69271830b4a93d6759c';
+
+/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
+/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
+///
+/// Public surface is preserved so consumers don't need to know which transport
+/// is active.
 
 abstract class _$Player extends $AsyncNotifier<PlayerStatus?> {
   FutureOr<PlayerStatus?> build();
