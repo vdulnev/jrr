@@ -258,8 +258,8 @@ void main() {
   group('getArtists', () {
     test('extracts names from track list', () async {
       final jsonResponse = [
-        {'Key': 1, 'Artist': 'ABBA'},
-        {'Key': 2, 'Artist': 'Queen'},
+        {'Key': 1, 'Album Artist (auto)': 'ABBA'},
+        {'Key': 2, 'Album Artist (auto)': 'Queen'},
       ];
 
       when(() => mockDio.fetch<List<dynamic>>(any())).thenAnswer(

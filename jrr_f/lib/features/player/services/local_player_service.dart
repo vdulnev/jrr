@@ -178,10 +178,7 @@ class LocalPlayerService {
     final uriAudioSource = AudioSource.uri(
       Uri.parse(url),
       tag: track,
-      headers: {
-        'User-Agent': 'JRR-Remote/1.0',
-        'X-MCWS-Token': ?token,
-      },
+      headers: {'User-Agent': 'JRR-Remote/1.0', 'X-MCWS-Token': ?token},
     );
 
     return uriAudioSource;
@@ -203,7 +200,10 @@ class LocalPlayerService {
     await _player.play();
   }
 
-  Future<void> insertTracksAt({required Tracks tracks, required int index}) async {
+  Future<void> insertTracksAt({
+    required Tracks tracks,
+    required int index,
+  }) async {
     _talker.debug(
       '[LocalPlayerService] insertTracksAt: ${tracks.length} tracks at index $index',
     );

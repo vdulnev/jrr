@@ -93,8 +93,9 @@ abstract class Track with _$Track {
     dateReadable,
   ]);
 
-  String get albumGroupId =>
-      '${album.toLowerCase()}|${parentFolderPath.toLowerCase()}';
+  String get albumGroupId => (totalDiscs > 1 && discNumber > 0)
+      ? '${album.toLowerCase()}|${parentFolderPath.toLowerCase()}'
+      : '${album.toLowerCase()}|${folderPath.toLowerCase()}';
 
   String get date => dateReadable;
 

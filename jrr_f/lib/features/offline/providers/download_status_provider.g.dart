@@ -162,3 +162,159 @@ final class DownloadProgressFamily extends $Family
   @override
   String toString() => r'downloadProgressProvider';
 }
+
+@ProviderFor(albumDownloadStatus)
+final albumDownloadStatusProvider = AlbumDownloadStatusFamily._();
+
+final class AlbumDownloadStatusProvider
+    extends $FunctionalProvider<DownloadState, DownloadState, DownloadState>
+    with $Provider<DownloadState> {
+  AlbumDownloadStatusProvider._({
+    required AlbumDownloadStatusFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'albumDownloadStatusProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$albumDownloadStatusHash();
+
+  @override
+  String toString() {
+    return r'albumDownloadStatusProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<DownloadState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DownloadState create(Ref ref) {
+    final argument = this.argument as String;
+    return albumDownloadStatus(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DownloadState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DownloadState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AlbumDownloadStatusProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$albumDownloadStatusHash() =>
+    r'42c7c8ce8ad3a6822dba43a7bc119144e3590469';
+
+final class AlbumDownloadStatusFamily extends $Family
+    with $FunctionalFamilyOverride<DownloadState, String> {
+  AlbumDownloadStatusFamily._()
+    : super(
+        retry: null,
+        name: r'albumDownloadStatusProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AlbumDownloadStatusProvider call(String albumGroupId) =>
+      AlbumDownloadStatusProvider._(argument: albumGroupId, from: this);
+
+  @override
+  String toString() => r'albumDownloadStatusProvider';
+}
+
+@ProviderFor(albumDownloadProgress)
+final albumDownloadProgressProvider = AlbumDownloadProgressFamily._();
+
+final class AlbumDownloadProgressProvider
+    extends $FunctionalProvider<double, double, double>
+    with $Provider<double> {
+  AlbumDownloadProgressProvider._({
+    required AlbumDownloadProgressFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'albumDownloadProgressProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$albumDownloadProgressHash();
+
+  @override
+  String toString() {
+    return r'albumDownloadProgressProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<double> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  double create(Ref ref) {
+    final argument = this.argument as String;
+    return albumDownloadProgress(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(double value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<double>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AlbumDownloadProgressProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$albumDownloadProgressHash() =>
+    r'8bb07017e263d498ef03c68b9fa96eb8e1a1d985';
+
+final class AlbumDownloadProgressFamily extends $Family
+    with $FunctionalFamilyOverride<double, String> {
+  AlbumDownloadProgressFamily._()
+    : super(
+        retry: null,
+        name: r'albumDownloadProgressProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AlbumDownloadProgressProvider call(String albumGroupId) =>
+      AlbumDownloadProgressProvider._(argument: albumGroupId, from: this);
+
+  @override
+  String toString() => r'albumDownloadProgressProvider';
+}

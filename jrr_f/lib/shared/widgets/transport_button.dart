@@ -72,8 +72,8 @@ class _TransportButtonState extends State<TransportButton> {
               color: widget.accent
                   ? (enabled ? Colors.black : AppColors.text3)
                   : (enabled
-                      ? (widget.color ?? AppColors.text2)
-                      : AppColors.text3),
+                        ? (widget.color ?? AppColors.text2)
+                        : AppColors.text3),
             ),
             child: widget.child,
           ),
