@@ -16,11 +16,22 @@ class MiniPlayerPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hasTracks = ref.watch(
+      playerProvider.select((status) => (status.value?.playingNowTracks ?? 0) > 0),
+    );
+
     return _Data(
       onItemTap: onItemTap,
-      onPreviousTap: () => ref.read(playerProvider.notifier).previous(),
-      onPlayPauseTap: () => ref.read(playerProvider.notifier).playPause(),
-      onNextTap: () => ref.read(playerProvider.notifier).next(),
+      onPreviousTap:
+          hasTracks
+              ? () => ref.read(playerProvider.notifier).previous()
+              : null,
+      onPlayPauseTap:
+          hasTracks
+              ? () => ref.read(playerProvider.notifier).playPause()
+              : null,
+      onNextTap:
+          hasTracks ? () => ref.read(playerProvider.notifier).next() : null,
       onSetVolumeTap: (v) => ref.read(playerProvider.notifier).setVolume(v),
       onMuteToggleTap: () => ref.read(playerProvider.notifier).toggleMute(),
     );
@@ -38,9 +49,9 @@ class _Data extends StatelessWidget {
   });
 
   final VoidCallback? onItemTap;
-  final VoidCallback onPreviousTap;
-  final VoidCallback onPlayPauseTap;
-  final VoidCallback onNextTap;
+  final VoidCallback? onPreviousTap;
+  final VoidCallback? onPlayPauseTap;
+  final VoidCallback? onNextTap;
   final ValueChanged<double> onSetVolumeTap;
   final VoidCallback onMuteToggleTap;
 
@@ -184,9 +195,10 @@ class _Artist extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final artist = ref.watch(
-      playerProvider.select(
-        (status) => status.value?.artist ?? 'Unknown Artist',
-      ),
+      playerProvider.select((status) {
+        final val = status.value?.artist ?? '';
+        return val.isNotEmpty ? val : 'Unknown Artist';
+      }),
     );
     return Text(
       artist,
@@ -203,7 +215,10 @@ class _Name extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final name = ref.watch(
-      playerProvider.select((status) => status.value?.name ?? 'Unknown Track'),
+      playerProvider.select((status) {
+        final val = status.value?.name ?? '';
+        return val.isNotEmpty ? val : 'Unknown Track';
+      }),
     );
     return Text(
       name,

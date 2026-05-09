@@ -283,12 +283,16 @@ class AlbumRowTile extends ConsumerWidget {
     switch (action) {
       case 'play':
         ref.read(playerProvider.notifier).playNow(tracks);
+        break;
       case 'playNext':
         ref.read(playerProvider.notifier).playNext(tracks);
+        break;
       case 'add':
         ref.read(playerProvider.notifier).addToQueue(tracks);
+        break;
       case 'download':
         downloadsRepo.enqueueAll(tracks.tracks);
+        break;
     }
     ref.read(playerProvider.notifier).refresh();
   }

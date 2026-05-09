@@ -27,13 +27,17 @@ class _TransportButtonState extends State<TransportButton> {
 
   @override
   Widget build(BuildContext context) {
+    final bool enabled = widget.onPressed != null;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onPressed?.call();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
+      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: enabled
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onPressed?.call();
+            }
+          : null,
+      onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
       child: AnimatedScale(
         scale: _pressed ? 0.93 : 1.0,
         duration: const Duration(milliseconds: 150),
@@ -42,7 +46,7 @@ class _TransportButtonState extends State<TransportButton> {
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: widget.accent
+            gradient: widget.accent && enabled
                 ? const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -50,9 +54,9 @@ class _TransportButtonState extends State<TransportButton> {
                   )
                 : null,
             color: widget.accent
-                ? null
+                ? (enabled ? null : AppColors.bg3)
                 : (_pressed ? AppColors.bg3 : Colors.transparent),
-            boxShadow: widget.accent
+            boxShadow: widget.accent && enabled
                 ? [
                     BoxShadow(
                       color: AppColors.accent.withValues(alpha: 0.4),
@@ -66,8 +70,10 @@ class _TransportButtonState extends State<TransportButton> {
           child: IconTheme(
             data: IconThemeData(
               color: widget.accent
-                  ? Colors.black
-                  : (widget.color ?? AppColors.text2),
+                  ? (enabled ? Colors.black : AppColors.text3)
+                  : (enabled
+                      ? (widget.color ?? AppColors.text2)
+                      : AppColors.text3),
             ),
             child: widget.child,
           ),

@@ -206,8 +206,10 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
     switch (action) {
       case 'play':
         ref.read(playerProvider.notifier).playNow(tracks);
+        break;
       case 'playNext':
         ref.read(playerProvider.notifier).playNext(tracks);
+        break;
       case 'add':
         ref.read(playerProvider.notifier).addToQueue(tracks);
         if (mounted) {
@@ -218,19 +220,24 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
             ),
           );
         }
+        break;
       case 'download':
         downloadsRepo.enqueue(item);
+        break;
       case 'cancelDownload':
         downloadsRepo.cancel(item.fileKey);
+        break;
       case 'deleteDownload':
-        if (!mounted) return;
+        if (!context.mounted) break;
         final confirmed = await showConfirmDeleteDialog(
           context: context,
-          title: 'Delete download?',
-          message: 'Delete the downloaded copy of "${item.name}"?',
+          title: 'Delete Download',
+          message: 'Delete downloaded track "${item.name}"?',
         );
-        if (!confirmed) return;
-        await downloadsRepo.delete(item.fileKey);
+        if (confirmed) {
+          downloadsRepo.delete(item.fileKey);
+        }
+        break;
     }
   }
 }
