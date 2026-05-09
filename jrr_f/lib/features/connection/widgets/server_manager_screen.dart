@@ -13,7 +13,6 @@ import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../../core/di/injection.dart';
-import '../../zones/providers/active_zone_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/session_state.dart';
 
@@ -23,7 +22,6 @@ class ServerManagerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
-    final isOffline = ref.watch(isOfflineActiveProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -64,16 +62,35 @@ class ServerManagerScreen extends ConsumerWidget {
                     const SizedBox(height: 32),
                     const _DiagnosticsSection(),
                     const SizedBox(height: 32),
-                    FilledButton.icon(
-                      onPressed: isOffline
-                          ? null
-                          : () => ref.read(sessionProvider.notifier).logout(),
-                      icon: const Icon(Icons.logout_rounded, size: 18),
-                      label: Text(isOffline ? 'Logout (offline)' : 'Logout'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.bg3,
-                        foregroundColor: Colors.redAccent,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final isSyntheticOffline = session.maybeWhen(
+                          authenticated: (info) => info.id == 'offline',
+                          orElse: () => false,
+                        );
+
+                        return FilledButton.icon(
+                          onPressed: () =>
+                              ref.read(sessionProvider.notifier).logout(),
+                          icon: Icon(
+                            isSyntheticOffline
+                                ? Icons.login_rounded
+                                : Icons.logout_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            isSyntheticOffline
+                                ? 'Setup Server / Login'
+                                : 'Logout',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.bg3,
+                            foregroundColor: isSyntheticOffline
+                                ? AppColors.accent
+                                : Colors.redAccent,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

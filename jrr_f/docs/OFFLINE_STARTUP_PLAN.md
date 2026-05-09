@@ -14,8 +14,9 @@ This plan describes how to allow the `jrr_f` application to start and function i
 - Update `_attemptSilentReconnect` to check for `offline-zone-guid` even if no saved server is found.
 - Add `enterOfflineMode()` method to the `Session` notifier.
 - This method will:
-    1. Set the session state to `SessionState.authenticated` with a synthetic `ServerInfo` (e.g., `id: 'offline'`).
-    2. Set the active zone to the Offline zone.
+    1. Set the session state to `SessionState.authenticated` with a synthetic `ServerInfo.offline`.
+    2. Ensure the active zone is set to the Offline zone.
+- **Note**: Since the `Player` provider already branches to `localPlayerProvider` for the Offline zone, no changes are needed to the playback logic.
 
 ### 2.2 Server Info (`server_info.dart`)
 - Define a constant `ServerInfo.offline` to represent the offline session.
@@ -30,10 +31,11 @@ static const offline = ServerInfo(
 ```
 
 ### 2.3 Repositories & Dependency Injection
+- **No MockMcwsClient needed**: Instead of providing a dummy client, we will update the repositories and providers to respect the offline state.
 - **`ZoneRepositoryImpl`**: 
-    - Already handles returning local zones when MCWS fails. 
-    - It should be updated to not even attempt the MCWS call if the current session is the "offline" one.
-    - **New**: If in "pure" offline mode (no server), it should only return the "Offline" zone, hiding the "Local" zone to avoid confusion (since "Local" might still attempt streaming).
+    - Update it to check if the current session is `ServerInfo.offline`. If so, it should return ONLY the "Offline" zone without attempting ANY network call.
+    - This avoids the need for a `McwsClient` to be present in `get_it` during pure offline mode.
+- **`ZoneList` Provider**: Update it to allow building the zone list if the session is `ServerInfo.offline`.
 
 ### 2.4 UI Changes
 - **`ServerSetupScreen`**:
@@ -49,10 +51,10 @@ static const offline = ServerInfo(
 2.  Modify `Session._attemptSilentReconnect` to support server-less offline startup.
 3.  Ensure `active_zone_guid` is set to `offline-zone-guid` when entering this mode.
 
-### Phase 2: Dependency Handling
-1.  Create a `MockMcwsClient` or ensure `McwsClient` can be initialized with an empty URL for offline mode.
-2.  Alternatively, use a separate `get_it` scope for offline mode that doesn't provide a real `McwsClient`, and update repositories to use `getIt.getSafe<McwsClient>()` (if we add such an extension) or check session state.
-    - *Decision*: Registering a dummy `McwsClient` that throws `AppException.offline()` on any call is the safest and least intrusive way.
+### Phase 2: Repository & Provider Guarding
+1.  Update `ZoneRepositoryImpl.getZones()` to skip network calls if session is offline.
+2.  Update `ZoneList` provider to build successfully in offline mode.
+3.  Ensure `Library` providers handle the offline state gracefully (already mostly done by `isOfflineActive` checks).
 
 ### Phase 3: UI Integration
 1.  Update `ServerSetupScreen` with the "Continue Offline" button.

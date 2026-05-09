@@ -28,16 +28,26 @@ class Session extends _$Session {
     final repo = getIt<ConnectionRepository>();
     final server = await getServerInfo();
 
+    final prefs = getIt<SharedPreferences>();
+    final lastZoneGuid = prefs.getString(kActiveZoneGuidKey);
+
     if (server == null) {
-      _talker.debug('[Session] No saved server with token — showing login');
-      state = const SessionState.unauthenticated();
+      if (lastZoneGuid == 'offline-zone-guid') {
+        _talker.info(
+          '[Session] No server but last zone was Offline — entering Offline Mode',
+        );
+        state = const SessionState.authenticated(
+          serverInfo: ServerInfo.offline,
+        );
+      } else {
+        _talker.debug('[Session] No saved server with token — showing login');
+        state = const SessionState.unauthenticated();
+      }
       return;
     }
 
     // NEW: If the last active zone was "offline", skip network reconnect
     // and enter Authenticated state immediately using the cached info.
-    final prefs = getIt<SharedPreferences>();
-    final lastZoneGuid = prefs.getString(kActiveZoneGuidKey);
     if (lastZoneGuid == 'offline-zone-guid') {
       _talker.info('[Session] Last zone was Offline — skipping reconnect');
       await repo.restoreSession(server);
@@ -85,6 +95,17 @@ class Session extends _$Session {
         state = SessionState.authenticated(serverInfo: info);
       },
     );
+  }
+
+  Future<void> enterOfflineMode() async {
+    _talker.info('[Session] Entering Offline Mode manually');
+
+    // Set the pref so ActiveZone picks it up when it rebuilds in response
+    // to the session state change below.
+    final prefs = getIt<SharedPreferences>();
+    await prefs.setString(kActiveZoneGuidKey, 'offline-zone-guid');
+
+    state = const SessionState.authenticated(serverInfo: ServerInfo.offline);
   }
 
   Future<String?> getPassword() async {

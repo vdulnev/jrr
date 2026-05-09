@@ -11,4 +11,12 @@ abstract class ServerInfo with _$ServerInfo {
     required String platform,
     required String address,
   }) = _ServerInfo;
+
+  static const offline = ServerInfo(
+    id: 'offline',
+    name: 'Offline Mode',
+    version: 'none',
+    platform: 'none',
+    address: '',
+  );
 }
