@@ -89,7 +89,7 @@ class DownloadService {
       final token = _connectionRepository.currentToken;
 
       final downloadUrl =
-          '${baseUrl}File/GetFile?File=${job.fileKey}&FileType=Key&Playback=0&Conversion=wav${token != null ? '&Token=$token' : ''}';
+          '${baseUrl}File/GetFile?File=${job.fileKey}&FileType=Key&Playback=0&Conversion=flac${token != null ? '&Token=$token' : ''}';
 
       _talker.info('[DownloadService] Downloading: $downloadUrl');
 

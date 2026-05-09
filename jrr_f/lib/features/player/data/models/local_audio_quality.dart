@@ -1,7 +1,7 @@
 /// MCWS conversion presets used when streaming a track from JRiver to the
 /// local just_audio player. Maps to `Conversion=…&Quality=…` query params.
 enum LocalAudioQuality {
-  lossless('wav', 'high', 'Lossless'),
+  lossless('flac', 'high', 'Lossless'),
   lossyHigh('opus', 'high', 'Lossy (high)'),
   lossyNormal('opus', 'normal', 'Lossy (normal)'),
   lossyLow('opus', 'low', 'Lossy (low)');
