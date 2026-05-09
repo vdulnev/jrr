@@ -14,6 +14,14 @@ class ZoneList extends _$ZoneList {
   Future<Zones> build() async {
     final session = ref.watch(sessionProvider);
     if (session is Authenticated) {
+      // In synthetic offline mode (no server info), the address is empty.
+      // We skip the repository call as it's already guarded, but this is a
+      // secondary guard at the provider level.
+      if (session.serverInfo.address.isEmpty) {
+        final result = await getIt<ZoneRepository>().getZones();
+        return Zones(zones: result.getOrElse((_) => []));
+      }
+
       final result = await getIt<ZoneRepository>().getZones();
       final zones = result.getOrElse(
         (e) => throw e,

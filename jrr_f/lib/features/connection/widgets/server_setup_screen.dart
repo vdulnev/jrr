@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../providers/last_server_provider.dart';
+import '../providers/session_provider.dart';
 import '../providers/server_setup_provider.dart';
 
 enum _ConnectMode { accessKey, manual }
@@ -266,6 +267,15 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                                   ),
                                 )
                               : const Text('Connect'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => ref
+                                    .read(sessionProvider.notifier)
+                                    .enterOfflineMode(),
+                          child: const Text('Continue Offline'),
                         ),
                       ],
                     ),

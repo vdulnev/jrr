@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
+import '../../../connection/data/repositories/connection_repository.dart';
 import '../../providers/active_zone_provider.dart';
 import '../models/zone.dart';
 import 'zone_repository.dart';
@@ -11,23 +12,34 @@ import 'zone_repository.dart';
 class ZoneRepositoryImpl implements ZoneRepository {
   @override
   Future<Either<AppException, List<Zone>>> getZones() async {
-    final localZones = [
-      const Zone(
+    const offlineZone = Zone(
+      id: 'offline',
+      name: 'Offline',
+      guid: 'offline-zone-guid',
+      isDLNA: false,
+      isLocal: false,
+      isOffline: true,
+    );
+
+    const localZones = [
+      Zone(
         id: 'local',
         name: 'Local',
         guid: 'local-zone-guid',
         isDLNA: false,
         isLocal: true,
       ),
-      const Zone(
-        id: 'offline',
-        name: 'Offline',
-        guid: 'offline-zone-guid',
-        isDLNA: false,
-        isLocal: false,
-        isOffline: true,
-      ),
+      offlineZone,
     ];
+
+    // If the current session is the synthetic "offline" one, we skip all
+    // network calls and only return the Offline zone.
+    // We also hide the 'local' zone in this case because without a server
+    // it's non-functional (cannot resolve streaming URLs).
+    final session = getIt<ConnectionRepository>().currentToken;
+    if (session == null) {
+      return right([offlineZone]);
+    }
 
     final savedGuid = getIt<SharedPreferences>().getString(kActiveZoneGuidKey);
     if (savedGuid == 'offline-zone-guid') {
