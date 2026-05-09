@@ -421,19 +421,6 @@ class _DiagnosticsSection extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _openLogInTextEdit(context),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                      label: const Text('Open in TextEdit'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.text,
-                        side: const BorderSide(color: AppColors.line2),
-                      ),
-                    ),
-                  ),
                 ],
               ],
             ),
@@ -468,21 +455,6 @@ class _DiagnosticsSection extends StatelessWidget {
       if (context.mounted) _showSnack(context, 'Saved to ${location.path}');
     } catch (e) {
       if (context.mounted) _showSnack(context, 'Save failed: $e');
-    }
-  }
-
-  Future<void> _openLogInTextEdit(BuildContext context) async {
-    final path = FileLogObserver.logFilePath;
-    if (path == null || !File(path).existsSync()) {
-      _showSnack(context, 'Log file not ready yet');
-      return;
-    }
-    // /usr/bin/open routes through Launch Services, which grants TextEdit
-    // a security-scoped read permission to our sandboxed log file via
-    // Powerbox. Direct File access from TextEdit would otherwise be denied.
-    final result = await Process.run('/usr/bin/open', ['-a', 'TextEdit', path]);
-    if (result.exitCode != 0 && context.mounted) {
-      _showSnack(context, 'Could not open: ${result.stderr}');
     }
   }
 
