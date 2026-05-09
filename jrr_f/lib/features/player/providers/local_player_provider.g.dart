@@ -147,7 +147,7 @@ final class LocalPlayerSequenceProvider
 }
 
 String _$localPlayerSequenceHash() =>
-    r'b445a65bec65041122b9a5504381f1a34a66d37b';
+    r'd2a02ad83078dfedbbb4eaceaa6165c4b635ad3b';
 
 abstract class _$LocalPlayerSequence extends $Notifier<SequenceStateData?> {
   SequenceStateData? build();
@@ -309,7 +309,7 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'f8245a31dce0d4e6742b1c7ea70be81757d18c63';
+String _$localPlayerHash() => r'382ee8fbbc0c721978196890abab0bf118974181';
 
 /// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
 ///

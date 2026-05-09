@@ -8,27 +8,21 @@ part of 'player_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
-/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
-///
-/// Public surface is preserved so consumers don't need to know which transport
-/// is active.
+/// Unified player provider. Resolves the active [PlayerController]
+/// implementation from [activeZoneProvider] and forwards every command to it,
+/// so call sites never branch on zone locality.
 
 @ProviderFor(Player)
 final playerProvider = PlayerProvider._();
 
-/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
-/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
-///
-/// Public surface is preserved so consumers don't need to know which transport
-/// is active.
+/// Unified player provider. Resolves the active [PlayerController]
+/// implementation from [activeZoneProvider] and forwards every command to it,
+/// so call sites never branch on zone locality.
 final class PlayerProvider
     extends $AsyncNotifierProvider<Player, PlayerStatus?> {
-  /// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
-  /// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
-  ///
-  /// Public surface is preserved so consumers don't need to know which transport
-  /// is active.
+  /// Unified player provider. Resolves the active [PlayerController]
+  /// implementation from [activeZoneProvider] and forwards every command to it,
+  /// so call sites never branch on zone locality.
   PlayerProvider._()
     : super(
         from: null,
@@ -48,13 +42,11 @@ final class PlayerProvider
   Player create() => Player();
 }
 
-String _$playerHash() => r'd0357777de15f66ef28a0586457acbfb832e91cd';
+String _$playerHash() => r'1a726f129b45694a1d6946d8d882cd9350f0921a';
 
-/// Unified player provider. Dispatches between [LocalPlayer] (just_audio) for
-/// local/offline zones and [McwsPlayer] (MCWS HTTP API) for remote zones.
-///
-/// Public surface is preserved so consumers don't need to know which transport
-/// is active.
+/// Unified player provider. Resolves the active [PlayerController]
+/// implementation from [activeZoneProvider] and forwards every command to it,
+/// so call sites never branch on zone locality.
 
 abstract class _$Player extends $AsyncNotifier<PlayerStatus?> {
   FutureOr<PlayerStatus?> build();

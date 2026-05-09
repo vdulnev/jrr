@@ -45,13 +45,11 @@ class DownloadedAlbumsScreen extends ConsumerWidget {
                     itemCount: albums.length,
                     itemBuilder: (context, i) {
                       final album = albums[i];
-                      final albumGroupId =
-                          '${album.name}|${album.parentFolderPath}';
                       return AlbumRowTile(
                         album: album,
                         onTap: () => context.router.push(
                           DownloadedAlbumDetailRoute(
-                            albumGroupId: albumGroupId,
+                            albumGroupId: album.albumGroupId,
                           ),
                         ),
                       );

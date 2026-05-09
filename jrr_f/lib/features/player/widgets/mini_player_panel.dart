@@ -17,21 +17,22 @@ class MiniPlayerPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasTracks = ref.watch(
-      playerProvider.select((status) => (status.value?.playingNowTracks ?? 0) > 0),
+      playerProvider.select(
+        (status) => (status.value?.playingNowTracks ?? 0) > 0,
+      ),
     );
 
     return _Data(
       onItemTap: onItemTap,
-      onPreviousTap:
-          hasTracks
-              ? () => ref.read(playerProvider.notifier).previous()
-              : null,
-      onPlayPauseTap:
-          hasTracks
-              ? () => ref.read(playerProvider.notifier).playPause()
-              : null,
-      onNextTap:
-          hasTracks ? () => ref.read(playerProvider.notifier).next() : null,
+      onPreviousTap: hasTracks
+          ? () => ref.read(playerProvider.notifier).previous()
+          : null,
+      onPlayPauseTap: hasTracks
+          ? () => ref.read(playerProvider.notifier).playPause()
+          : null,
+      onNextTap: hasTracks
+          ? () => ref.read(playerProvider.notifier).next()
+          : null,
       onSetVolumeTap: (v) => ref.read(playerProvider.notifier).setVolume(v),
       onMuteToggleTap: () => ref.read(playerProvider.notifier).toggleMute(),
     );

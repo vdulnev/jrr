@@ -10,6 +10,7 @@ import '../../offline/data/models/download_state.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
+import '../../offline/widgets/album_download_progress_indicator.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
@@ -44,13 +45,11 @@ class AlbumRowTile extends ConsumerWidget {
     final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
     final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
 
-    final albumGroupId = '${album.name}|${album.parentFolderPath}';
-
     final downloadedInAlbum = downloadedTracks.where(
-      (t) => t.albumGroupId == albumGroupId,
+      (t) => t.albumGroupId == album.albumGroupId,
     );
     final jobsInAlbum = downloadJobs.where(
-      (j) => j.track.albumGroupId == albumGroupId,
+      (j) => j.track.albumGroupId == album.albumGroupId,
     );
 
     final activeJobs = jobsInAlbum.where(
@@ -76,7 +75,7 @@ class AlbumRowTile extends ConsumerWidget {
           onTap ??
           () => isOffline
               ? context.router.push(
-                  DownloadedAlbumDetailRoute(albumGroupId: albumGroupId),
+                  DownloadedAlbumDetailRoute(albumGroupId: album.albumGroupId),
                 )
               : context.router.push(AlbumDetailRoute(album: album)),
       child: Container(
@@ -138,6 +137,12 @@ class AlbumRowTile extends ConsumerWidget {
                 constraints: const BoxConstraints(),
                 onPressed: onToggle,
               ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: AlbumDownloadProgressIndicator(
+                albumGroupId: album.albumGroupId,
+              ),
+            ),
             if (!isOffline || downloadedInAlbum.isNotEmpty)
               PopupMenuButton<String>(
                 icon: const Icon(
@@ -253,11 +258,12 @@ class AlbumRowTile extends ConsumerWidget {
     final downloadsRepo = getIt<DownloadsRepository>();
 
     final isOffline = ref.read(isOfflineActiveProvider);
-    final albumGroupId = '${album.name}|${album.parentFolderPath}';
 
     if (action == 'cancelDownload' || action == 'deleteDownload') {
       final tracks = isOffline
-          ? await ref.read(downloadedAlbumTracksProvider(albumGroupId).future)
+          ? await ref.read(
+              downloadedAlbumTracksProvider(album.albumGroupId).future,
+            )
           : await ref.read(albumTracksProvider(album).future);
       final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
       if (action == 'cancelDownload') {
@@ -277,7 +283,9 @@ class AlbumRowTile extends ConsumerWidget {
     }
 
     final tracks = isOffline
-        ? await ref.read(downloadedAlbumTracksProvider(albumGroupId).future)
+        ? await ref.read(
+            downloadedAlbumTracksProvider(album.albumGroupId).future,
+          )
         : await ref.read(albumTracksProvider(album).future);
 
     switch (action) {

@@ -9,6 +9,7 @@ void main() {
         albumArtist: 'The Band',
         folderPath: '/Music/The Band/Greatest Hits/',
         parentFolderPath: '/Music/The Band/',
+        albumGroupId: 'id',
         date: '2020',
       );
       const a2 = Album(
@@ -16,6 +17,7 @@ void main() {
         albumArtist: 'the band',
         folderPath: '/music/the band/greatest hits/',
         parentFolderPath: '/music/the band/',
+        albumGroupId: 'id',
         date: '2020',
       );
 
@@ -29,6 +31,7 @@ void main() {
         albumArtist: 'The Band',
         folderPath: '/Music/The Band/Greatest Hits/',
         parentFolderPath: '/Music/The Band/',
+        albumGroupId: 'id',
         date: 'May 2020',
       );
       const a2 = Album(
@@ -36,6 +39,7 @@ void main() {
         albumArtist: 'The Band',
         folderPath: '/Music/The Band/Greatest Hits/',
         parentFolderPath: '/Music/The Band/',
+        albumGroupId: 'id',
         date: 'may 2020',
       );
 
