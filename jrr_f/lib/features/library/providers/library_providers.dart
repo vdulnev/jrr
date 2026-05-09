@@ -44,7 +44,7 @@ Future<List<AlbumGroup>> albumGroupsByArtist(Ref ref, String artist) async {
 
 List<AlbumGroup> _buildAlbumGroups(String artist, Albums albums) {
   final talker = getIt<Talker>();
-  const tag = '[albumGroupsByArtist]';
+  const tag = '[albumGroupsByArtistProvider]';
 
   talker.debug('$tag [$artist] Received ${albums.length} album row(s)');
   for (final a in albums.albums) {

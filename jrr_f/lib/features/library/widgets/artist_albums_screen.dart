@@ -46,8 +46,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
               Expanded(
                 child: ErrorView(
                   error: e,
-                  onRetry: () =>
-                      ref.invalidate(albumGroupsByArtistProvider(artist)),
+                  onRetry: () => ref.invalidate(albumsByArtistProvider(artist)),
                 ),
               ),
             ],
@@ -60,7 +59,7 @@ class ArtistAlbumsScreen extends ConsumerWidget {
         subtitle: 'Artist',
         showArtist: false,
         onBack: () => context.router.maybePop(),
-        onRefresh: () => ref.invalidate(albumGroupsByArtistProvider(artist)),
+        onRefresh: () => ref.invalidate(albumsByArtistProvider(artist)),
       ),
     );
   }
