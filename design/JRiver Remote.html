@@ -15,6 +15,7 @@
 <script type="text/babel" src="jrr-connection.jsx"></script>
 <script type="text/babel" src="jrr-library.jsx"></script>
 <script type="text/babel" src="jrr-player.jsx"></script>
+<script type="text/babel" src="jrr-settings.jsx"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; background: #080809; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; }
@@ -129,10 +130,11 @@ function App() {
 
   // ── Screen map ────────────────────────────────────────────
   const screenMap = {
-    now:     <NowPlayingScreen tweaks={tweaks} playing={playing} setPlaying={setPlaying}/>,
-    queue:   <QueueScreen/>,
-    library: <LibraryScreen libNavs={libNavs} setLibNavs={setLibNavs} libTab={libTab} setLibTab={setLibTab}/>,
-    zones:   <ZonesScreen/>,
+    now:      <NowPlayingScreen tweaks={tweaks} playing={playing} setPlaying={setPlaying}/>,
+    queue:    <QueueScreen/>,
+    library:  <LibraryScreen libNavs={libNavs} setLibNavs={setLibNavs} libTab={libTab} setLibTab={setLibTab}/>,
+    zones:    <ZonesScreen/>,
+    settings: <SettingsScreen/>,
   };
 
   // ── Connection screens ────────────────────────────────────

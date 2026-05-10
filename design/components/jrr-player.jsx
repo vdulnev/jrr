@@ -320,6 +320,12 @@ function TabBar({ active, onChange }) {
         <path d="M6 5v3M6 13v3M16 5v3M16 13v3" strokeWidth="1.2" opacity="0.5"/>
       </svg>
     )},
+    { id:'settings', label:'Settings', icon:c=>(
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="3"/>
+        <path d="M18 11a7 7 0 00-.1-1.2l1.7-1.3-1.7-3-2 .8a7 7 0 00-2-1.2l-.3-2.1h-3.4l-.3 2.1a7 7 0 00-2 1.2l-2-.8-1.7 3 1.7 1.3a7 7 0 000 2.4l-1.7 1.3 1.7 3 2-.8a7 7 0 002 1.2l.3 2.1h3.4l.3-2.1a7 7 0 002-1.2l2 .8 1.7-3-1.7-1.3a7 7 0 00.1-1.2z"/>
+      </svg>
+    )},
   ];
   return (
     <div style={{height:82,borderTop:`1px solid ${T.line}`,
