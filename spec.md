@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.6.0
+**Version:** 0.7.0
 **Status:** Draft — implemented in `jrr_f/` (Flutter)
 
 ---
@@ -34,6 +34,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Multi-platform layouts      | v5 (done)|
 | Local playback (client zone)| v5 (done)|
 | Favorites (browse nodes)    | v5 (done)|
+| Offline Mode (server-less)  | v6 (done)|
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
@@ -136,6 +137,32 @@ Normalization. Values used as keys for internal grouping or identification
 (e.g., albumGroupId) must be normalized to a consistent case (prefer 
 lowercase) before use. 
 
+
+
+## 2.5 Offline Mode (Server-less)
+
+Clients may allow users to enter the application without connecting to a server.
+This mode is useful for accessing downloaded content on the device.
+
+**Synthetic Session:**
+The client should synthesize a ServerInfo object with a reserved ID (e.g., 'offline')
+and an empty address to represent this state.
+
+**Behavior:**
+In Offline Mode:
+- All server-bound API calls are skipped.
+- The client-synthesized 'Offline' zone is the primary active zone.
+- The library view should only show 'Downloads' or locally cached content.
+
+## 2.6 Persistence & Startup
+
+The client should persist the last active zone GUID.
+
+**Server-less Startup:**
+If the last active zone was 'Offline', the app should skip the initial network
+'Alive' check and 'Authenticate' call on launch, booting directly into the
+offline shell using the synthetic session. This allows for immediate music
+access even without internet or server availability.
 
 ## 3. Domain Model
 

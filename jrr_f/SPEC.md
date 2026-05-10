@@ -9,9 +9,9 @@ spec.
 If anything here conflicts with the parent spec, the parent spec wins for
 behavior and this file wins for Flutter-specific implementation details.
 
-**Version:** 2.3.0
-**Status:** Phases 1–8 implemented (remote control, library, design
-system, multi-platform layouts, local playback, favorites)
+**Version:** 2.5.1
+**Status:** Phases 1–9 implemented (remote control, library, design
+system, multi-platform layouts, local playback, favorites, offline startup)
 
 ---
 
@@ -21,6 +21,8 @@ system, multi-platform layouts, local playback, favorites)
 - Never use `dynamic` — be explicit.
 - Trailing commas in all widget constructors; prefer `const`.
 - Run `dart format .` before every commit.
+- **Async Synchronization**: Always use synchronization flags (like `_isReloading`) when an asynchronous operation (like queue reloading) must be atomic and non-overlapping.
+- **Provider Decoupling**: Avoid direct dependencies between `sessionProvider` and `activeZoneProvider` (or its dependencies like `ZoneList`). Use persistence (e.g. `SharedPreferences`) as a side-channel to communicate desired zone state on login/offline-entry.
 
 ## 1. Tech Stack
 
@@ -761,7 +763,22 @@ across all playable items (Play / Play next / Add to playing now).
 - **Top-level error capture**: `FlutterError.onError` and
   `PlatformDispatcher.instance.onError` route to Talker.
 
-### Phase 9 — Future polish (planned)
+### Phase 9 — Offline Startup & Stability (done)
+- **Offline Startup**: Synthetic `ServerInfo.offline` session for
+  server-less operation.
+- **Manual Entry**: "Continue Offline" button on `ServerSetupScreen`
+  to bypass login.
+- **Silent Offline Reconnect**: App restores "Offline" zone state on
+  launch without network checks if it was the last active zone.
+- **Album Download Progress**: `AlbumDownloadStatusProvider` +
+  `AlbumDownloadProgressIndicator` for aggregated album tracking.
+- **Player Robustness**: Locking mechanism (`_isReloading`) and awaited
+  async operations in `LocalPlayer` and `LocalPlayerService` to prevent
+  race conditions and `RangeError` crashes.
+- **Dynamic Logout**: Logout button becomes "Setup Server / Login" in
+  offline mode.
+
+### Phase 10 — Future polish (planned)
 - Adaptive layouts beyond the binary breakpoint (compact phone vs
   large tablet vs desktop).
 - App-lifecycle pause/resume of polling timers
@@ -814,84 +831,100 @@ code should follow them by default; review should call out deviations.
 3. **Cancel every stream subscription in `ref.onDispose`.** Including
    stream-backed notifiers — a leaked subscription will keep
    `keepAlive` providers alive after the user logs out.
-4. **`ref.watch(sessionProvider)` to gate work.** Polling notifiers,
+4. **ref.watch(sessionProvider) to gate work.** Polling notifiers,
    active-zone restoration, and library queries should *all* gate on
    the session state so logout naturally pauses them without explicit
    teardown.
+5. **Synchronize recursive async actions.** Use a private boolean flag
+   (e.g., `_isReloading`) to guard complex async loops. If a new request
+   arrives while one is active, buffer it (e.g., `_reloadRequestedDuringReload`)
+   instead of launching a parallel overlapping task.
 
 ### Routing
-5. **Prefer nested `AutoTabsRouter` over a hand-rolled stack notifier.**
+6. **Prefer nested AutoTabsRouter over a hand-rolled stack notifier.**
    When you need per-tab back history, give each tab its own
    `@RoutePage` router stub and let auto_route own the stack. Use
    `context.router.push` inside that subtree freely.
-6. **Use `AutoRouter.declarative()` for binary flow gates** (auth,
+7. **Use `AutoRouter.declarative()` for binary flow gates** (auth,
    onboarding) where the route depends purely on a Riverpod state.
 
 ### Networking
-7. **Inject the auth token via a closure, never via a captured
+8. **Inject the auth token via a closure, never via a captured
    string.** `AuthInterceptor` reads `tokenGetter()` at request-time;
    the token can be rotated in `ConnectionRepository` without rebuilding
    the `Dio` instance.
-8. **Mark public endpoints with `@Extra({'skipAuth': true})`.** This
+9. **Mark public endpoints with `@Extra({'skipAuth': true})`.** This
    keeps the auth interceptor declarative — no per-call branching in
    the interceptor itself.
-9. **Build `Dio` per scope.** A second `createPublicDio()` for
+10. **Build `Dio` per scope.** A second `createPublicDio()` for
    non-MCWS calls (e.g. the JRiver access-key registry) keeps
    interceptors targeted and avoids accidentally leaking the auth
    token to third-party hosts.
-10. **Always set `ZoneType=ID` when a `Zone` parameter is present.**
-    Codified as a default parameter in every Retrofit method.
-11. **Tolerate type drift in JSON.** MCWS sometimes returns `"Key"` as
-    a number, sometimes as a string. `ForceIntConverter` /
-    `ForceStringConverter` keep deserialization stable.
-12. **Client-side exact filter after MCWS field equality.** MCWS does
+11. **Always set `ZoneType=ID` when a `Zone` parameter is present.**
+   Codified as a default parameter in every Retrofit method.
+12. **Tolerate type drift in JSON.** MCWS sometimes returns `"Key"` as
+   a number, sometimes as a string. `ForceIntConverter` /
+   `ForceStringConverter` keep deserialization stable.
+13. **Client-side exact filter after MCWS field equality.** MCWS does
     substring matching on `[Field]=value`. For unique-key lookups
     (artist exact match, file path exact match) post-filter in the
     client.
+14. **Check for synthetic sessions in Repositories.** When implementing
+    MCWS methods, check if the current token or server address indicates
+    an "Offline" state (e.g. `session == null` or `address.isEmpty`)
+    and return a local fallback instead of making network calls.
 
 ### Local playback
-13. **Local-zone services live in the base scope, not the session
+15. **Local-zone services live in the base scope, not the session
     scope.** Logging out should not stop music that is already playing
     on the device.
-14. **Tag every `AudioSource` with the source `Track`.** The mini
+16. **Tag every `AudioSource` with the source `Track`.** The mini
     player and now-playing screen consume `tag` rather than carrying a
     parallel index.
-15. **Persist queue state through Drift, not shared_preferences.**
+17. **Persist queue state through Drift, not shared_preferences.**
     `shared_preferences` is fine for scalar UI flags; queues are
     structured data and want migrations.
+18. **Await ALL audio player operations.** Operations like `insert`,
+    `remove`, and `move` in `just_audio` are asynchronous. Failing to
+    await them before the next state update can cause index out-of-bounds
+    errors (RangeError).
 
 ### UI
-16. **Mini-player participates in layout flow.** Never an overlay —
+19. **Mini-player participates in layout flow.** Never an overlay —
     overlays cover modals and popup menus.
-17. **`PopupMenuButton` for every playable surface.** Same items, same
+20. **`PopupMenuButton` for every playable surface.** Same items, same
     icon, same density. The user shouldn't have to learn three
     different action surfaces.
-18. **One public widget per file.** Including stub router widgets.
-19. **Centralize text styles.** All non-trivial `TextStyle`s live in
+21. **One public widget per file.** Including stub router widgets.
+22. **Centralize text styles.** All non-trivial `TextStyle`s live in
     `AppTextStyles`.
 
 ### Persistence
-20. **`flutter_secure_storage` for credentials, Drift for everything
+23. **`flutter_secure_storage` for credentials, Drift for everything
     else.** Never put a password in `shared_preferences` or in the
     Drift schema directly.
-21. **Schema migrations are append-only.** Never edit a previous
+24. **Schema migrations are append-only.** Never edit a previous
     migration; add a new one and bump `schemaVersion`.
-22. **Wipe the persisted auth token on `clearSession()`.** Token reuse
+25. **Wipe the persisted auth token on `clearSession()`.** Token reuse
     after logout is a footgun; force a fresh `Authenticate` next time.
+26. **Decouple Session from ActiveZone via Preferences.** Instead of
+    reading the `activeZoneProvider` notifier during session transitions,
+    write the desired GUID to `SharedPreferences`. This avoids circular
+    initialization loops between the session and zone providers.
 
 ### Logging
-23. **One `Talker` instance.** Inject via get_it; route Dio,
+27. **One `Talker` instance.** Inject via get_it; route Dio,
     Riverpod, and route-observer logs through it. The
     `LoggingInterceptor` redacts the token query param.
-24. **Catch top-level errors at `main()`.** `FlutterError.onError` for
+28. **Catch top-level errors at `main()`.** `FlutterError.onError` for
     framework errors, `PlatformDispatcher.instance.onError` for async
     errors that escape the framework.
 
 ### Case-Insensitivity
-25. **String equality for models is case-insensitive where appropriate.** Many MCWS tags (Artist, Album, Genre) are inconsistent in their casing. The `Track`, `Album`, and `DownloadedTrack` models override `operator ==` and `hashCode` to use case-insensitive comparison for these fields.
-26. **Use `equalsIgnoreCase` extension.** For consistency, always use the `equalsIgnoreCase` extension (from `lib/shared/extensions/string_extensions.dart`) instead of `toLowerCase() == toLowerCase()`.
-27. **Normalize grouping keys to lowercase.** The `albumGroupId` getter on `Track` and the `id` on `AlbumGroup` must be fully lowercased: `'${name.toLowerCase()}|${parentFolderPath.toLowerCase()}'`. This ensures consistent grouping across different track entries and filesystem paths.
-28. **Filter offline data case-insensitively.** When filtering `downloaded_tracks` in providers (e.g. by artist name), use `equalsIgnoreCase`.
+29. **String equality for models is case-insensitive where appropriate.** Many MCWS tags (Artist, Album, Genre) are inconsistent in their casing. The `Track`, `Album`, and `DownloadedTrack` models override `operator ==` and `hashCode` to use case-insensitive comparison for these fields.
+30. **Use `equalsIgnoreCase` extension.** For consistency, always use the `equalsIgnoreCase` extension (from `lib/shared/extensions/string_extensions.dart`) instead of `toLowerCase() == toLowerCase()`.
+31. **Normalize grouping keys to lowercase.** The `albumGroupId` getter on `Track` and the `id` on `AlbumGroup` must be fully lowercased: `'${name.toLowerCase()}|${parentFolderPath.toLowerCase()}'`. This ensures consistent grouping across different track entries and filesystem paths.
+32. **Filter offline data case-insensitively.** When filtering `downloaded_tracks` in providers (e.g. by artist name), use `equalsIgnoreCase`.
 
 ---
 
@@ -908,3 +941,5 @@ code should follow them by default; review should call out deviations.
 | 0.4.0 | 2026-04-21 | UI design system (Phase 7): `AppTextStyles`, kebab popup menus everywhere, bottom tabs, `MiniPlayerPanel` in Column flow, `SubScreenHeader`, segmented Library tabs |
 | 2.2.0 | 2026-05-05 | Phase 8: adaptive narrow/wide layouts (`AdaptiveLayoutBuilder` + `TwoPanelShell` + `Sidebar`), Settings tab, JRiver Access Key lookup, silent reconnect with persisted `auth_token`, **local playback** (just_audio + audio_session, `LocalPlayerService`, persisted local queue via Drift, `LocalAudioQuality` selector), Favorites tab + Drift-backed `favorites` table, nested `AutoTabsRouter` per Library sub-tab, top-level error handlers in `main`, `Tracks`/`Zones` Freezed wrappers, AlbumGroup multi-disc helper, `Track.fileType`, `Track.albumArtistAuto`. Schema bumped to v4 (favorites, local_queue_tracks, local_queue_state). Added Best Practices section. Imperative `context.router.push` allowed inside library sub-routers. |
 | 2.3.0 | 2026-05-06 | Case-insensitive string comparison for Track/Album fields; `StringExtensions.equalsIgnoreCase`; lowercase normalization for `albumGroupId` and `AlbumGroup.id`. |
+| 2.5.1 | 2026-05-10 | Phase 9: Offline Startup, synthetic offline sessions, album download progress tracking, synchronized player reloads, and decoupling of session/zone providers. Added Best Practices for async synchronization and provider decoupling. |
+
