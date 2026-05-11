@@ -15,6 +15,7 @@ import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../layout/adaptive_layout.dart';
 import '../layout/two_panel_shell.dart';
+import '../lifecycle/app_lifecycle_provider.dart';
 import '../theme/app_theme.dart';
 import 'app_router.dart';
 import 'navigation_notifier.dart';
@@ -46,6 +47,7 @@ class _AuthenticatedShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(zonePollingProvider);
     ref.watch(localPlayerProvider);
+    ref.watch(appLifecycleProvider);
 
     return AdaptiveLayoutBuilder(
       narrowBuilder: (context) => _NarrowLayout(ref: ref),
