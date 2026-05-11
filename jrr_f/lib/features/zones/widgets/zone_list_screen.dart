@@ -36,14 +36,27 @@ class ZoneListScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('OUTPUT', style: AppTextStyles.sectionLabel),
-                  SizedBox(height: 6),
-                  Text('Zones', style: AppTextStyles.screenTitle),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('OUTPUT', style: AppTextStyles.sectionLabel),
+                        SizedBox(height: 6),
+                        Text('Zones', style: AppTextStyles.screenTitle),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => ref.invalidate(zoneListProvider),
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: AppColors.text2,
+                    tooltip: 'Refresh zones',
+                  ),
                 ],
               ),
             ),
