@@ -22,9 +22,8 @@ class QueueScreen extends ConsumerWidget {
     final queueState = ref.watch(queueProvider);
     final currentIndex = ref.watch(playingNowPositionProvider);
 
-    talker.debug(
-      '[QueueScreen]: queueState: $queueState, currentIndex: $currentIndex',
-    );
+    talker.debug('[QueueScreen]: queueState: $queueState');
+    talker.debug('[QueueScreen]: currentIndex: $currentIndex');
 
     return Scaffold(
       body: SafeArea(
@@ -46,6 +45,7 @@ class QueueScreen extends ConsumerWidget {
                     children: [
                       const Text('Queue', style: AppTextStyles.screenTitle),
                       queueState.maybeWhen(
+                        skipLoadingOnReload: true,
                         data: (items) => Row(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -77,6 +77,7 @@ class QueueScreen extends ConsumerWidget {
             // Queue list
             Expanded(
               child: queueState.when(
+                skipLoadingOnReload: true,
                 loading: () => const LoadingView(),
                 error: (e, _) => ErrorView(
                   error: e,
