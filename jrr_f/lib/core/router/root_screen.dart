@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
 import '../../features/connection/widgets/server_manager_screen.dart';
+import '../../features/library/providers/library_providers.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/providers/local_player_provider.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
@@ -63,8 +64,13 @@ class _NarrowLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AppTab>(activeTabProvider, (_, _) {
+      ref.read(libraryChromeVisibleProvider.notifier).set(true);
+    });
+
     final activeTab = ref.watch(activeTabProvider);
-    final showMiniPlayer = activeTab != AppTab.nowPlaying;
+    final chromeVisible = ref.watch(libraryChromeVisibleProvider);
+    final showMiniPlayer = activeTab != AppTab.nowPlaying && chromeVisible;
 
     return Scaffold(
       body: Column(
@@ -81,15 +87,21 @@ class _NarrowLayout extends ConsumerWidget {
               ],
             ),
           ),
-          if (showMiniPlayer)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-              child: MiniPlayerPanel(
-                onItemTap: () => ref
-                    .read(activeTabProvider.notifier)
-                    .select(AppTab.nowPlaying),
-              ),
-            ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: showMiniPlayer
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                    child: MiniPlayerPanel(
+                      onItemTap: () => ref
+                          .read(activeTabProvider.notifier)
+                          .select(AppTab.nowPlaying),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
       bottomNavigationBar: _TabBar(

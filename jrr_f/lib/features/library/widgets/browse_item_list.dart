@@ -39,3 +39,32 @@ class BrowseItemList extends ConsumerWidget {
     );
   }
 }
+
+/// Sliver variant of [BrowseItemList] — for use inside a [CustomScrollView].
+class BrowseItemSliverList extends StatelessWidget {
+  final List<BrowseItem> items;
+  final ValueChanged<BrowseItem> onTap;
+  final bool showFavoriteToggle;
+
+  const BrowseItemSliverList({
+    super.key,
+    required this.items,
+    required this.onTap,
+    this.showFavoriteToggle = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.builder(
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return BrowseItemTile(
+          item: item,
+          onTap: () => onTap(item),
+          showFavoriteToggle: showFavoriteToggle,
+        );
+      },
+    );
+  }
+}

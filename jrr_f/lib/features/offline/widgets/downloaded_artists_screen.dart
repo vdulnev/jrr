@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../library/data/models/tracks.dart';
 import '../../player/providers/player_provider.dart';
 import '../data/repositories/downloads_repository.dart';
@@ -31,12 +32,16 @@ class DownloadedArtistsScreen extends ConsumerWidget {
         if (artists.isEmpty) {
           return const _EmptyState();
         }
-        return ListView.builder(
-          itemCount: artists.length,
-          itemBuilder: (context, i) {
-            final artist = artists[i];
-            return _ArtistRow(artist: artist);
-          },
+        return ScrollChromeListener(
+          child: CustomScrollView(
+            slivers: [
+              SliverList.builder(
+                itemCount: artists.length,
+                itemBuilder: (context, i) => _ArtistRow(artist: artists[i]),
+              ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            ],
+          ),
         );
       },
     );

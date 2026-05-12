@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../../library/data/models/browse_item.dart';
 import '../../library/providers/library_providers.dart';
@@ -59,7 +60,14 @@ class _FavoritesList extends ConsumerWidget {
         if (items.isEmpty) {
           return const _EmptyState();
         }
-        return BrowseItemList(items: items, onTap: onPush);
+        return ScrollChromeListener(
+          child: CustomScrollView(
+            slivers: [
+              BrowseItemSliverList(items: items, onTap: onPush),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            ],
+          ),
+        );
       },
     );
   }

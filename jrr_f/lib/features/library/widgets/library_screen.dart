@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../zones/providers/active_zone_provider.dart';
+import '../providers/library_providers.dart';
 
-class LibraryScreen extends ConsumerWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
   static const _tabs = [
@@ -19,7 +20,14 @@ class LibraryScreen extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  int? _lastIndex;
+
+  @override
+  Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineActiveProvider);
 
     return AutoTabsRouter(
@@ -40,15 +48,32 @@ class LibraryScreen extends ConsumerWidget {
           });
         }
 
+        if (_lastIndex != null && _lastIndex != tabsRouter.activeIndex) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ref.read(libraryChromeVisibleProvider.notifier).set(true);
+          });
+        }
+        _lastIndex = tabsRouter.activeIndex;
+
+        final chromeVisible = ref.watch(libraryChromeVisibleProvider);
+
         return Scaffold(
           body: SafeArea(
             bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Header(
-                  activeIndex: tabsRouter.activeIndex,
-                  onTabSelected: tabsRouter.setActiveIndex,
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
+                  alignment: Alignment.topCenter,
+                  child: chromeVisible
+                      ? _Header(
+                          activeIndex: tabsRouter.activeIndex,
+                          onTabSelected: tabsRouter.setActiveIndex,
+                        )
+                      : const SizedBox(width: double.infinity),
                 ),
                 Expanded(child: child),
               ],

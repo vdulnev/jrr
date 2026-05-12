@@ -8,6 +8,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../providers/library_providers.dart';
 
 @RoutePage()
@@ -40,111 +41,114 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
                   .where((a) => a.toLowerCase().contains(_filter.toLowerCase()))
                   .toList();
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(
-                    onTap: () => ref.invalidate(artistsProvider),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.line2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Refresh',
-                        style: AppTextStyles.accentSmall,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Filter field
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Filter artists\u2026',
-                  prefixIcon: Icon(Icons.search, size: 18),
-                  isDense: true,
-                ),
-                style: AppTextStyles.labelLarge,
-                onChanged: (v) => setState(() => _filter = v),
-              ),
-            ),
-            Expanded(
-              child: filtered.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No matches',
-                        style: AppTextStyles.emptyState,
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final artist = filtered[i];
-                        return GestureDetector(
-                          onTap: () => context.router.push(
-                            ArtistAlbumsRoute(artist: artist),
+        return ScrollChromeListener(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 16, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () => ref.invalidate(artistsProvider),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: AppColors.line),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.line2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Refresh',
+                            style: AppTextStyles.accentSmall,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Filter artists…',
+                      prefixIcon: Icon(Icons.search, size: 18),
+                      isDense: true,
+                    ),
+                    style: AppTextStyles.labelLarge,
+                    onChanged: (v) => setState(() => _filter = v),
+                  ),
+                ),
+              ),
+              if (filtered.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text('No matches', style: AppTextStyles.emptyState),
+                  ),
+                )
+              else
+                SliverList.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) {
+                    final artist = filtered[i];
+                    return GestureDetector(
+                      onTap: () => context.router.push(
+                        ArtistAlbumsRoute(artist: artist),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: AppColors.line),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.bg3,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                artist.isNotEmpty
+                                    ? artist[0].toUpperCase()
+                                    : '?',
+                                style: AppTextStyles.avatarLetter,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                // Avatar circle
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.bg3,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    artist.isNotEmpty
-                                        ? artist[0].toUpperCase()
-                                        : '?',
-                                    style: AppTextStyles.avatarLetter,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    artist,
-                                    style: AppTextStyles.itemTitle,
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  size: 18,
-                                  color: AppColors.text3,
-                                ),
-                              ],
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                artist,
+                                style: AppTextStyles.itemTitle,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 18,
+                              color: AppColors.text3,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            ],
+          ),
         );
       },
     );

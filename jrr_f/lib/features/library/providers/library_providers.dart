@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
@@ -13,6 +14,23 @@ import '../data/models/tracks.dart';
 import '../data/repositories/library_repository.dart';
 
 part 'library_providers.g.dart';
+
+/// Controls whether the library chrome (parent header + root mini player)
+/// is visible. Scroll listeners in tab screens toggle this to maximize the
+/// list area on scroll-down and restore it on scroll-up.
+class LibraryChromeVisibleNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool value) {
+    if (state != value) state = value;
+  }
+}
+
+final libraryChromeVisibleProvider =
+    NotifierProvider<LibraryChromeVisibleNotifier, bool>(
+      LibraryChromeVisibleNotifier.new,
+    );
 
 @riverpod
 Future<Tracks> librarySearch(Ref ref, String query) async {

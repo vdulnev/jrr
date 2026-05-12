@@ -8,6 +8,7 @@ import 'package:talker/talker.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../../shared/widgets/vu_meter.dart';
 import '../../player/providers/player_provider.dart';
 import '../providers/queue_provider.dart';
@@ -25,80 +26,90 @@ class QueueScreen extends ConsumerWidget {
     talker.debug('[QueueScreen]: queueState: $queueState');
     talker.debug('[QueueScreen]: currentIndex: $currentIndex');
 
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('PLAYBACK', style: AppTextStyles.sectionLabel),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text('Queue', style: AppTextStyles.screenTitle),
+              queueState.maybeWhen(
+                skipLoadingOnReload: true,
+                data: (items) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${items.length} tracks',
+                      style: AppTextStyles.monoLabel,
+                    ),
+                    if (items.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      _ClearButton(
+                        onPressed: () => _confirmClear(context, ref),
+                      ),
+                    ],
+                  ],
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    const upNextLabel = Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
+    );
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('PLAYBACK', style: AppTextStyles.sectionLabel),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Queue', style: AppTextStyles.screenTitle),
-                      queueState.maybeWhen(
-                        skipLoadingOnReload: true,
-                        data: (items) => Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${items.length} tracks',
-                              style: AppTextStyles.monoLabel,
-                            ),
-                            if (items.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              _ClearButton(
-                                onPressed: () => _confirmClear(context, ref),
-                              ),
-                            ],
-                          ],
-                        ),
-                        orElse: () => const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+        child: ScrollChromeListener(
+          child: queueState.when(
+            skipLoadingOnReload: true,
+            loading: () => const LoadingView(),
+            error: (e, _) => ErrorView(
+              error: e,
+              onRetry: () => ref.invalidate(queueProvider),
             ),
-            // "Up Next" label
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
-            ),
-            // Queue list
-            Expanded(
-              child: queueState.when(
-                skipLoadingOnReload: true,
-                loading: () => const LoadingView(),
-                error: (e, _) => ErrorView(
-                  error: e,
-                  onRetry: () => ref.invalidate(queueProvider),
-                ),
-                data: (items) {
-                  if (items.isEmpty) {
-                    return const _NoData();
-                  }
-                  return _Data(
+            data: (items) {
+              if (items.isEmpty) {
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(child: header),
+                    const SliverToBoxAdapter(child: upNextLabel),
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _NoData(),
+                    ),
+                  ],
+                );
+              }
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: header),
+                  const SliverToBoxAdapter(child: upNextLabel),
+                  _QueueSliverList(
                     tracks: items,
                     currentIndex: currentIndex,
                     onTap: (index) =>
                         ref.read(playerProvider.notifier).playByIndex(index),
                     onRemove: (index) =>
                         ref.read(queueProvider.notifier).removeItem(index),
-                  );
-                },
-              ),
-            ),
-          ],
+                  ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -166,8 +177,8 @@ class _ClearButton extends StatelessWidget {
   }
 }
 
-class _Data extends StatelessWidget {
-  const _Data({
+class _QueueSliverList extends StatelessWidget {
+  const _QueueSliverList({
     required this.tracks,
     required this.currentIndex,
     required this.onTap,
@@ -181,8 +192,7 @@ class _Data extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 16),
+    return SliverList.builder(
       itemCount: tracks.length,
       itemBuilder: (context, i) {
         final track = tracks[i];

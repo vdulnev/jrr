@@ -15,10 +15,22 @@ class AlbumListView extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 16),
       itemCount: groups.length,
-      itemBuilder: (_, i) {
-        final group = groups[i];
-        return AlbumRowTile(album: group.album);
-      },
+      itemBuilder: (_, i) => AlbumRowTile(album: groups[i].album),
+    );
+  }
+}
+
+/// Sliver variant of [AlbumListView] — for use inside a [CustomScrollView].
+class AlbumSliverList extends StatelessWidget {
+  final List<AlbumGroup> groups;
+
+  const AlbumSliverList({required this.groups, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.builder(
+      itemCount: groups.length,
+      itemBuilder: (_, i) => AlbumRowTile(album: groups[i].album),
     );
   }
 }
