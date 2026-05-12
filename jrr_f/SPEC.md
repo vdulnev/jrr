@@ -9,9 +9,9 @@ spec.
 If anything here conflicts with the parent spec, the parent spec wins for
 behavior and this file wins for Flutter-specific implementation details.
 
-**Version:** 2.5.3
+**Version:** 2.6.0
 **Status:** Phases 1–9 implemented (remote control, library, design
-system, multi-platform layouts, local playback, favorites, offline startup)
+system, multi-platform layouts, local playback, favorites, offline startup, adaptive chrome)
 
 ---
 
@@ -24,6 +24,7 @@ system, multi-platform layouts, local playback, favorites, offline startup)
 - **Async Synchronization**: Always use synchronization flags (like `_isReloading`) when an asynchronous operation (like queue reloading) must be atomic and non-overlapping.
 - **Provider Decoupling**: Avoid direct dependencies between `sessionProvider` and `activeZoneProvider` (or its dependencies like `ZoneList`). Use persistence (e.g. `SharedPreferences`) as a side-channel to communicate desired zone state on login/offline-entry.
 - **App Lifecycle**: Use `appLifecycleProvider` to manage global pause/resume events. Components requiring background/foreground transitions should listen to these events rather than implementing local `WidgetsBindingObserver` listeners.
+- **Adaptive Chrome**: Use `ScrollChromeListener` and `libraryChromeVisibleProvider` to manage header/mini-player visibility on scroll. Prefer `Sliver`-based layouts for all primary scrolling surfaces to support this behavior.
 
 ## 1. Tech Stack
 
