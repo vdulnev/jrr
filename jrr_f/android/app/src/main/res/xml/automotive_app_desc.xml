@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tells Android Auto which app categories this app participates in.
+  `media` flags JRR as a media-browse-and-playback source: the head unit
+  will discover the MediaBrowserService declared in AndroidManifest.xml,
+  call its getChildren() to fetch the browse hierarchy, and surface our
+  PlaybackState in the Auto Now Playing UI.
+
+  Referenced from AndroidManifest.xml via
+  <meta-data
+      android:name="com.google.android.gms.car.application"
+      android:resource="@xml/automotive_app_desc"/>
+-->
+<automotiveApp>
+    <uses name="media"/>
+</automotiveApp>

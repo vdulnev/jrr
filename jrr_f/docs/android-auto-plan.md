@@ -379,7 +379,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | 🟢 done |
 | 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | 🟢 done |
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | 🟢 done |
-| 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | ⚪ |
+| 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | 🟢 done |
 | 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | ⚪ |
 | 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | ⚪ |
 | 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | ⚪ |
@@ -810,6 +810,69 @@ Runtime verification (user-side, requires DHU or real car):
   most-recent first, no duplicates.
 - Use the voice button: "play <artist|album|track name>" should
   trigger `playFromSearch` and start matching tracks.
+
+### Phase 6 — Completion notes
+
+Changes landed:
+
+- [automotive_app_desc.xml](../android/app/src/main/res/xml/automotive_app_desc.xml):
+  new file declaring `<uses name="media"/>`. This is what Android
+  Auto's package-discovery scanner looks for when deciding which
+  apps to surface in the in-car media picker.
+- [AndroidManifest.xml](../android/app/src/main/AndroidManifest.xml):
+  added two new `<meta-data>` elements inside `<application>`:
+  - `com.google.android.gms.car.application` →
+    `@xml/automotive_app_desc` (the descriptor above).
+  - `com.google.android.gms.car.notification.SmallIcon` →
+    `@drawable/ic_audio_service_notification` (the monochrome
+    drawable added in Phase 2). Auto enforces the same alpha-mask
+    rule the system notification path does; reusing the existing
+    drawable keeps a single source of truth.
+
+Already in place from earlier phases (re-verified for §8 conformance):
+
+- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and
+  `WAKE_LOCK` permissions (Phase 2).
+- `com.ryanheise.audioservice.AudioService` declaration with
+  `foregroundServiceType="mediaPlayback"` and the
+  `android.media.browse.MediaBrowserService` intent filter (Phase 2)
+  — this is the service Auto binds to and calls `getChildren` /
+  `playFromMediaId` on.
+- `com.ryanheise.audioservice.MediaButtonReceiver` for media-button
+  / Bluetooth headset events (Phase 2).
+- `MainActivity` extending `com.ryanheise.audioservice.AudioServiceActivity`
+  so the audio_service MethodChannel resolves the right
+  FlutterEngine (Phase 2).
+
+**Deferred / not done in this phase:**
+
+- **Dedicated car launcher icon** (`ic_launcher_car.png` at
+  mdpi/hdpi/xhdpi/xxhdpi). The plan called for this but it's an
+  asset task — Android Auto falls back to `android:icon` from
+  `<application>` (the existing `@mipmap/ic_launcher`) when no car-
+  specific icon is supplied, so the app is functionally surfaced in
+  the car media picker without it. A purpose-designed transparent-
+  background icon optimised for the car carousel can be added later
+  once design provides a source.
+- **Runtime validation via `adb shell dumpsys car_service` and the
+  Desktop Head Unit (DHU)** — both require a physical device and
+  the DHU set up locally. Belongs to Phase 9 QA (and §10's "user-
+  side" notes).
+
+Verification: `flutter analyze` clean, all 45 tests pass. Manifest
+parses (no Android build error from a `flutter test` build), but the
+real "is the app actually discoverable by Auto" check has to happen on
+a device — see the Phase 9 / DHU checklist.
+
+Runtime verification (user-side, requires DHU or real car):
+- Run `adb shell dumpsys car_service | grep -i jrr` after launching
+  the JRR app with the DHU attached — the package should appear.
+- Use Google's Auto desktop validator (`apk-analyzer` /
+  `android-auto-validator`) on a release build to confirm the
+  manifest descriptor is picked up.
+- Open the car media picker — JRR should appear as a selectable
+  media app and, when chosen, show the root browse tree built in
+  Phase 5.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

@@ -41,6 +41,22 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Android Auto: registers JRR as a `media` category app. The head
+             unit reads this descriptor on bind, then talks to the
+             MediaBrowserService declared further down. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!-- Android Auto: small monochrome notification icon. Reuses the
+             alpha-mask drawable added in Phase 2 for the system media
+             notification — Auto enforces the same alpha-mask rule, and
+             pointing at the multicolor mipmap/ic_launcher would crash on
+             some head units. -->
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@drawable/ic_audio_service_notification" />
+
         <!-- audio_service: foreground media playback service. -->
         <service
             android:name="com.ryanheise.audioservice.AudioService"
