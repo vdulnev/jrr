@@ -309,7 +309,7 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'382ee8fbbc0c721978196890abab0bf118974181';
+String _$localPlayerHash() => r'20b4560d6d6f2f6f0fe86faabd60709a00fb844f';
 
 /// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
 ///

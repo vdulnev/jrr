@@ -377,7 +377,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 1 — Zone model | Add `isAndroidAuto`; insert synthetic zone; routing audit (`isVirtualZoneActive` derived providers; refactor existing `isOffline`/`isLocal` guards) | 2 | 🟢 done |
 | 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | 🟢 done |
 | 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | 🟢 done |
-| 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | ⚪ |
+| 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | 🟢 done |
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | ⚪ |
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | ⚪ |
 | 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | ⚪ |
@@ -619,6 +619,89 @@ Deferred / not done in Phase 3:
 
 Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
 applied.
+
+### Phase 4 — Completion notes
+
+Changes landed:
+
+- [android_auto_session_service.dart](../lib/features/zones/services/android_auto_session_service.dart):
+  new `AndroidAutoSessionService` (no Riverpod dependency). Holds a
+  `ValueNotifier<bool> isConnected`, exposes `markActive()` which
+  flips to `true` on the first ping and refreshes a 5-minute
+  inactivity debounce on every subsequent ping, plus a `markInactive()`
+  escape hatch for future use (logout / app shutdown / a platform-
+  channel `onUnbind` hook). The 5-minute debounce is deliberately
+  long: Auto caches browse results aggressively and may go quiet for
+  minutes mid-playlist; a shorter timeout would falsely flip the
+  zone off the picker while the car is still connected.
+- [injection.dart](../lib/core/di/injection.dart): registers
+  `AndroidAutoSessionService` as a singleton. It's constructed in
+  `configureDependencies` (not `main.dart`) so it exists *before*
+  `AudioService.init` runs and `LocalPlayerService` resolves it
+  during its first `getChildren` call.
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  overrides three `BaseAudioHandler` browse callbacks —
+  `getChildren`, `getMediaItem`, and `search`. Each one calls
+  `markActive()` on the session service. For Phase 4 the bodies
+  return empty / null; Phase 5 will replace them with the real
+  browse hierarchy and `playFromMediaId` routing.
+- [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart):
+  added `AndroidAutoConnected` `Notifier<bool>` provider that
+  mirrors the session service's `ValueNotifier`. Riverpod's
+  `keepAlive: true` is deliberate — the listener stays attached for
+  the lifetime of the app so we never miss a connect/disconnect.
+- [zone_repository_impl.dart](../lib/features/zones/data/repositories/zone_repository_impl.dart):
+  every `getZones()` return path now passes through `_withAndroidAuto`,
+  which appends `androidAutoZone` when the session service reports
+  connected. The unauthenticated branch (offline-only) also includes
+  AA — Phase 4 leaves the gating *only* to the connection flag, so
+  the user could in principle have AA + Offline both visible. In
+  practice the unauthenticated branch is reached when the saved
+  session can't be restored, and AA at that point would still be
+  useful for playing downloaded tracks through the car.
+- [zone_provider.dart](../lib/features/zones/providers/zone_provider.dart):
+  `ZoneList.build` now also watches `androidAutoConnectedProvider`,
+  so the picker re-fetches when the car binds or the inactivity
+  debounce fires. The existing `ActiveZone._restoreZone` listener
+  picks up the new list automatically.
+
+Saved-active-zone fallback (the §6 edge case): handled implicitly by
+the existing `_restoreZone` logic in [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart).
+If the saved guid is `android-auto-zone-guid` but AA isn't in the
+fetched list (no car connected), `firstWhere(orElse: () => zones.first)`
+falls back to the first available zone — same path the offline-zone
+fallback already exercises. No snackbar yet; matches the silent
+fallback used for other "saved zone disappeared" cases. A user-
+visible toast could be added later if the silent swap is confusing
+in practice.
+
+Not built in Phase 4 (deferred to later phases or future work):
+
+- **Native `onUnbind` hook.** Truly immediate disconnect detection
+  would need a small platform-channel notification from a custom
+  `MediaBrowserService` subclass — not worth the cost given the
+  5-min debounce already covers the common cases (drive ends, phone
+  unplugged). Revisit if QA reports the AA chip lingering visibly
+  after the car disconnects.
+- **Auto-switch active zone to AA on connect.** Phase 5 is the
+  right place — when the user taps a track on the head unit and
+  `playFromMediaId` fires, that's the unambiguous signal to make
+  AA the active zone. Flipping it on bare connect would steal the
+  active zone from a user who's still using the phone UI in their
+  driveway before they actually press play in the car.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
+
+Runtime verification (requires a device + DHU or real car, **user-side**):
+- With the app open and authenticated, connect the phone to the
+  Android Auto desktop head unit (DHU). The "Android Auto" zone
+  should appear in the zone picker within ~1 second.
+- Disconnect Auto. The zone disappears from the picker within the
+  debounce window (≤5 min).
+- If the saved active zone is AA and the app cold-starts without a
+  car connection, the picker should restore the first available
+  zone instead of leaving AA orphaned.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

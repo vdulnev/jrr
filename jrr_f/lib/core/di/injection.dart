@@ -24,6 +24,7 @@ import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
+import '../../features/zones/services/android_auto_session_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -86,6 +87,14 @@ Future<void> configureDependencies() async {
   // AudioService.init so that audio_service is initialized before the widget
   // tree builds (required for the system media notification, lock-screen
   // controls, and Android Auto). Both are registered into getIt from there.
+
+  // Android Auto session detection — flipped to "connected" the first time
+  // Auto calls into the audio handler's browse API and back to "disconnected"
+  // after a debounced inactivity timeout. Lives outside main.dart so
+  // LocalPlayerService can resolve it during its getChildren override.
+  getIt.registerSingleton<AndroidAutoSessionService>(
+    AndroidAutoSessionService(),
+  );
 
   // Favorites repository — manages favorite items from browse screen
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());

@@ -13,6 +13,7 @@ import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
+import '../../zones/services/android_auto_session_service.dart';
 import '../data/models/local_audio_quality.dart';
 
 /// Local playback service that doubles as the `audio_service`
@@ -166,6 +167,40 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   Future<void> skipToPrevious() async {
     _talker.debug('[LocalPlayerService] skipToPrevious');
     await _player.seekToPrevious();
+  }
+
+  // ─── MediaBrowser callbacks (Android Auto session detection) ──────────
+  // Any browse-side ping from Auto reaches the handler through one of
+  // these overrides. We mark the AA session active on every call; the
+  // session service debounces back to inactive after a timeout. Phase 5
+  // will replace the empty bodies with the real browse hierarchy and
+  // playFromMediaId routing.
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
+    _talker.debug('[LocalPlayerService] getChildren: $parentMediaId');
+    getIt<AndroidAutoSessionService>().markActive();
+    return const [];
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) async {
+    _talker.debug('[LocalPlayerService] getMediaItem: $mediaId');
+    getIt<AndroidAutoSessionService>().markActive();
+    return null;
+  }
+
+  @override
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    _talker.debug('[LocalPlayerService] search: $query');
+    getIt<AndroidAutoSessionService>().markActive();
+    return const [];
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../data/models/zone.dart';
+import '../services/android_auto_session_service.dart';
 import 'zone_provider.dart';
 
 part 'active_zone_provider.g.dart';
@@ -123,4 +124,20 @@ bool isVirtualZoneActive(Ref ref) {
   return zone?.isLocal == true ||
       zone?.isOffline == true ||
       zone?.isAndroidAuto == true;
+}
+
+/// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
+/// repository surfaces the AA zone only while this is `true`; the zone
+/// list provider invalidates itself whenever this flips so the picker
+/// updates on connect/disconnect.
+@Riverpod(keepAlive: true)
+class AndroidAutoConnected extends _$AndroidAutoConnected {
+  @override
+  bool build() {
+    final service = getIt<AndroidAutoSessionService>();
+    void listener() => state = service.isConnected.value;
+    service.isConnected.addListener(listener);
+    ref.onDispose(() => service.isConnected.removeListener(listener));
+    return service.isConnected.value;
+  }
 }

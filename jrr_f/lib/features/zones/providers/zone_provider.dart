@@ -1,6 +1,7 @@
 import 'package:jrr_f/features/connection/providers/session_provider.dart';
 import 'package:jrr_f/features/connection/providers/session_state.dart';
 import 'package:jrr_f/features/zones/data/models/zones.dart';
+import 'package:jrr_f/features/zones/providers/active_zone_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injection.dart';
@@ -13,6 +14,9 @@ class ZoneList extends _$ZoneList {
   @override
   Future<Zones> build() async {
     final session = ref.watch(sessionProvider);
+    // Re-fetch whenever the Android Auto session connects/disconnects so
+    // the AA zone appears in / disappears from the picker live.
+    ref.watch(androidAutoConnectedProvider);
     if (session is Authenticated) {
       // In synthetic offline mode (no server info), the address is empty.
       // We skip the repository call as it's already guarded, but this is a

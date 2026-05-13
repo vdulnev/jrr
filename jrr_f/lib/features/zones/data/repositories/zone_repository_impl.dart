@@ -6,6 +6,7 @@ import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../../../connection/data/repositories/connection_repository.dart';
 import '../../providers/active_zone_provider.dart';
+import '../../services/android_auto_session_service.dart';
 import '../models/zone.dart';
 import 'zone_repository.dart';
 
@@ -37,6 +38,16 @@ const androidAutoZone = Zone(
 const _localZones = [localZone, offlineZone];
 
 class ZoneRepositoryImpl implements ZoneRepository {
+  /// Appends [androidAutoZone] when an Auto session is currently bound.
+  /// Phase 4: detection is debounced through [AndroidAutoSessionService] —
+  /// the zone disappears from the picker shortly after the car disconnects.
+  List<Zone> _withAndroidAuto(List<Zone> zones) {
+    if (getIt<AndroidAutoSessionService>().isConnected.value) {
+      return [...zones, androidAutoZone];
+    }
+    return zones;
+  }
+
   @override
   Future<Either<AppException, List<Zone>>> getZones() async {
     // If the current session is the synthetic "offline" one, we skip all
@@ -45,22 +56,22 @@ class ZoneRepositoryImpl implements ZoneRepository {
     // it's non-functional (cannot resolve streaming URLs).
     final session = getIt<ConnectionRepository>().currentToken;
     if (session == null) {
-      return right([offlineZone]);
+      return right(_withAndroidAuto([offlineZone]));
     }
 
     final savedGuid = getIt<SharedPreferences>().getString(kActiveZoneGuidKey);
     if (savedGuid == 'offline-zone-guid') {
-      return right(_localZones);
+      return right(_withAndroidAuto(_localZones));
     }
 
     try {
       final result = await getIt<McwsClient>().getZones();
       return result.fold(
-        (e) => right(_localZones),
-        (zones) => right([...zones, ..._localZones]),
+        (e) => right(_withAndroidAuto(_localZones)),
+        (zones) => right(_withAndroidAuto([...zones, ..._localZones])),
       );
     } catch (_) {
-      return right(_localZones);
+      return right(_withAndroidAuto(_localZones));
     }
   }
 

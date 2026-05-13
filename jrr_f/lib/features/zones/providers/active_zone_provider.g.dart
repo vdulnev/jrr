@@ -242,3 +242,74 @@ final class IsVirtualZoneActiveProvider
 
 String _$isVirtualZoneActiveHash() =>
     r'501b7e202dc2681c3f2785876955ad5629c939de';
+
+/// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
+/// repository surfaces the AA zone only while this is `true`; the zone
+/// list provider invalidates itself whenever this flips so the picker
+/// updates on connect/disconnect.
+
+@ProviderFor(AndroidAutoConnected)
+final androidAutoConnectedProvider = AndroidAutoConnectedProvider._();
+
+/// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
+/// repository surfaces the AA zone only while this is `true`; the zone
+/// list provider invalidates itself whenever this flips so the picker
+/// updates on connect/disconnect.
+final class AndroidAutoConnectedProvider
+    extends $NotifierProvider<AndroidAutoConnected, bool> {
+  /// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
+  /// repository surfaces the AA zone only while this is `true`; the zone
+  /// list provider invalidates itself whenever this flips so the picker
+  /// updates on connect/disconnect.
+  AndroidAutoConnectedProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'androidAutoConnectedProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$androidAutoConnectedHash();
+
+  @$internal
+  @override
+  AndroidAutoConnected create() => AndroidAutoConnected();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$androidAutoConnectedHash() =>
+    r'5b982a634f6fac8aa35705a75385acb7126f8a07';
+
+/// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
+/// repository surfaces the AA zone only while this is `true`; the zone
+/// list provider invalidates itself whenever this flips so the picker
+/// updates on connect/disconnect.
+
+abstract class _$AndroidAutoConnected extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
