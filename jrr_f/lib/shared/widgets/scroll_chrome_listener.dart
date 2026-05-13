@@ -21,9 +21,17 @@ class ScrollChromeListener extends ConsumerStatefulWidget {
 }
 
 class _ScrollChromeListenerState extends ConsumerState<ScrollChromeListener> {
+  late final LibraryChromeVisibleNotifier _chromeNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _chromeNotifier = ref.read(libraryChromeVisibleProvider.notifier);
+  }
+
   @override
   void dispose() {
-    ref.read(libraryChromeVisibleProvider.notifier).set(true);
+    _chromeNotifier.set(true);
     super.dispose();
   }
 
