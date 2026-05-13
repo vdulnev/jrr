@@ -66,10 +66,15 @@ class ActiveZone extends _$ActiveZone {
   }
 
   void setZone(Zone zone) {
-    final wasOffline = state?.isOffline == true;
+    // Refresh the zone list when leaving a virtual zone that runs without a
+    // live server (Offline / Android Auto) — they suppress MCWS calls, so we
+    // need a fresh server-side zone list once they're deactivated.
+    final wasServerless =
+        state?.isOffline == true || state?.isAndroidAuto == true;
+    final isServerless = zone.isOffline || zone.isAndroidAuto;
     state = zone;
     _saveZone(zone);
-    if (wasOffline && !zone.isOffline) {
+    if (wasServerless && !isServerless) {
       ref.read(zoneListProvider.notifier).refresh();
     }
   }
@@ -94,4 +99,28 @@ class ActiveZone extends _$ActiveZone {
 bool isOfflineActive(Ref ref) {
   final zone = ref.watch(activeZoneProvider);
   return zone?.isOffline == true;
+}
+
+@riverpod
+bool isAndroidAutoActive(Ref ref) {
+  final zone = ref.watch(activeZoneProvider);
+  return zone?.isAndroidAuto == true;
+}
+
+/// True when the active zone uses downloaded files for library browsing
+/// (Offline or Android Auto). Live MCWS library calls should be skipped.
+@riverpod
+bool isOfflineLikeActive(Ref ref) {
+  final zone = ref.watch(activeZoneProvider);
+  return zone?.isOffline == true || zone?.isAndroidAuto == true;
+}
+
+/// True when the active zone is a virtual (non-MCWS) zone — Local, Offline,
+/// or Android Auto. Used to skip server-side zone polling and routing.
+@riverpod
+bool isVirtualZoneActive(Ref ref) {
+  final zone = ref.watch(activeZoneProvider);
+  return zone?.isLocal == true ||
+      zone?.isOffline == true ||
+      zone?.isAndroidAuto == true;
 }
