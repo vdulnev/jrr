@@ -360,9 +360,9 @@ proper `PlaybackState`. Verify:
 
 - Implement `playFromSearch(query)` for natural-language queries.
 - Map common spoken intents:
-  - "play <artist>" → search artists, queue all
-  - "play album <title>" → search albums
-  - "shuffle <artist>" → shuffle on + queue all artist tracks
+  - `play <artist>` → search artists, queue all
+  - `play album <title>` → search albums
+  - `shuffle <artist>` → shuffle on + queue all artist tracks
 
 Test with the real head unit voice button — Auto delivers a transcribed
 string plus extras like `EXTRA_MEDIA_ARTIST`.
@@ -375,14 +375,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 |---|---|---|---|
 | 0 — Spike | Stripped-down `audio_service` sample on DHU; one hard-coded MediaItem playing one local file | 1–2 | ⏸ user-side (needs DHU + device) |
 | 1 — Zone model | Add `isAndroidAuto`; insert synthetic zone; routing audit (`isVirtualZoneActive` derived providers; refactor existing `isOffline`/`isLocal` guards) | 2 | 🟢 done |
-| 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 |
-| 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 |
-| 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 |
-| 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 |
-| 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 |
-| 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 |
-| 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 |
-| 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | ⚪ |
+| 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | 🟢 done |
 | 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | ⚪ |
 | 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | ⚪ |
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | ⚪ |
@@ -446,6 +439,112 @@ Deferred / not done in Phase 1:
 - `local_player_provider` still early-returns for AA via its existing
   `isLocal || isOffline` guards; Phase 3 will replace this with the
   handler bridge.
+
+### Phase 2 — Completion notes
+
+Decisions (confirmed with user):
+- **Collapse, not coexist.** `LocalPlayerService` itself now extends
+  `BaseAudioHandler with SeekHandler` and is the single owner of the
+  `just_audio` `AudioPlayer`. No second handler class introduced —
+  keeps the diff small and consumers untouched.
+- **Package version:** `audio_service: ^0.18.18` (latest stable).
+
+Changes landed:
+
+- [pubspec.yaml](../pubspec.yaml): added `audio_service: ^0.18.18`
+  (and its transitive `rxdart` dependency).
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  class now extends `BaseAudioHandler with SeekHandler`. Existing public
+  surface (state getters, just_audio streams, `setTracks`, `playNow`,
+  `seekTo`, `setShuffle`, `setRepeat`, etc.) is preserved so all
+  consumers in [local_player_provider.dart](../lib/features/player/providers/local_player_provider.dart)
+  keep working unchanged. Added:
+  - `audio_service` transport overrides: `play`, `pause`, `stop`,
+    `seek`, `skipToNext`, `skipToPrevious`, `setShuffleMode`,
+    `setRepeatMode`. These route to the underlying `_player` and are
+    invoked from the system notification, lock screen, and (Phase 3+)
+    Android Auto head unit.
+  - Stream forwarding from `just_audio` to `audio_service`: a
+    `_bindPlayerToAudioServiceStreams()` binder fires on construction,
+    listens to `playbackEventStream` and `sequenceStateStream`, and
+    pushes `PlaybackState` / `MediaItem` / `queue` updates to the
+    audio_service `BehaviorSubject`s.
+  - `_mapPlaybackState`: just_audio `PlaybackEvent` →
+    audio_service `PlaybackState` (controls, system actions, processing
+    state, position, buffered position, speed, queue index).
+  - `_toMediaItem`: `Track` → `MediaItem` (id from `fileKey`, title /
+    artist / album / duration). Artwork URI not wired yet — Phase 5.
+- [main.dart](../lib/main.dart): now calls `AudioService.init(builder,
+  config)` before `runApp`, constructs the `AudioPlayer` and
+  `LocalPlayerService` there, and registers both into `getIt`. Notification
+  channel ID `com.jriver.remote.audio`, ongoing notification, foreground
+  stops on pause.
+- [injection.dart](../lib/core/di/injection.dart): removed direct
+  `AudioPlayer()` / `LocalPlayerService` construction (moved to
+  `main.dart`); imports cleaned up.
+- [AndroidManifest.xml](../android/app/src/main/AndroidManifest.xml):
+  added `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and
+  `WAKE_LOCK` permissions (the last is **required** — audio_service
+  acquires a `PARTIAL_WAKE_LOCK` inside `enterPlayingState` between
+  `startForegroundService` and `startForeground`; without it,
+  `SecurityException` aborts the method and the system ANRs the
+  foreground service it was asked to start); added `<service>` for
+  `com.ryanheise.audioservice.AudioService`
+  (`foregroundServiceType="mediaPlayback"`, intent filter
+  `android.media.browse.MediaBrowserService`) and `<receiver>` for
+  `com.ryanheise.audioservice.MediaButtonReceiver` (intent filter
+  `android.intent.action.MEDIA_BUTTON`). Added `xmlns:tools` so the
+  required `tools:ignore="Instantiatable"` attribute parses. Full
+  Phase 6 manifest work (`automotive_app_desc.xml`, car launcher icon,
+  AA meta-data) still pending.
+- [MainActivity.kt](../android/app/src/main/kotlin/com/jrr/jrr_f/MainActivity.kt):
+  now extends `com.ryanheise.audioservice.AudioServiceActivity`
+  instead of `FlutterActivity`. Required by `audio_service` so its
+  MethodChannel can find the correct `FlutterEngine`; without this
+  `AudioService.init` throws a `PlatformException` at startup.
+- [ic_audio_service_notification.xml](../android/app/src/main/res/drawable/ic_audio_service_notification.xml):
+  added a monochrome vector drawable as the notification icon.
+  Android requires notification icons to be alpha-masks (the system
+  tints them); the default `mipmap/ic_launcher` is a multicolor PNG
+  that silently crashes the foreground service on some devices when
+  the first notification is posted, ending up as "Lost connection to
+  device" with no Dart-visible error.
+- [main.dart](../lib/main.dart) `AudioServiceConfig`:
+  - `androidNotificationIcon: 'drawable/ic_audio_service_notification'`
+    points at the new drawable.
+  - `androidStopForegroundOnPause` removed (was `true`). In
+    `audio_service ^0.18.x` on Android 12+ this triggers a native
+    crash when the foreground service tries to detach while
+    `FOREGROUND_SERVICE_MEDIA_PLAYBACK` is the only justification for
+    being foreground. Safer default is to leave the service in the
+    foreground while paused; we can revisit once the rest of the
+    pipeline is stable.
+
+Known not-yet-Phase-2 issues observed during runtime testing:
+
+- Riverpod state-change log storm: every 200ms position tick fires
+  `localPlayerPositionProvider` →
+  `localPlayerProvider` → `playerProvider` → `queueProvider`
+  through AsyncLoading→AsyncData transitions, and
+  [TalkerRiverpodObserver](../lib/main.dart) dumps the full Tracks
+  list each time. Pre-existing; not blocking Phase 2 but worth a
+  cleanup pass before Phase 3 since it amplifies any I/O pressure
+  from `audio_service`'s notification updates. Either drop the
+  observer from the production `ProviderScope` or trim its included
+  providers list.
+- [Info.plist](../ios/Runner/Info.plist): added `UIBackgroundModes`
+  with `audio` so iOS playback continues when the app is backgrounded.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
+
+Runtime verification (requires a device, **user-side**):
+- Confirm Local-zone playback works as before.
+- Confirm a system media notification appears with title/artist/album
+  and play/pause/skip controls.
+- Lock-screen controls forward to the handler.
+- (iOS) Backgrounding the app continues playback.
+- (Android) `adb shell dumpsys media_session` lists the JRR session.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Notification icon for audio_service. Pure alpha mask — Android tints
+  notification icons automatically, so we use a white path on a transparent
+  background with no theme attribute references (those don't resolve in the
+  system_server context where notifications are rendered).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,5v14l11,-7z" />
+</vector>
