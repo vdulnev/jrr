@@ -25,7 +25,9 @@ class QueueScreen extends ConsumerWidget {
     );
     final currentIndex = ref.watch(playingNowPositionProvider);
 
-    talker.debug('[QueueScreen]: state: error ${state.error}, tracks ${state.tracks}');
+    talker.debug(
+      '[QueueScreen]: state: error ${state.error}, tracks ${state.tracks}',
+    );
     talker.debug('[QueueScreen]: currentIndex: $currentIndex');
 
     Future<void> onClearTap() => _confirmClear(context, ref);
