@@ -376,7 +376,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 0 — Spike | Stripped-down `audio_service` sample on DHU; one hard-coded MediaItem playing one local file | 1–2 | ⏸ user-side (needs DHU + device) |
 | 1 — Zone model | Add `isAndroidAuto`; insert synthetic zone; routing audit (`isVirtualZoneActive` derived providers; refactor existing `isOffline`/`isLocal` guards) | 2 | 🟢 done |
 | 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | 🟢 done |
-| 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | ⚪ |
+| 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | 🟢 done |
 | 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | ⚪ |
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | ⚪ |
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | ⚪ |
@@ -545,6 +545,80 @@ Runtime verification (requires a device, **user-side**):
 - Lock-screen controls forward to the handler.
 - (iOS) Backgrounding the app continues playback.
 - (Android) `adb shell dumpsys media_session` lists the JRR session.
+
+### Phase 3 — Completion notes
+
+Because Phase 2 **collapsed** `LocalPlayerService` into the single
+`BaseAudioHandler`, the planned separate `JrrAudioHandler` +
+`AndroidAutoPlaybackController` pair from §5.1 is **not needed**. There is
+one handler, one `AudioPlayer`. Phase 3 reduces to: route the AA zone
+through the existing local handler with its own persisted queue, and
+remove the Phase 1 placeholder early-returns.
+
+Changes landed:
+
+- [local_player_provider.dart](../lib/features/player/providers/local_player_provider.dart):
+  - `build()` zone-id resolution now maps `isAndroidAuto` to a third
+    persisted-queue id `'android-auto'`. The existing per-zone
+    SharedPreferences keys (`local_player_<zone>_index`,
+    `local_player_<zone>_position_ms`) and `LocalQueueRepository` keys
+    automatically give AA its own queue / index / position state,
+    independent of Local and Offline.
+  - The `localPlaybackStateProvider` listener and the initial
+    `_calculateStatus` snapshot now treat AA the same as Local/Offline,
+    so `playerProvider` receives `PlayerStatus` updates when the AA
+    zone is active.
+- [queue_provider.dart](../lib/features/queue/providers/queue_provider.dart):
+  - Removed the AA early-return in `build()` and the three AA
+    `Phase 3: wire to AA handler` no-ops on `removeItem` / `moveItem`
+    / `clearQueue`. AA now falls through to the local-zone branch and
+    operates on the same handler.
+- [player_provider.dart](../lib/features/player/providers/player_provider.dart):
+  - Updated the `_controllerFor` comment to reflect that Local/Offline/AA
+    all share the single audio_service-backed handler — Phase 3
+    placeholder language removed. The actual dispatch was already
+    correct from Phase 1's hardening pass.
+
+Not needed (vs the original plan):
+
+- **No `AndroidAutoPlaybackController` class.** Subsumed by the
+  collapsed handler. The handler streams already feed the
+  `localPlayer*Provider` family, which the unified `playerProvider`
+  and `queueProvider` read from when AA is the active zone.
+- **No queue-state divergence between car and phone.** With one
+  handler, "what the car sees" and "what the phone sees while AA is
+  the active zone" are the same `MediaItem` / `queue` /
+  `PlaybackState` streams. No additional bridge required.
+
+Implication for later phases:
+
+- Phase 4 (session detection) — when AA binds and the car-side
+  `getChildren` callback fires, the existing handler can be left
+  alone; we only need to surface the AA zone in `getZones()` and let
+  the user pick it (or auto-pick it on connect, TBD §12).
+- Phase 5 (`playFromMediaId`) — wires directly to
+  `LocalPlayerService.playNow` (or a thin AA-flavoured variant that
+  also sets the active zone). No new player object is introduced.
+- The "two-player coexistence" risk in §11 is **resolved by the Phase
+  2 collapse decision** — there is one player. AA and Local can't
+  fight each other; switching the active zone simply swaps which
+  persisted queue is loaded.
+
+Deferred / not done in Phase 3:
+
+- AA zone is still invisible (no session detection — Phase 4).
+- The AA zone's queue is empty until `playFromMediaId` lands in
+  Phase 5; manually switching to the AA zone from the picker (once
+  Phase 4 surfaces it) will show an empty queue, which is correct.
+- The `localPlayerProvider` quality-change / downloads-change reload
+  listeners (L265–332) fire regardless of active zone. That's fine
+  for v1 — AA's queue is downloads-only per §7 so the streaming-URL
+  swap path is a no-op for AA tracks, and quality changes are still
+  user-driven from the same settings screen. Revisit only if we
+  expose quality settings inside the car-side UI.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

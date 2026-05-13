@@ -201,6 +201,8 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
       newZoneId = 'local';
     } else if (activeZone.isOffline) {
       newZoneId = 'offline';
+    } else if (activeZone.isAndroidAuto) {
+      newZoneId = 'android-auto';
     } else if (activeZone.isLocal) {
       newZoneId = 'local';
     } else {
@@ -338,7 +340,9 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
     ref.listen(localPlaybackStateProvider, (_, next) {
       final currentZone = ref.read(activeZoneProvider);
       if (currentZone == null ||
-          (!currentZone.isLocal && !currentZone.isOffline)) {
+          (!currentZone.isLocal &&
+              !currentZone.isOffline &&
+              !currentZone.isAndroidAuto)) {
         return;
       }
       state = AsyncData(_calculateStatus(currentZone, next));
@@ -397,7 +401,10 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
     ref.onDispose(sub.cancel);
 
     // Initial status snapshot.
-    if (activeZone == null || (!activeZone.isLocal && !activeZone.isOffline)) {
+    if (activeZone == null ||
+        (!activeZone.isLocal &&
+            !activeZone.isOffline &&
+            !activeZone.isAndroidAuto)) {
       return null;
     }
     return _calculateStatus(activeZone, ref.read(localPlaybackStateProvider));
