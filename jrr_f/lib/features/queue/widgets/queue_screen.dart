@@ -20,11 +20,14 @@ class QueueScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final talker = getIt<Talker>();
 
-    final tracks = ref.watch(queueProvider.select((q) => q.value));
-    final error = ref.watch(queueProvider.select((q) => q.error));
+    final state = ref.watch(
+      queueProvider.select((q) => (tracks: q.value, error: q.error)),
+    );
     final currentIndex = ref.watch(playingNowPositionProvider);
 
-    talker.debug('[QueueScreen]: tracks: $tracks');
+    talker.debug(
+      '[QueueScreen]: state: error ${state.error}, tracks ${state.tracks}',
+    );
     talker.debug('[QueueScreen]: currentIndex: $currentIndex');
 
     Future<void> onClearTap() => _confirmClear(context, ref);
@@ -33,24 +36,23 @@ class QueueScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: ScrollChromeListener(
-          child: (error != null)
-              ? ErrorView(error: error)
-              : (tracks == null)
-              ? const LoadingView()
-              : (tracks.isEmpty)
-              ? _EmptyView(
-                  tracks: tracks,
-                  onClearTap: onClearTap,
-                )
-              : _DataView(
-                  items: tracks,
-                  currentIndex: currentIndex,
-                  onTap: (index) =>
-                      ref.read(playerProvider.notifier).playByIndex(index),
-                  onRemove: (index) =>
-                      ref.read(queueProvider.notifier).removeItem(index),
-                  onClearTap: onClearTap,
-                ),
+          child: switch (state) {
+            (tracks: _, error: final e?) => ErrorView(error: e),
+            (tracks: null, error: _) => const LoadingView(),
+            (tracks: final t?, error: _) when t.isEmpty => _EmptyView(
+              tracks: t,
+              onClearTap: onClearTap,
+            ),
+            (tracks: final t?, error: _) => _DataView(
+              items: t,
+              currentIndex: currentIndex,
+              onTap: (index) =>
+                  ref.read(playerProvider.notifier).playByIndex(index),
+              onRemove: (index) =>
+                  ref.read(queueProvider.notifier).removeItem(index),
+              onClearTap: onClearTap,
+            ),
+          },
         ),
       ),
     );
