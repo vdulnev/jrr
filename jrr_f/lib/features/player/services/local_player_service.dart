@@ -19,6 +19,7 @@ import '../../zones/services/android_auto_session_service.dart';
 import '../data/models/local_audio_quality.dart';
 import '../data/repositories/recently_played_repository.dart';
 import 'media_item_mapper.dart';
+import 'voice_intent_resolver.dart';
 
 /// Local playback service that doubles as the `audio_service`
 /// [BaseAudioHandler]. It owns the single `just_audio` [AudioPlayer], exposes
@@ -283,17 +284,34 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
     String query, [
     Map<String, dynamic>? extras,
   ]) async {
-    _talker.info('[LocalPlayerService] playFromSearch: $query');
+    _talker.info(
+      '[LocalPlayerService] playFromSearch: "$query" extras=$extras',
+    );
     getIt<AndroidAutoSessionService>().markActive();
-    if (query.trim().isEmpty) return;
-    final tracks = await _searchDownloaded(query);
-    if (tracks.isEmpty) {
+
+    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final intent = resolveVoiceIntent(
+      query: query,
+      extras: extras,
+      downloaded: downloaded,
+    );
+
+    if (intent.tracks.isEmpty) {
       _talker.info(
         '[LocalPlayerService] playFromSearch: no matches for "$query"',
       );
       return;
     }
-    await playNow(Tracks(tracks: tracks.map((d) => d.track).toList()));
+
+    _talker.debug(
+      '[LocalPlayerService] playFromSearch: ${intent.tracks.length} tracks, '
+      'shuffle=${intent.shuffle}',
+    );
+
+    // Voice queries should never inherit a stale shuffle flag from a
+    // previous play. Set explicitly regardless of the resolved value.
+    await setShuffle(intent.shuffle ? ShuffleMode.on : ShuffleMode.off);
+    await playNow(Tracks(tracks: intent.tracks));
   }
 
   // ─── Browse-tree builders ─────────────────────────────────────────────

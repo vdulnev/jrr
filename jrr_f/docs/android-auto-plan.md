@@ -381,7 +381,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | 🟢 done |
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | 🟢 done |
 | 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | 🟢 done |
-| 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | ⚪ |
+| 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | 🟢 done |
 | 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | ⚪ |
 | **Total** | | **16–25 days** | |
 
@@ -920,6 +920,72 @@ Runtime verification (user-side, requires car connection):
 - Tap pause/skip in the phone UI while AA is active — the head
   unit's playback should update too (both route to the same
   handler).
+
+### Phase 8 — Completion notes
+
+Phase 5 already shipped a basic `playFromSearch` (substring search
+across name/artist/album). Phase 8 upgrades it to honor Android Auto's
+structured voice-search [extras][extras-ref] (Google Assistant fills
+these in when it parses an utterance like "play album X"), and to
+recognize a `shuffle` prefix in the raw query.
+
+[extras-ref]: https://developer.android.com/reference/android/provider/MediaStore#EXTRA_MEDIA_ARTIST
+
+Changes landed:
+
+- [voice_intent_resolver.dart](../lib/features/player/services/voice_intent_resolver.dart):
+  new pure Dart resolver — no `getIt`, no `audio_service`, no Flutter
+  bindings — so the intent-parsing logic is unit-testable in
+  isolation. Inputs: raw query, extras map, downloaded library.
+  Output: `VoiceIntent { tracks, shuffle }`. Selection rules
+  (first match wins):
+  1. `focus = artist` + artist extra → all that artist's tracks
+     (album-artist column preferred, falls back to track artist).
+  2. `focus = album` + album extra → that album's tracks. If
+     `artist` is also present, narrows by artist — disambiguates
+     "Greatest Hits" hits from multiple artists.
+  3. `focus = audio` + title extra → tracks matching the title.
+  4. `focus = genre` + genre extra → tracks in that genre.
+  5. Non-empty query (after stripping `shuffle `): substring
+     search across name / artist / album.
+  6. Empty query (e.g. "play music"): the entire library, with
+     shuffle forced on regardless of the prefix.
+  - Edge: `focus` set but the corresponding extra missing falls
+    through to query-substring search rather than returning empty.
+    Some head units set focus speculatively and Auto's Assistant
+    layer doesn't always fill in the matching extra.
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  `playFromSearch` now defers all matching to `resolveVoiceIntent`,
+  then explicitly applies shuffle mode and calls `playNow`. The
+  explicit `setShuffle(off)` on non-shuffle intents prevents a
+  stale shuffle flag from a previous voice command leaking into
+  the next.
+
+Tests: [voice_intent_resolver_test.dart](../test/features/player/services/voice_intent_resolver_test.dart)
+covers all six selection rules, the `shuffle <artist>` prefix,
+bare `shuffle`, the focus-without-extra fallback, and the
+album-narrowed-by-artist case. 10 new tests; suite is now 55 green.
+
+Mappings to the §9.4 examples from the plan:
+
+| Spoken intent           | Expected extras (Auto)                 | Resolver result           |
+|-------------------------|----------------------------------------|---------------------------|
+| "play <artist>"         | `focus=artist`, `artist=<name>`        | all that artist's tracks  |
+| "play album <title>"    | `focus=album`, `album=<title>`         | that album's tracks       |
+| "play <title> by <a>"   | `focus=audio`, `title=…`, `artist=…`   | title-match (artist is informational only in v1; revisit if scoping helps) |
+| "play music by <a>"     | `focus=artist`, `artist=<name>`        | same as "play <artist>"   |
+| "shuffle <artist>"      | `focus=artist`, `artist=<name>` *or* raw query "shuffle <name>" | artist's tracks, shuffle on |
+| "play music" / "shuffle"| (none)                                 | whole library, shuffle on |
+
+Verification: `flutter analyze` clean, all 55 tests pass,
+`dart format` applied.
+
+Runtime verification (user-side, requires DHU or real car):
+- Press the head-unit voice button and say "play the beatles" /
+  "play album <X>" / "shuffle <Y>" — each should immediately load
+  the appropriate queue and begin playback. Check the talker log
+  for the `playFromSearch` line; it dumps the resolved
+  `tracks.length` and `shuffle` flag.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.
