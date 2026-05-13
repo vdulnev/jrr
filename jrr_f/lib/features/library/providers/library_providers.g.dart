@@ -58,7 +58,7 @@ final class LibrarySearchProvider
   }
 }
 
-String _$librarySearchHash() => r'cf3b2ebd3b7c8b0e7dffb4144cc2a5fc6e7771a6';
+String _$librarySearchHash() => r'5588367caabd023cc8a9047460a6285cbefe0765';
 
 final class LibrarySearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Tracks>, String> {
@@ -115,7 +115,7 @@ final class ArtistsProvider
   }
 }
 
-String _$artistsHash() => r'5e78bc5f6ae8a53c2beffecd4d2819c1f5891b39';
+String _$artistsHash() => r'20e9952c55d0e952679d57d73ca0064286d705a3';
 
 @ProviderFor(albumsByArtist)
 final albumsByArtistProvider = AlbumsByArtistFamily._();
@@ -166,7 +166,7 @@ final class AlbumsByArtistProvider
   }
 }
 
-String _$albumsByArtistHash() => r'86aeda4284e1bf5e13de6ee7b96077d0ecc0e1c0';
+String _$albumsByArtistHash() => r'4351259d20546885d209469e763e457432f43d80';
 
 final class AlbumsByArtistFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Albums>, String> {
@@ -311,7 +311,7 @@ final class AlbumTracksProvider
   }
 }
 
-String _$albumTracksHash() => r'e14d26ee74a041f43ca61fec6a4f403e2c2d0c67';
+String _$albumTracksHash() => r'5ec5a631ac021511c56cbcf3233fb20c77098bab';
 
 final class AlbumTracksFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Tracks>, Album> {
@@ -380,7 +380,7 @@ final class FolderTracksProvider
   }
 }
 
-String _$folderTracksHash() => r'9f96501f74d7349f92221382ad6dd79fd790f808';
+String _$folderTracksHash() => r'4fe6abc100e7fdaa387091b27b48c123b1acbe41';
 
 final class FolderTracksFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Tracks>, String> {
@@ -431,7 +431,7 @@ final class RandomAlbumsProvider
   }
 }
 
-String _$randomAlbumsHash() => r'b472cbe09b073daf43b07a2d1583a76d0aa2a732';
+String _$randomAlbumsHash() => r'e5d20c882ecab2914fbcd5b8dada7e98a821c12b';
 
 @ProviderFor(browseChildren)
 final browseChildrenProvider = BrowseChildrenFamily._();
@@ -488,7 +488,7 @@ final class BrowseChildrenProvider
   }
 }
 
-String _$browseChildrenHash() => r'18c85b527c1cf0ced960e27c47e2651642205ffd';
+String _$browseChildrenHash() => r'efa3fcb5a8938a5d5d68bc3cd3dcf7957c93c3f9';
 
 final class BrowseChildrenFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<BrowseItem>>, String> {
@@ -557,7 +557,7 @@ final class BrowseFilesProvider
   }
 }
 
-String _$browseFilesHash() => r'4fa3c18e6da3e65ba1aa2117914ffbd5fc23c7ad';
+String _$browseFilesHash() => r'ff37551ec9882ad185ddf77667927ac0620e751d';
 
 final class BrowseFilesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Tracks>, String> {
@@ -626,7 +626,7 @@ final class SearchByFileKeyProvider
   }
 }
 
-String _$searchByFileKeyHash() => r'7a4bb383149e26df9f9e6ecec624755266cc0d08';
+String _$searchByFileKeyHash() => r'a908e3984040f23c339fab79b806766aab8dd84f';
 
 final class SearchByFileKeyFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Track?>, int> {
