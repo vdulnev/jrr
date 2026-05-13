@@ -11,5 +11,6 @@ abstract class Zone with _$Zone {
     required bool isDLNA,
     @Default(false) bool isLocal,
     @Default(false) bool isOffline,
+    @Default(false) bool isAndroidAuto,
   }) = _Zone;
 }

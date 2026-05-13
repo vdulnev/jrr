@@ -19,6 +19,13 @@ class Queue extends _$Queue {
     final zone = ref.watch(activeZoneProvider);
     if (zone == null) return Tracks.empty;
 
+    if (zone.isAndroidAuto) {
+      // Phase 3 wires this to AndroidAutoPlaybackController. For now the
+      // AA zone is unreachable (not surfaced by getZones), so return empty
+      // rather than dispatching to MCWS with an unknown zone id.
+      return Tracks.empty;
+    }
+
     if (zone.isLocal || zone.isOffline) {
       // Ensure LocalPlayer has finished loading/swapping the queue
       await ref.watch(localPlayerProvider.future);
@@ -39,6 +46,7 @@ class Queue extends _$Queue {
 
   Future<void> removeItem(int index) async {
     final zone = ref.read(activeZoneProvider);
+    if (zone?.isAndroidAuto == true) return; // Phase 3: wire to AA handler
     if (zone?.isLocal == true || zone?.isOffline == true) {
       await ref.read(localPlayerProvider.notifier).removeTrack(index);
     } else {
@@ -48,6 +56,7 @@ class Queue extends _$Queue {
 
   Future<void> moveItem(int source, int target) async {
     final zone = ref.read(activeZoneProvider);
+    if (zone?.isAndroidAuto == true) return; // Phase 3: wire to AA handler
     if (zone?.isLocal == true || zone?.isOffline == true) {
       await ref.read(localPlayerProvider.notifier).moveTrack(source, target);
     } else {
@@ -57,6 +66,7 @@ class Queue extends _$Queue {
 
   Future<void> clearQueue() async {
     final zone = ref.read(activeZoneProvider);
+    if (zone?.isAndroidAuto == true) return; // Phase 3: wire to AA handler
     if (zone?.isLocal == true || zone?.isOffline == true) {
       await ref.read(localPlayerProvider.notifier).setTracks(Tracks.empty);
     } else {

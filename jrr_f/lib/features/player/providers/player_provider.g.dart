@@ -42,7 +42,7 @@ final class PlayerProvider
   Player create() => Player();
 }
 
-String _$playerHash() => r'1a726f129b45694a1d6946d8d882cd9350f0921a';
+String _$playerHash() => r'bf7bb49b6389905678e7d3b55c954b92fc7f0125';
 
 /// Unified player provider. Resolves the active [PlayerController]
 /// implementation from [activeZoneProvider] and forwards every command to it,

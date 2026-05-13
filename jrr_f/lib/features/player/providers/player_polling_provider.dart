@@ -25,18 +25,16 @@ class PlayerPolling extends _$PlayerPolling {
     });
 
     final session = ref.watch(sessionProvider);
-    final activeZone = ref.watch(activeZoneProvider);
-    final isLocalOrOffline =
-        activeZone?.isLocal == true || activeZone?.isOffline == true;
+    final isVirtual = ref.watch(isVirtualZoneActiveProvider);
 
-    if (session is Authenticated && !isLocalOrOffline) {
+    if (session is Authenticated && !isVirtual) {
       _talker.debug(
         '[PlayerPolling] Session authenticated & zone is remote — starting player polling',
       );
       _start();
     } else {
       _talker.debug(
-        '[PlayerPolling] Session unauthenticated or zone is local/offline — stopping player polling',
+        '[PlayerPolling] Session unauthenticated or zone is virtual — stopping player polling',
       );
       _stop();
     }
