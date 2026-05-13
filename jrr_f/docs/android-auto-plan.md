@@ -378,7 +378,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | 🟢 done |
 | 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | 🟢 done |
 | 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | 🟢 done |
-| 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | ⚪ |
+| 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | 🟢 done |
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | ⚪ |
 | 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | ⚪ |
 | 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | ⚪ |
@@ -702,6 +702,114 @@ Runtime verification (requires a device + DHU or real car, **user-side**):
 - If the saved active zone is AA and the app cold-starts without a
   car connection, the picker should restore the first available
   zone instead of leaving AA orphaned.
+
+### Phase 5 — Completion notes
+
+Scope reminder: per §7, the **car-side** browse tree is **downloads-only**
+for v1. Phone-side library screens continue using the live MCWS library
+unchanged.
+
+MediaId grammar (final shape that landed):
+
+| Id                       | Kind     | Children                             |
+|--------------------------|----------|--------------------------------------|
+| `root`                   | category | `cat:downloads/recent/artists/albums`|
+| `cat:downloads`          | category | all downloaded tracks                |
+| `cat:recent`             | category | recently-played downloaded tracks    |
+| `cat:artists`            | category | `artist:<base64url(name)>` nodes     |
+| `cat:albums`             | category | `album:<base64url(albumGroupId)>`    |
+| `artist:<b64>`           | browse   | album nodes for that artist          |
+| `album:<b64>`            | browse   | `track:<fileKey>` items (disc/track sorted) |
+| `track:<fileKey>`        | playable | (leaf)                               |
+
+URL-safe base64 keeps `/` and `:` available as structural separators in
+the grammar even when artist/album names contain them. Padding is
+stripped so Auto's id-stable caching is well-behaved.
+
+Changes landed:
+
+- [recently_played_repository.dart](../lib/features/player/data/repositories/recently_played_repository.dart):
+  new `RecentlyPlayedRepository` backed by a single
+  `SharedPreferences` key holding a JSON-encoded list of file keys.
+  `markPlayed` dedupes and caps at 100 entries; a head-dedupe guard
+  avoids storage churn on re-emission of the same MediaItem. Survives
+  a corrupt stored payload. Tested in
+  [recently_played_repository_test.dart](../test/features/player/data/repositories/recently_played_repository_test.dart)
+  (7 new tests).
+- [injection.dart](../lib/core/di/injection.dart): registered the
+  repo as a singleton (depends on the SharedPreferences singleton
+  already in scope).
+- [media_item_mapper.dart](../lib/features/player/services/media_item_mapper.dart):
+  new `MediaItemMapper` with `fromDownloadedTrack` / `fromTrack` /
+  `browseNode` factories. Emits a `file://` `artUri` when the
+  downloaded artwork path exists on disk and `null` otherwise — Auto
+  silently falls back to a generic icon in the latter case. Streaming
+  artwork URIs are intentionally not yet emitted (would require
+  `MediaItem` re-emission on session refresh, deferred).
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  - Replaced the Phase 4 stub overrides with full
+    `getChildren` / `getMediaItem` / `search` / `playFromMediaId` /
+    `playFromSearch` implementations.
+  - Browse routing dispatches on id prefix (`cat:`, `artist:`,
+    `album:`, `track:`); category root returns the four top-level
+    nodes.
+  - Sort orders: Downloads → track name; Artists → artist name;
+    Albums → album title; Album tracks → disc # then track #.
+    Recent preserves repository order (most-recent first), dropping
+    keys whose downloads have since been deleted.
+  - `playFromMediaId` resolves a `track:<fileKey>` against the
+    downloads table and calls the existing `playNow(Tracks)` path.
+    v1 is single-track play; queue-from-parent-context is a known
+    limitation (see below).
+  - `playFromSearch` runs the same simple substring match as `search`
+    (name + artist + album, case-insensitive) and plays all
+    matches as a queue.
+  - Added a recently-played write inside the existing
+    `_bindPlayerToAudioServiceStreams` block — when the active
+    track in `sequenceStateStream` changes, the file key is pushed
+    to the repository. A local `lastRecordedFileKey` dedupe guards
+    against double-writes on unrelated re-emissions (shuffle/loop
+    toggles).
+
+**Known v1 limitations** (documented for Phase 9 QA and future work):
+
+- **No queue-from-parent-context on `playFromMediaId`.** When the user
+  picks a track from Downloads or an album, only that single track
+  plays; the queue does not auto-expand to the surrounding category.
+  audio_service's `playFromMediaId` doesn't carry the browse parent
+  out of the box, and encoding it inside the track media-id would
+  give the same track different ids depending on the browse path and
+  pollute Auto's caches. Practical fix later: pass parent context
+  through `extras` when Auto supports it on more head units, or
+  expose explicit "Play all" / "Shuffle all" playable nodes inside
+  each category.
+- **No active-zone auto-switch on `playFromMediaId`.** With Phase 2's
+  collapse there's one player; calling `playNow` from the handler
+  replaces whatever queue the Local zone had loaded. Auto-switching
+  the active zone to AA from inside the handler would cross the
+  Riverpod/handler boundary and race with `LocalPlayer._loadQueue`.
+  Acceptable for v1 (the audio still plays correctly through the
+  car), but the phone-side zone label may show "Local" while the
+  car is the source. Revisit by surfacing a "play requested from
+  AA" event on `AndroidAutoSessionService` that a Riverpod listener
+  consumes to switch the zone.
+- **Streaming artwork URIs not emitted.** Downloaded artwork uses
+  `file://`; streaming tracks (none, in the v1 car tree) would need
+  the §7 token-rotation handling.
+
+Verification: `flutter analyze` clean, all 45 tests pass (7 new for
+`RecentlyPlayedRepository`), `dart format` applied.
+
+Runtime verification (user-side, requires DHU or real car):
+- Connect Auto and open the JRR media app — root shows
+  Downloads / Recent / Artists / Albums.
+- Drill into each category; verify list contents match the phone's
+  Downloads screen.
+- Tap a track in the car — it plays through the car speakers.
+- Play 2–3 tracks, then check the Recent category — order is
+  most-recent first, no duplicates.
+- Use the voice button: "play <artist|album|track name>" should
+  trigger `playFromSearch` and start matching tracks.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

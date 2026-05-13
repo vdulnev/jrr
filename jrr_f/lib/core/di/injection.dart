@@ -18,6 +18,7 @@ import '../../features/offline/data/repositories/downloads_repository_impl.dart'
 import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
+import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
@@ -94,6 +95,13 @@ Future<void> configureDependencies() async {
   // LocalPlayerService can resolve it during its getChildren override.
   getIt.registerSingleton<AndroidAutoSessionService>(
     AndroidAutoSessionService(),
+  );
+
+  // Recently-played history backs the Android Auto "Recent" browse
+  // category and (later) phone-side UI. Stored in SharedPreferences as a
+  // capped list of file keys.
+  getIt.registerSingleton<RecentlyPlayedRepository>(
+    RecentlyPlayedRepository(prefs),
   );
 
   // Favorites repository — manages favorite items from browse screen

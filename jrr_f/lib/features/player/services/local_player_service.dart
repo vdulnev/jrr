@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -12,9 +13,12 @@ import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
+import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../zones/services/android_auto_session_service.dart';
 import '../data/models/local_audio_quality.dart';
+import '../data/repositories/recently_played_repository.dart';
+import 'media_item_mapper.dart';
 
 /// Local playback service that doubles as the `audio_service`
 /// [BaseAudioHandler]. It owns the single `just_audio` [AudioPlayer], exposes
@@ -169,12 +173,32 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
     await _player.seekToPrevious();
   }
 
-  // ─── MediaBrowser callbacks (Android Auto session detection) ──────────
+  // ─── MediaBrowser callbacks (Android Auto browse tree) ────────────────
   // Any browse-side ping from Auto reaches the handler through one of
-  // these overrides. We mark the AA session active on every call; the
-  // session service debounces back to inactive after a timeout. Phase 5
-  // will replace the empty bodies with the real browse hierarchy and
-  // playFromMediaId routing.
+  // these overrides. Each one marks the AA session active so the AA
+  // virtual zone shows up in the phone-side picker.
+  //
+  // v1 browse tree is downloads-only (see §7 of docs/android-auto-plan.md):
+  //
+  //   root
+  //   ├── cat:downloads        flat list of downloaded tracks
+  //   ├── cat:recent           recently-played tracks
+  //   ├── cat:artists          list of artist nodes (artist:<base64(name)>)
+  //   │   └── artist:<name>    list of album nodes for this artist
+  //   │       └── album:<gid>  list of track items
+  //   └── cat:albums           list of album nodes (top-level)
+  //       └── album:<gid>      list of track items
+  //
+  // MediaItem ids are base64-encoded where they embed strings, so the
+  // path is `/`-safe and Auto's caching can use the id as a stable key.
+
+  static const _idRoot = 'root';
+  static const _idCatDownloads = 'cat:downloads';
+  static const _idCatRecent = 'cat:recent';
+  static const _idCatArtists = 'cat:artists';
+  static const _idCatAlbums = 'cat:albums';
+
+  final MediaItemMapper _mapper = const MediaItemMapper();
 
   @override
   Future<List<MediaItem>> getChildren(
@@ -183,6 +207,26 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   ]) async {
     _talker.debug('[LocalPlayerService] getChildren: $parentMediaId');
     getIt<AndroidAutoSessionService>().markActive();
+
+    try {
+      if (parentMediaId == _idRoot) return _rootChildren();
+      if (parentMediaId == _idCatDownloads) return await _downloadsChildren();
+      if (parentMediaId == _idCatRecent) return await _recentChildren();
+      if (parentMediaId == _idCatArtists) return await _artistsChildren();
+      if (parentMediaId == _idCatAlbums) return await _albumsChildren();
+      if (parentMediaId.startsWith('artist:')) {
+        return await _artistAlbumsChildren(
+          _decode(parentMediaId.substring('artist:'.length)),
+        );
+      }
+      if (parentMediaId.startsWith('album:')) {
+        return await _albumTracksChildren(
+          _decode(parentMediaId.substring('album:'.length)),
+        );
+      }
+    } catch (e, st) {
+      _talker.error('[LocalPlayerService] getChildren failed', e, st);
+    }
     return const [];
   }
 
@@ -190,7 +234,11 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   Future<MediaItem?> getMediaItem(String mediaId) async {
     _talker.debug('[LocalPlayerService] getMediaItem: $mediaId');
     getIt<AndroidAutoSessionService>().markActive();
-    return null;
+    if (!mediaId.startsWith('track:')) return null;
+    final fileKey = int.tryParse(mediaId.substring('track:'.length));
+    if (fileKey == null) return null;
+    final dt = await _findDownloadedTrack(fileKey);
+    return dt == null ? null : _mapper.fromDownloadedTrack(dt);
   }
 
   @override
@@ -200,7 +248,184 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   ]) async {
     _talker.debug('[LocalPlayerService] search: $query');
     getIt<AndroidAutoSessionService>().markActive();
-    return const [];
+    if (query.trim().isEmpty) return const [];
+    final tracks = await _searchDownloaded(query);
+    return tracks.map(_mapper.fromDownloadedTrack).toList(growable: false);
+  }
+
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    _talker.info('[LocalPlayerService] playFromMediaId: $mediaId');
+    getIt<AndroidAutoSessionService>().markActive();
+    if (!mediaId.startsWith('track:')) {
+      _talker.warning(
+        '[LocalPlayerService] playFromMediaId: unrecognised id, ignoring',
+      );
+      return;
+    }
+    final fileKey = int.tryParse(mediaId.substring('track:'.length));
+    if (fileKey == null) return;
+    final dt = await _findDownloadedTrack(fileKey);
+    if (dt == null) {
+      _talker.warning(
+        '[LocalPlayerService] playFromMediaId: track $fileKey not downloaded',
+      );
+      return;
+    }
+    await playNow(Tracks(tracks: [dt.track]));
+  }
+
+  @override
+  Future<void> playFromSearch(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    _talker.info('[LocalPlayerService] playFromSearch: $query');
+    getIt<AndroidAutoSessionService>().markActive();
+    if (query.trim().isEmpty) return;
+    final tracks = await _searchDownloaded(query);
+    if (tracks.isEmpty) {
+      _talker.info(
+        '[LocalPlayerService] playFromSearch: no matches for "$query"',
+      );
+      return;
+    }
+    await playNow(Tracks(tracks: tracks.map((d) => d.track).toList()));
+  }
+
+  // ─── Browse-tree builders ─────────────────────────────────────────────
+
+  List<MediaItem> _rootChildren() => [
+    _mapper.browseNode(id: _idCatDownloads, title: 'Downloads'),
+    _mapper.browseNode(id: _idCatRecent, title: 'Recent'),
+    _mapper.browseNode(id: _idCatArtists, title: 'Artists'),
+    _mapper.browseNode(id: _idCatAlbums, title: 'Albums'),
+  ];
+
+  Future<List<MediaItem>> _downloadsChildren() async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final sorted = [...tracks]
+      ..sort(
+        (a, b) =>
+            a.track.name.toLowerCase().compareTo(b.track.name.toLowerCase()),
+      );
+    return sorted.map(_mapper.fromDownloadedTrack).toList(growable: false);
+  }
+
+  Future<List<MediaItem>> _recentChildren() async {
+    final keys = getIt<RecentlyPlayedRepository>().getRecent();
+    if (keys.isEmpty) return const [];
+    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final byKey = {for (final d in downloaded) d.fileKey: d};
+    // Preserve the most-recent-first order from the repository; drop keys
+    // whose downloads have been deleted (v1 is downloads-only).
+    return [
+      for (final k in keys)
+        if (byKey[k] != null) _mapper.fromDownloadedTrack(byKey[k]!),
+    ];
+  }
+
+  Future<List<MediaItem>> _artistsChildren() async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final artists = <String>{};
+    for (final t in tracks) {
+      final a = _artistOf(t);
+      if (a.isNotEmpty) artists.add(a);
+    }
+    final sorted = artists.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return sorted
+        .map(
+          (name) =>
+              _mapper.browseNode(id: 'artist:${_encode(name)}', title: name),
+        )
+        .toList(growable: false);
+  }
+
+  Future<List<MediaItem>> _albumsChildren() async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    return _albumNodesFrom(tracks);
+  }
+
+  Future<List<MediaItem>> _artistAlbumsChildren(String artistName) async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final filtered = tracks
+        .where((t) => _artistOf(t).toLowerCase() == artistName.toLowerCase())
+        .toList(growable: false);
+    return _albumNodesFrom(filtered);
+  }
+
+  Future<List<MediaItem>> _albumTracksChildren(String albumGroupId) async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final matches = tracks.where((t) => t.albumGroupId == albumGroupId).toList()
+      ..sort((a, b) {
+        final cmp = a.discNumber.compareTo(b.discNumber);
+        if (cmp != 0) return cmp;
+        return a.trackNumber.compareTo(b.trackNumber);
+      });
+    return matches.map(_mapper.fromDownloadedTrack).toList(growable: false);
+  }
+
+  List<MediaItem> _albumNodesFrom(List<DownloadedTrack> tracks) {
+    final byGid = <String, DownloadedTrack>{};
+    for (final t in tracks) {
+      byGid.putIfAbsent(t.albumGroupId, () => t);
+    }
+    final entries = byGid.entries.toList()
+      ..sort(
+        (a, b) =>
+            a.value.album.toLowerCase().compareTo(b.value.album.toLowerCase()),
+      );
+    return [
+      for (final entry in entries)
+        _mapper.browseNode(
+          id: 'album:${_encode(entry.key)}',
+          title: entry.value.album.isEmpty
+              ? 'Unknown Album'
+              : entry.value.album,
+          subtitle: _artistOf(entry.value),
+          artworkPath: entry.value.artworkPath,
+        ),
+    ];
+  }
+
+  Future<DownloadedTrack?> _findDownloadedTrack(int fileKey) async {
+    final all = await getIt<DownloadsRepository>().getDownloadedTracks();
+    for (final t in all) {
+      if (t.fileKey == fileKey) return t;
+    }
+    return null;
+  }
+
+  Future<List<DownloadedTrack>> _searchDownloaded(String query) async {
+    final q = query.trim().toLowerCase();
+    final all = await getIt<DownloadsRepository>().getDownloadedTracks();
+    return all
+        .where(
+          (d) =>
+              d.track.name.toLowerCase().contains(q) ||
+              d.track.artist.toLowerCase().contains(q) ||
+              d.track.album.toLowerCase().contains(q),
+        )
+        .toList(growable: false);
+  }
+
+  String _artistOf(DownloadedTrack t) {
+    if (t.albumArtist.isNotEmpty) return t.albumArtist;
+    if (t.track.albumArtist.isNotEmpty) return t.track.albumArtist;
+    return t.track.artist;
+  }
+
+  /// URL-safe base64 keeps mediaIds free of `/` and `:`, which we use as
+  /// structural separators elsewhere in the id grammar.
+  String _encode(String s) => base64UrlEncode(s.codeUnits).replaceAll('=', '');
+
+  String _decode(String s) {
+    final padded = s.padRight(s.length + (4 - s.length % 4) % 4, '=');
+    return String.fromCharCodes(base64Url.decode(padded));
   }
 
   @override
@@ -404,6 +629,7 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
               _talker.error('[LocalPlayerService] playbackEventStream', e, st),
         );
 
+    int? lastRecordedFileKey;
     _player.sequenceStateStream.listen(
       (seqState) {
         queue.add([
@@ -415,7 +641,20 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
             ci >= 0 &&
             ci < seqState.sequence.length &&
             seqState.sequence[ci].tag is Track) {
-          mediaItem.add(_toMediaItem(seqState.sequence[ci].tag as Track));
+          final currentTrack = seqState.sequence[ci].tag as Track;
+          mediaItem.add(_toMediaItem(currentTrack));
+          // Record into the "Recent" history when the active track
+          // changes. Dedupe against the last recorded key to avoid
+          // double-writes when sequenceStateStream re-emits for
+          // unrelated reasons (shuffle toggle, loop-mode flip).
+          if (currentTrack.fileKey != lastRecordedFileKey) {
+            lastRecordedFileKey = currentTrack.fileKey;
+            unawaited(
+              getIt<RecentlyPlayedRepository>().markPlayed(
+                currentTrack.fileKey,
+              ),
+            );
+          }
         } else {
           mediaItem.add(null);
         }
