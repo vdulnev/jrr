@@ -380,7 +380,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | 🟢 done |
 | 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | 🟢 done |
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | 🟢 done |
-| 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | ⚪ |
+| 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | 🟢 done |
 | 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | ⚪ |
 | 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | ⚪ |
 | **Total** | | **16–25 days** | |
@@ -873,6 +873,53 @@ Runtime verification (user-side, requires DHU or real car):
 - Open the car media picker — JRR should appear as a selectable
   media app and, when chosen, show the root browse tree built in
   Phase 5.
+
+### Phase 7 — Completion notes
+
+Most of the §10 Phase 7 scope ("Queue / Player show car state;
+transport controls forward to handler") is **already satisfied by
+Phase 2's collapse + Phase 3's routing**. There's one shared
+`audio_service` handler, and `queueProvider` / `playerProvider` route
+the AA zone through the same `localPlayerProvider` family that the
+Local zone uses. The queue screen, now-playing screen, and
+mini-player panel have **no zone-flag branches** (verified via grep
+on `isLocal|isOffline|isAndroidAuto` in
+`lib/features/queue/widgets/` and `lib/features/player/widgets/`)
+— they read providers directly and reflect the active handler state
+regardless of whether the zone is Local, Offline, or AA. Transport
+buttons in those screens already dispatch through `playerProvider`,
+which forwards to the handler for AA.
+
+What was missing for Phase 7 was purely cosmetic on the zone picker:
+
+- [zone_list_screen.dart](../lib/features/zones/widgets/zone_list_screen.dart):
+  the `_ZoneTile` icon and badge branch on `zone.isLocal /
+  isDLNA`. Added an `isAndroidAuto` branch so AA renders with a
+  `Icons.directions_car_rounded` leading icon and an
+  `ANDROID AUTO` mono-label badge. The audio-quality popup (used
+  for picking streaming quality at source) is also surfaced for
+  AA since AA streams through the same just_audio handler as the
+  Local zone.
+
+Phone-side library widgets continue to use `isOfflineActiveProvider`
+(unchanged from Phase 3's design decision): when AA is the active
+zone, the user can still browse the live MCWS library on the phone
+and queue tracks that play through the car. The car-side browse tree
+remains downloads-only (§7).
+
+Verification: `flutter analyze` clean, all 45 tests pass,
+`dart format` applied.
+
+Runtime verification (user-side, requires car connection):
+- With AA connected, open the zone picker on the phone — the
+  "Android Auto" zone shows with the car icon and ANDROID AUTO
+  badge.
+- Switch to the AA zone; play a track from the car; the phone's
+  now-playing / mini-player / queue screens should reflect the
+  same track and queue.
+- Tap pause/skip in the phone UI while AA is active — the head
+  unit's playback should update too (both route to the same
+  handler).
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.
