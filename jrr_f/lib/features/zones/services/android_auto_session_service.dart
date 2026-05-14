@@ -49,7 +49,7 @@ class AndroidAutoSessionService {
   // code paths (e.g. tests that build the service directly).
   Talker? get _talker => getIt.isRegistered<Talker>() ? getIt<Talker>() : null;
 
-  /// Called from `LocalPlayerService.getChildren` (and any other
+  /// Called from `AndroidAutoPlayerService.getChildren` (and any other
   /// browse-side audio_service callback) when a MediaBrowser client pings
   /// the handler. Flips [isConnected] to `true` on the first call and
   /// resets the inactivity debounce on every subsequent call.

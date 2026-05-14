@@ -19,8 +19,8 @@ part 'player_provider.g.dart';
 @Riverpod(keepAlive: true)
 class Player extends _$Player {
   PlayerController _controllerFor(Zone? zone) {
-    // Local, Offline, and Android Auto all share the single
-    // audio_service-backed handler (LocalPlayerService). Only true remote
+    // Local, Offline, and Android Auto all share the localPlayerProvider
+    // (which switches between specialized services). Only true remote
     // zones reach the MCWS controller.
     final isLocal =
         zone == null || zone.isLocal || zone.isOffline || zone.isAndroidAuto;

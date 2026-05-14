@@ -9,6 +9,54 @@ part of 'local_player_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(localPlayerService)
+final localPlayerServiceProvider = LocalPlayerServiceProvider._();
+
+final class LocalPlayerServiceProvider
+    extends
+        $FunctionalProvider<
+          LocalPlayerServiceBase,
+          LocalPlayerServiceBase,
+          LocalPlayerServiceBase
+        >
+    with $Provider<LocalPlayerServiceBase> {
+  LocalPlayerServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'localPlayerServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$localPlayerServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<LocalPlayerServiceBase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LocalPlayerServiceBase create(Ref ref) {
+    return localPlayerService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LocalPlayerServiceBase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LocalPlayerServiceBase>(value),
+    );
+  }
+}
+
+String _$localPlayerServiceHash() =>
+    r'70ea846828e19f3768815e429731f9c5217cfc02';
+
 @ProviderFor(LocalPlayerPosition)
 final localPlayerPositionProvider = LocalPlayerPositionProvider._();
 
@@ -42,7 +90,7 @@ final class LocalPlayerPositionProvider
 }
 
 String _$localPlayerPositionHash() =>
-    r'677c239b88b002d70c2a1e174a195047e26ec4be';
+    r'4343dc64d00a7b978685b65784c544df885c47a3';
 
 abstract class _$LocalPlayerPosition extends $Notifier<Duration> {
   Duration build();
@@ -94,7 +142,7 @@ final class LocalPlayerStateProvider
   }
 }
 
-String _$localPlayerStateHash() => r'3faf31e1c7e7863ac89924f883d54811f108208f';
+String _$localPlayerStateHash() => r'dddb723e7e6985f445df075161add502d3a5ccca';
 
 abstract class _$LocalPlayerState extends $Notifier<PlayerStateData> {
   PlayerStateData build();
@@ -147,7 +195,7 @@ final class LocalPlayerSequenceProvider
 }
 
 String _$localPlayerSequenceHash() =>
-    r'd2a02ad83078dfedbbb4eaceaa6165c4b635ad3b';
+    r'a182f5c60951d7ade9a4a3c38f7a48b884e87bf4';
 
 abstract class _$LocalPlayerSequence extends $Notifier<SequenceStateData?> {
   SequenceStateData? build();
@@ -199,7 +247,7 @@ final class LocalPlayerVolumeProvider
   }
 }
 
-String _$localPlayerVolumeHash() => r'adc1e4654e4c5afe2fb12a2a2232d3c22125c224';
+String _$localPlayerVolumeHash() => r'fee731899d6590aa47dcbd298955416b9fae3bf6';
 
 abstract class _$LocalPlayerVolume extends $Notifier<double> {
   double build();
@@ -252,7 +300,7 @@ final class LocalPlayerDurationProvider
 }
 
 String _$localPlayerDurationHash() =>
-    r'5cb2a43f9fe139412a86706503460cdb83b20645';
+    r'e589b8c873cd764cdc81c5d693da616780fc6c35';
 
 abstract class _$LocalPlayerDuration extends $Notifier<Duration?> {
   Duration? build();
@@ -309,7 +357,7 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'20b4560d6d6f2f6f0fe86faabd60709a00fb844f';
+String _$localPlayerHash() => r'289f195f4e346175a977abd06f02863096ef1622';
 
 /// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
 ///

@@ -15,6 +15,8 @@ import 'core/logging/file_log_observer.dart';
 import 'core/network/ssl_trust.dart';
 import 'features/player/data/models/local_audio_quality.dart';
 import 'features/player/services/local_player_service.dart';
+import 'features/player/services/android_auto_player_service.dart';
+import 'features/player/services/jrr_audio_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,33 +43,47 @@ void main() async {
 
   final talker = getIt<Talker>();
 
-  // Initialize audio_service. The handler also serves as the LocalPlayerService
-  // — owning the single just_audio AudioPlayer and forwarding events to the
-  // system media notification, lock-screen controls, and (Phase 3+) Android
-  // Auto. Must run before runApp so background playback survives the widget
-  // tree being unmounted.
-  final audioPlayer = AudioPlayer();
-  final handler = await AudioService.init(
-    builder: () => LocalPlayerService(
-      player: audioPlayer,
-      talker: talker,
-      qualityResolver: () => LocalAudioQuality.fromName(
-        getIt<SharedPreferences>().getString('local_audio_quality'),
-      ),
+  // Initialize audio_service. The handler manages multiple sub-players
+  // (LocalPlayerService for phone, AndroidAutoPlayerService for the car).
+  final localAudioPlayer = AudioPlayer();
+  final autoAudioPlayer = AudioPlayer();
+
+  final localHandler = LocalPlayerService(
+    player: localAudioPlayer,
+    talker: talker,
+    qualityResolver: () => LocalAudioQuality.fromName(
+      getIt<SharedPreferences>().getString('local_audio_quality'),
+    ),
+  );
+
+  final autoHandler = AndroidAutoPlayerService(
+    player: autoAudioPlayer,
+    talker: talker,
+    qualityResolver: () => LocalAudioQuality.fromName(
+      getIt<SharedPreferences>().getString('local_audio_quality'),
+    ),
+  );
+
+  final mainHandler = await AudioService.init(
+    builder: () => JrrAudioHandler(
+      localPlayer: localHandler,
+      autoPlayer: autoHandler,
     ),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.jriver.remote.audio',
       androidNotificationChannelName: 'JRiver Remote playback',
-      // Custom monochrome drawable — Android requires notification icons to
-      // be alpha-masks. Using the multicolor mipmap/ic_launcher (the
-      // default) silently crashes the foreground service on some devices.
       androidNotificationIcon: 'drawable/ic_audio_service_notification',
       androidNotificationOngoing: true,
     ),
   );
-  await handler.init();
-  getIt.registerSingleton<AudioPlayer>(audioPlayer);
-  getIt.registerSingleton<LocalPlayerService>(handler);
+
+  await localHandler.init();
+  await autoHandler.init();
+
+  getIt.registerSingleton<LocalPlayerService>(localHandler);
+  getIt.registerSingleton<AndroidAutoPlayerService>(autoHandler);
+  getIt.registerSingleton<JrrAudioHandler>(mainHandler);
+
 
   // Flutter framework errors (widget build exceptions, layout overflows, etc.)
   // Use details.toStringDeep() so the diagnostic property tree is captured —

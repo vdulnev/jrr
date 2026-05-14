@@ -18,6 +18,9 @@ import '../data/models/sequence_state_data.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
 import '../services/local_player_service.dart';
+import '../services/android_auto_player_service.dart';
+import '../services/jrr_audio_handler.dart';
+import '../services/local_player_service_base.dart';
 import 'local_audio_quality_provider.dart';
 import 'player_controller.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
@@ -26,10 +29,26 @@ import '../../zones/providers/active_zone_provider.dart';
 part 'local_player_provider.g.dart';
 
 @Riverpod(keepAlive: true)
+LocalPlayerServiceBase localPlayerService(Ref ref) {
+  final activeZone = ref.watch(activeZoneProvider);
+  final handler = getIt<JrrAudioHandler>();
+
+  if (activeZone?.isAndroidAuto == true) {
+    final service = getIt<AndroidAutoPlayerService>();
+    handler.switchTo(service);
+    return service;
+  } else {
+    final service = getIt<LocalPlayerService>();
+    handler.switchTo(service);
+    return service;
+  }
+}
+
+@Riverpod(keepAlive: true)
 class LocalPlayerPosition extends _$LocalPlayerPosition {
   @override
   Duration build() {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.watch(localPlayerServiceProvider);
     final talker = getIt<Talker>();
 
     final sub = service.positionStream.listen(
@@ -47,7 +66,7 @@ class LocalPlayerPosition extends _$LocalPlayerPosition {
 class LocalPlayerState extends _$LocalPlayerState {
   @override
   PlayerStateData build() {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.watch(localPlayerServiceProvider);
     final talker = getIt<Talker>();
 
     final sub = service.playerStateStream.listen(
@@ -71,7 +90,7 @@ class LocalPlayerState extends _$LocalPlayerState {
 class LocalPlayerSequence extends _$LocalPlayerSequence {
   @override
   SequenceStateData? build() {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.watch(localPlayerServiceProvider);
     final talker = getIt<Talker>();
 
     final sub = service.sequenceStateStream.listen((s) {
@@ -80,30 +99,6 @@ class LocalPlayerSequence extends _$LocalPlayerSequence {
         state = null;
         return;
       }
-      String trackInfo;
-      if (s.currentIndex != null &&
-          s.currentIndex! >= 0 &&
-          s.currentIndex! < s.sequence.length) {
-        final element = s.sequence[s.currentIndex!];
-        if (element.tag is Track) {
-          final track = element.tag as Track;
-          trackInfo =
-              'name: ${track.name}, uri: ${(element is UriAudioSource) ? element.uri : 'none for ${s.runtimeType}'}';
-        } else {
-          trackInfo = 'none';
-        }
-      } else {
-        trackInfo = 'none';
-      }
-      talker.debug(
-        '[localPlayerSequenceProvider] SequenceState updated: '
-        'currentIndex=${s.currentIndex}, '
-        'sequenceLength=${s.sequence.length}, '
-        'shuffleModeEnabled=${s.shuffleModeEnabled}, '
-        'shuffleIndices=${s.shuffleIndices}, '
-        'loopMode=${s.loopMode}, '
-        'currentTrack=$trackInfo',
-      );
       state = SequenceStateData(
         sequence: Tracks(
           tracks: s.sequence.map((e) => e.tag as Track).toList(),
@@ -136,7 +131,7 @@ class LocalPlayerSequence extends _$LocalPlayerSequence {
 class LocalPlayerVolume extends _$LocalPlayerVolume {
   @override
   double build() {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.watch(localPlayerServiceProvider);
     final talker = getIt<Talker>();
 
     final sub = service.volumeStream.listen(
@@ -154,7 +149,7 @@ class LocalPlayerVolume extends _$LocalPlayerVolume {
 class LocalPlayerDuration extends _$LocalPlayerDuration {
   @override
   Duration? build() {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.watch(localPlayerServiceProvider);
     final talker = getIt<Talker>();
 
     final sub = service.durationStream.listen(
@@ -179,9 +174,10 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
       'local_player_${zoneId}_position_ms';
   static const _kVolumeKey = 'local_player_volume';
 
-  late LocalPlayerService _service;
+  late LocalPlayerServiceBase _service;
   late SharedPreferences _prefs;
   late Talker _talker;
+
 
   String _currentZoneId = '';
 
@@ -190,7 +186,7 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
 
   @override
   FutureOr<PlayerStatus?> build() async {
-    _service = getIt<LocalPlayerService>();
+    _service = ref.watch(localPlayerServiceProvider);
     _prefs = getIt<SharedPreferences>();
     _talker = getIt<Talker>();
     final queueRepo = getIt<LocalQueueRepository>();

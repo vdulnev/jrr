@@ -84,15 +84,15 @@ Future<void> configureDependencies() async {
   downloadService.start();
   getIt.registerSingleton<DownloadService>(downloadService);
 
-  // Note: AudioPlayer + LocalPlayerService are constructed in main.dart via
-  // AudioService.init so that audio_service is initialized before the widget
-  // tree builds (required for the system media notification, lock-screen
-  // controls, and Android Auto). Both are registered into getIt from there.
+  // Note: AudioPlayer instances and specialized player services are
+  // constructed in main.dart via AudioService.init so that audio_service
+  // is initialized before the widget tree builds. Everything is registered
+  // into getIt from there.
 
   // Android Auto session detection — flipped to "connected" the first time
   // Auto calls into the audio handler's browse API and back to "disconnected"
   // after a debounced inactivity timeout. Lives outside main.dart so
-  // LocalPlayerService can resolve it during its getChildren override.
+  // AndroidAutoPlayerService can resolve it during its getChildren override.
   getIt.registerSingleton<AndroidAutoSessionService>(
     AndroidAutoSessionService(),
   );
