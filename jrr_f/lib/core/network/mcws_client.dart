@@ -327,9 +327,10 @@ class McwsClient {
 
   Future<Either<AppException, Tracks>> getAlbumTracks(Album album) {
     final base = '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
-    final query = album.folderPath.isNotEmpty
+    final filtered = album.folderPath.isNotEmpty
         ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;
+    final query = '$filtered ~sort=[Disc #],[Track #]';
     return _request(
       () => _api.filesSearch(query: query),
       (tracks) => right(Tracks(tracks: tracks)),
