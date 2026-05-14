@@ -67,6 +67,9 @@ void main() async {
   };
 
   runApp(
-    ProviderScope(observers: [TalkerRiverpodObserver()], child: const App()),
+    ProviderScope(
+      observers: [TalkerRiverpodObserver(talker: talker)],
+      child: const App(),
+    ),
   );
 }
