@@ -179,25 +179,40 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   // these overrides. Each one marks the AA session active so the AA
   // virtual zone shows up in the phone-side picker.
   //
-  // v1 browse tree is downloads-only (see §7 of docs/android-auto-plan.md):
+  // v1 browse tree is downloads-only (see §7 of docs/android-auto-plan.md).
+  // Media ids are **path-style**: each child carries the full parent
+  // path so `playFromMediaId` can reconstruct the surrounding queue:
   //
   //   root
-  //   ├── cat:downloads        flat list of downloaded tracks
-  //   ├── cat:recent           recently-played tracks
-  //   ├── cat:artists          list of artist nodes (artist:<base64(name)>)
-  //   │   └── artist:<name>    list of album nodes for this artist
-  //   │       └── album:<gid>  list of track items
-  //   └── cat:albums           list of album nodes (top-level)
-  //       └── album:<gid>      list of track items
+  //   ├── cat:downloads                              flat list of tracks
+  //   │   ├── play:all  / shuffle:all
+  //   │   └── track:<fileKey>
+  //   ├── cat:recent                                 recently-played
+  //   │   └── track:<fileKey>
+  //   ├── cat:artists                                artist nodes
+  //   │   └── artist:<b64(name)>                     albums for that artist
+  //   │       ├── play:all  / shuffle:all
+  //   │       └── album:<b64(gid)>                   tracks for that album
+  //   │           ├── play:all  / shuffle:all
+  //   │           └── track:<fileKey>
+  //   └── cat:albums                                 album nodes (top-level)
+  //       └── album:<b64(gid)>                       tracks for that album
+  //           ├── play:all  / shuffle:all
+  //           └── track:<fileKey>
   //
-  // MediaItem ids are base64-encoded where they embed strings, so the
-  // path is `/`-safe and Auto's caching can use the id as a stable key.
+  // The full path lets us look at the parent in `playFromMediaId` and
+  // build a queue from the album / artist / category — not just the
+  // single track Auto handed us. Strings embedded in ids are URL-safe
+  // base64 so artist / album names can contain `/` and `:` without
+  // corrupting the grammar.
 
   static const _idRoot = 'root';
   static const _idCatDownloads = 'cat:downloads';
   static const _idCatRecent = 'cat:recent';
   static const _idCatArtists = 'cat:artists';
   static const _idCatAlbums = 'cat:albums';
+  static const _segPlayAll = 'play:all';
+  static const _segShuffleAll = 'shuffle:all';
 
   final MediaItemMapper _mapper = const MediaItemMapper();
 
@@ -210,19 +225,24 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
     getIt<AndroidAutoSessionService>().markActive();
 
     try {
-      if (parentMediaId == _idRoot) return _rootChildren();
-      if (parentMediaId == _idCatDownloads) return await _downloadsChildren();
-      if (parentMediaId == _idCatRecent) return await _recentChildren();
-      if (parentMediaId == _idCatArtists) return await _artistsChildren();
-      if (parentMediaId == _idCatAlbums) return await _albumsChildren();
-      if (parentMediaId.startsWith('artist:')) {
+      final last = _lastSegment(parentMediaId);
+      if (last == _idRoot) return _rootChildren();
+      if (last == _idCatDownloads) {
+        return await _downloadsChildren(parentMediaId);
+      }
+      if (last == _idCatRecent) return await _recentChildren(parentMediaId);
+      if (last == _idCatArtists) return await _artistsChildren(parentMediaId);
+      if (last == _idCatAlbums) return await _albumsChildren(parentMediaId);
+      if (last.startsWith('artist:')) {
         return await _artistAlbumsChildren(
-          _decode(parentMediaId.substring('artist:'.length)),
+          parentMediaId,
+          _decode(last.substring('artist:'.length)),
         );
       }
-      if (parentMediaId.startsWith('album:')) {
+      if (last.startsWith('album:')) {
         return await _albumTracksChildren(
-          _decode(parentMediaId.substring('album:'.length)),
+          parentMediaId,
+          _decode(last.substring('album:'.length)),
         );
       }
     } catch (e, st) {
@@ -235,8 +255,10 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   Future<MediaItem?> getMediaItem(String mediaId) async {
     _talker.debug('[LocalPlayerService] getMediaItem: $mediaId');
     getIt<AndroidAutoSessionService>().markActive();
-    if (!mediaId.startsWith('track:')) return null;
-    final fileKey = int.tryParse(mediaId.substring('track:'.length));
+    // Path-style ids land here too; the last segment is the leaf.
+    final leaf = _lastSegment(mediaId);
+    if (!leaf.startsWith('track:')) return null;
+    final fileKey = int.tryParse(leaf.substring('track:'.length));
     if (fileKey == null) return null;
     final dt = await _findDownloadedTrack(fileKey);
     return dt == null ? null : _mapper.fromDownloadedTrack(dt);
@@ -261,22 +283,89 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
   ]) async {
     _talker.info('[LocalPlayerService] playFromMediaId: $mediaId');
     getIt<AndroidAutoSessionService>().markActive();
-    if (!mediaId.startsWith('track:')) {
+
+    final segments = mediaId.split('/');
+    if (segments.isEmpty) return;
+    final action = segments.last;
+    final parentPath = segments.length > 1
+        ? segments.sublist(0, segments.length - 1).join('/')
+        : '';
+
+    // Resolve the queue from the parent context, regardless of which
+    // playable leaf the user tapped. This is what lets a tap on a track
+    // inside an album play the whole album, and how the synthetic
+    // play:all / shuffle:all virtual items work — they share the
+    // queue-from-parent path.
+    final queue = parentPath.isEmpty
+        ? <DownloadedTrack>[]
+        : await _resolveQueueForParent(parentPath);
+
+    int startIndex = 0;
+    var shuffle = false;
+
+    if (action == _segPlayAll) {
+      // Play all — start from the top of the parent's queue.
+    } else if (action == _segShuffleAll) {
+      shuffle = true;
+    } else if (action.startsWith('track:')) {
+      final fileKey = int.tryParse(action.substring('track:'.length));
+      if (fileKey == null) return;
+      if (queue.isEmpty) {
+        // Bare `track:<key>` with no parent context — fall back to
+        // single-track play so legacy ids (and the search results,
+        // which intentionally have no parent path) still work.
+        final dt = await _findDownloadedTrack(fileKey);
+        if (dt == null) {
+          _talker.warning(
+            '[LocalPlayerService] playFromMediaId: track $fileKey '
+            'not downloaded',
+          );
+          return;
+        }
+        await setShuffle(ShuffleMode.off);
+        await playNow(Tracks(tracks: [dt.track]));
+        return;
+      }
+      final idx = queue.indexWhere((DownloadedTrack d) => d.fileKey == fileKey);
+      if (idx < 0) {
+        _talker.warning(
+          '[LocalPlayerService] playFromMediaId: track $fileKey not '
+          'in resolved parent queue ($parentPath); falling back to '
+          'single-track play',
+        );
+        final dt = await _findDownloadedTrack(fileKey);
+        if (dt == null) return;
+        await setShuffle(ShuffleMode.off);
+        await playNow(Tracks(tracks: [dt.track]));
+        return;
+      }
+      startIndex = idx;
+    } else {
       _talker.warning(
-        '[LocalPlayerService] playFromMediaId: unrecognised id, ignoring',
+        '[LocalPlayerService] playFromMediaId: unrecognised leaf '
+        '"$action", ignoring',
       );
       return;
     }
-    final fileKey = int.tryParse(mediaId.substring('track:'.length));
-    if (fileKey == null) return;
-    final dt = await _findDownloadedTrack(fileKey);
-    if (dt == null) {
-      _talker.warning(
-        '[LocalPlayerService] playFromMediaId: track $fileKey not downloaded',
+
+    if (queue.isEmpty) {
+      _talker.info(
+        '[LocalPlayerService] playFromMediaId: empty queue for '
+        'parent "$parentPath"',
       );
       return;
     }
-    await playNow(Tracks(tracks: [dt.track]));
+
+    final tracks = Tracks(
+      tracks: queue.map((DownloadedTrack d) => d.track).toList(),
+    );
+    await setShuffle(shuffle ? ShuffleMode.on : ShuffleMode.off);
+    await setTracks(tracks);
+    await playByIndex(startIndex);
+    _talker.debug(
+      '[LocalPlayerService] playFromMediaId: started queue of '
+      '${queue.length} from index $startIndex, shuffle=$shuffle',
+    );
   }
 
   @override
@@ -323,30 +412,26 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
     _mapper.browseNode(id: _idCatAlbums, title: 'Albums'),
   ];
 
-  Future<List<MediaItem>> _downloadsChildren() async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    final sorted = [...tracks]
-      ..sort(
-        (a, b) =>
-            a.track.name.toLowerCase().compareTo(b.track.name.toLowerCase()),
-      );
-    return sorted.map(_mapper.fromDownloadedTrack).toList(growable: false);
-  }
-
-  Future<List<MediaItem>> _recentChildren() async {
-    final keys = getIt<RecentlyPlayedRepository>().getRecent();
-    if (keys.isEmpty) return const [];
-    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
-    final byKey = {for (final d in downloaded) d.fileKey: d};
-    // Preserve the most-recent-first order from the repository; drop keys
-    // whose downloads have been deleted (v1 is downloads-only).
+  Future<List<MediaItem>> _downloadsChildren(String parentPath) async {
+    final tracks = await _downloadsTracks();
+    if (tracks.isEmpty) return const [];
     return [
-      for (final k in keys)
-        if (byKey[k] != null) _mapper.fromDownloadedTrack(byKey[k]!),
+      ..._playActions(parentPath, tracks),
+      for (final t in tracks)
+        _mapper.fromDownloadedTrack(t, parentPath: parentPath),
     ];
   }
 
-  Future<List<MediaItem>> _artistsChildren() async {
+  Future<List<MediaItem>> _recentChildren(String parentPath) async {
+    final tracks = await _recentTracks();
+    if (tracks.isEmpty) return const [];
+    return [
+      for (final t in tracks)
+        _mapper.fromDownloadedTrack(t, parentPath: parentPath),
+    ];
+  }
+
+  Future<List<MediaItem>> _artistsChildren(String parentPath) async {
     final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
     final artists = <String>{};
     for (final t in tracks) {
@@ -357,37 +442,47 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return sorted
         .map(
-          (name) =>
-              _mapper.browseNode(id: 'artist:${_encode(name)}', title: name),
+          (name) => _mapper.browseNode(
+            id: _join(parentPath, 'artist:${_encode(name)}'),
+            title: name,
+          ),
         )
         .toList(growable: false);
   }
 
-  Future<List<MediaItem>> _albumsChildren() async {
+  Future<List<MediaItem>> _albumsChildren(String parentPath) async {
     final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    return _albumNodesFrom(tracks);
+    return _albumNodesFrom(parentPath, tracks);
   }
 
-  Future<List<MediaItem>> _artistAlbumsChildren(String artistName) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    final filtered = tracks
-        .where((t) => _artistOf(t).toLowerCase() == artistName.toLowerCase())
-        .toList(growable: false);
-    return _albumNodesFrom(filtered);
+  Future<List<MediaItem>> _artistAlbumsChildren(
+    String parentPath,
+    String artistName,
+  ) async {
+    final tracks = await _artistTracks(artistName);
+    return [
+      if (tracks.isNotEmpty) ..._playActions(parentPath, tracks),
+      ..._albumNodesFrom(parentPath, tracks),
+    ];
   }
 
-  Future<List<MediaItem>> _albumTracksChildren(String albumGroupId) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    final matches = tracks.where((t) => t.albumGroupId == albumGroupId).toList()
-      ..sort((a, b) {
-        final cmp = a.discNumber.compareTo(b.discNumber);
-        if (cmp != 0) return cmp;
-        return a.trackNumber.compareTo(b.trackNumber);
-      });
-    return matches.map(_mapper.fromDownloadedTrack).toList(growable: false);
+  Future<List<MediaItem>> _albumTracksChildren(
+    String parentPath,
+    String albumGroupId,
+  ) async {
+    final tracks = await _albumTracks(albumGroupId);
+    if (tracks.isEmpty) return const [];
+    return [
+      ..._playActions(parentPath, tracks),
+      for (final t in tracks)
+        _mapper.fromDownloadedTrack(t, parentPath: parentPath),
+    ];
   }
 
-  List<MediaItem> _albumNodesFrom(List<DownloadedTrack> tracks) {
+  List<MediaItem> _albumNodesFrom(
+    String parentPath,
+    List<DownloadedTrack> tracks,
+  ) {
     final byGid = <String, DownloadedTrack>{};
     for (final t in tracks) {
       byGid.putIfAbsent(t.albumGroupId, () => t);
@@ -400,7 +495,7 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
     return [
       for (final entry in entries)
         _mapper.browseNode(
-          id: 'album:${_encode(entry.key)}',
+          id: _join(parentPath, 'album:${_encode(entry.key)}'),
           title: entry.value.album.isEmpty
               ? 'Unknown Album'
               : entry.value.album,
@@ -408,6 +503,110 @@ class LocalPlayerService extends BaseAudioHandler with SeekHandler {
           artworkPath: entry.value.artworkPath,
         ),
     ];
+  }
+
+  /// Virtual Play all / Shuffle all rows pinned to the top of any
+  /// browse list that maps onto >1 playable track. Tapping one routes
+  /// through `playFromMediaId` with the parent path as the queue source.
+  List<MediaItem> _playActions(
+    String parentPath,
+    List<DownloadedTrack> tracks,
+  ) {
+    if (tracks.length < 2) return const [];
+    return [
+      _mapper.playAction(
+        id: _join(parentPath, _segPlayAll),
+        title: 'Play all',
+        subtitle: '${tracks.length} tracks',
+      ),
+      _mapper.playAction(
+        id: _join(parentPath, _segShuffleAll),
+        title: 'Shuffle all',
+        subtitle: '${tracks.length} tracks',
+      ),
+    ];
+  }
+
+  // ─── Pure queue resolvers (no MediaItems) ─────────────────────────────
+  // These return the ordered DownloadedTrack list for a given browse
+  // parent, and are what `playFromMediaId` uses to expand a tapped track
+  // / play-all / shuffle-all into a real queue.
+
+  Future<List<DownloadedTrack>> _resolveQueueForParent(
+    String parentPath,
+  ) async {
+    final last = _lastSegment(parentPath);
+    if (last == _idCatDownloads) return _downloadsTracks();
+    if (last == _idCatRecent) return _recentTracks();
+    if (last.startsWith('album:')) {
+      return _albumTracks(_decode(last.substring('album:'.length)));
+    }
+    if (last.startsWith('artist:')) {
+      return _artistTracks(_decode(last.substring('artist:'.length)));
+    }
+    // cat:artists / cat:albums / root: no implicit "queue" — these are
+    // browse-only and shouldn't have a play:all/shuffle:all action.
+    return const [];
+  }
+
+  Future<List<DownloadedTrack>> _downloadsTracks() async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    return [...tracks]..sort(
+      (a, b) =>
+          a.track.name.toLowerCase().compareTo(b.track.name.toLowerCase()),
+    );
+  }
+
+  Future<List<DownloadedTrack>> _recentTracks() async {
+    final keys = getIt<RecentlyPlayedRepository>().getRecent();
+    if (keys.isEmpty) return const [];
+    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final byKey = {for (final d in downloaded) d.fileKey: d};
+    // Preserve the most-recent-first order from the repository; drop
+    // keys whose downloads have been deleted (v1 is downloads-only).
+    return [
+      for (final k in keys)
+        if (byKey[k] != null) byKey[k]!,
+    ];
+  }
+
+  Future<List<DownloadedTrack>> _albumTracks(String albumGroupId) async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    return tracks.where((t) => t.albumGroupId == albumGroupId).toList()
+      ..sort((a, b) {
+        final cmp = a.discNumber.compareTo(b.discNumber);
+        if (cmp != 0) return cmp;
+        return a.trackNumber.compareTo(b.trackNumber);
+      });
+  }
+
+  Future<List<DownloadedTrack>> _artistTracks(String artistName) async {
+    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final filtered = tracks
+        .where((t) => _artistOf(t).toLowerCase() == artistName.toLowerCase())
+        .toList();
+    // Album then disc then track — gives the artist's full discography
+    // a coherent playback order when shuffle is off.
+    filtered.sort((a, b) {
+      final byAlbum = a.album.toLowerCase().compareTo(b.album.toLowerCase());
+      if (byAlbum != 0) return byAlbum;
+      final byDisc = a.discNumber.compareTo(b.discNumber);
+      if (byDisc != 0) return byDisc;
+      return a.trackNumber.compareTo(b.trackNumber);
+    });
+    return filtered;
+  }
+
+  // ─── Path-id helpers ──────────────────────────────────────────────────
+
+  /// Join a parent path with a child segment. An empty parent (the
+  /// implicit `root` case) drops the leading separator.
+  String _join(String parent, String child) =>
+      parent.isEmpty ? child : '$parent/$child';
+
+  String _lastSegment(String path) {
+    final i = path.lastIndexOf('/');
+    return i < 0 ? path : path.substring(i + 1);
   }
 
   Future<DownloadedTrack?> _findDownloadedTrack(int fileKey) async {

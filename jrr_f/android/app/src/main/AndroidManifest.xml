@@ -8,6 +8,16 @@
          enterPlayingState() throws SecurityException before reaching
          startForeground(), which Android then reports as an ANR. -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!-- Declares that the app runs on Android Automotive OS (AAOS) head
+         units in addition to phones. required="false" keeps the same APK
+         installable on regular phones, where Google Play Services'
+         Android Auto host (`com.google.android.projection.gearhead`)
+         binds our MediaBrowserService over the phone-to-car link
+         instead. -->
+    <uses-feature
+        android:name="android.hardware.type.automotive"
+        android:required="false" />
     <application
         android:label="JRiver Remote"
         android:name="${applicationName}"
@@ -41,11 +51,20 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Android Auto: registers JRR as a `media` category app. The head
-             unit reads this descriptor on bind, then talks to the
-             MediaBrowserService declared further down. -->
+        <!-- Android Auto (phone-based, via GMS gearhead host app):
+             registers JRR as a `media` category app. The head unit reads
+             this descriptor on bind, then talks to the MediaBrowserService
+             declared further down. -->
         <meta-data
             android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!-- Android Automotive OS (AAOS, native on the head unit — no
+             phone). AAOS uses a different meta-data name to discover the
+             same descriptor; declaring both keeps a single APK working on
+             both phone-AA and AAOS. -->
+        <meta-data
+            android:name="com.android.automotive"
             android:resource="@xml/automotive_app_desc" />
 
         <!-- Android Auto: small monochrome notification icon. Reuses the

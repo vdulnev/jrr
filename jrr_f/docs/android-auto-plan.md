@@ -382,7 +382,7 @@ Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 | 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | 🟢 done |
 | 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | 🟢 done |
 | 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | 🟢 done |
-| 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | ⚪ |
+| 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | 🟡 user-side (checklist ready, hardware testing pending) |
 | **Total** | | **16–25 days** | |
 
 ### Phase 1 — Completion notes
@@ -986,6 +986,155 @@ Runtime verification (user-side, requires DHU or real car):
   the appropriate queue and begin playback. Check the talker log
   for the `playFromSearch` line; it dumps the resolved
   `tracks.length` and `shuffle` flag.
+
+### Phase 9 — Completion notes
+
+Phase 9 is the **release runway**. The code work is done; everything
+remaining is exercised on real hardware and through the Play Console.
+
+Status:
+- ⏸ DHU validation — requires DHU + paired phone, user-side.
+- ⏸ Real-car validation — requires 2+ vehicles (at minimum: one
+  long-trip car with AA, one short-trip / older AA stack).
+- ⏸ Play Console AA submission — requires release build,
+  store listing copy/screenshots, and the AA-eligibility review.
+
+The rest of this section consolidates the scattered runtime checks
+from Phases 2–8 into one walkthrough, plus the Play Console prep.
+
+#### DHU validation checklist
+
+Setup (run once):
+1. Install the Desktop Head Unit per
+   [developer.android.com/training/cars/testing][dhu-install].
+2. Enable Developer Mode in Android Auto on the phone (tap the
+   version row in Auto's settings 10×) and turn on "Unknown sources".
+3. Pair the phone over USB; start the DHU.
+
+[dhu-install]: https://developer.android.com/training/cars/testing
+
+App-launch + zone surfacing (Phase 4):
+- [ ] DHU sees JRR in the media-app picker. (If not: check
+  `automotive_app_desc.xml` is bundled and the manifest meta-data
+  is present.)
+- [ ] Pick JRR; root browse shows Downloads / Recent / Artists / Albums.
+- [ ] Open the phone — the "Android Auto" zone appears in the
+  picker within ~1 s. Icon is the car glyph; badge reads
+  ANDROID AUTO.
+- [ ] Disconnect the DHU. The AA zone disappears from the phone
+  picker within the 5-min debounce (≤5 min).
+- [ ] Set AA as saved active zone; restart the app cold without
+  the DHU. Picker restores the first available zone (silent
+  fallback) instead of staying stuck on AA.
+
+Browse tree (Phase 5):
+- [ ] Downloads: count + order match the phone's Downloads screen.
+- [ ] Recent: starts empty; after playing 3 tracks shows most-
+  recent-first, no dupes.
+- [ ] Artists drill-down: list is alphabetised; tapping an artist
+  shows their albums.
+- [ ] Albums drill-down: same shape, with album artwork visible
+  in the car carousel for tracks whose `artworkPath` exists on disk.
+- [ ] Tap a track in the car → audio plays through the car
+  speakers within ~2 s. Lock screen + system notification update
+  with the same title.
+- [ ] Pause/skip on the head unit; the phone's now-playing screen
+  reflects the change in real time (Phase 7 wiring).
+
+Voice (Phase 8):
+- [ ] "Play <artist>" → all tracks by that artist (downloads-only).
+- [ ] "Play album <title>" → the album's tracks.
+- [ ] "Play album <title> by <artist>" → narrowed if the same
+  album exists for multiple artists.
+- [ ] "Shuffle <artist>" → shuffle on + that artist's tracks.
+- [ ] "Play music" → shuffle the whole downloaded library.
+- [ ] "Play <something we don't have>" → graceful no-op
+  (no crash, no infinite loading spinner). Check talker for
+  `no matches for "..."` line.
+
+System integration (Phases 2 & 6):
+- [ ] Lock-screen controls (play/pause/skip) work while the phone
+  screen is off.
+- [ ] System media notification persists across foreground/
+  background transitions; notification icon is monochrome (not
+  the multicolour app launcher).
+- [ ] Incoming phone call duck/pause behavior works on a real
+  vehicle (audio_service handles audio focus).
+- [ ] `adb shell dumpsys media_session` lists the JRR session
+  while playback is active.
+- [ ] `adb shell dumpsys car_service | grep -i jrr` (with DHU
+  attached) shows the package as a registered media app.
+
+Edge cases:
+- [ ] Mid-playback DHU disconnect: playback **stops** rather than
+  silently continuing on the phone (matches today's remote-zone
+  disappearance behaviour — see §12).
+- [ ] Network loss during a streamed track (if the user ever
+  routes a streaming source through AA in future iterations) —
+  not in v1 scope, v1 is downloads-only.
+- [ ] Logout while AA is active: AA zone disappears with the
+  rest of the picker; handler stops cleanly.
+
+#### Real-car checklist
+
+Run the DHU checklist again on each test vehicle. Specifically:
+- [ ] Car A (modern AA, ≥2022): all browse, voice, transport,
+  artwork checks pass.
+- [ ] Car B (older AA, 2018–2020 stack): manifest is accepted,
+  browse + transport pass. Voice search may be limited to title
+  queries — note any extras gaps in the bug tracker.
+- [ ] (Optional) Car C with **wireless AA**: bind/unbind
+  semantics differ slightly; confirm the 5-min inactivity
+  debounce doesn't trip while the car is parked and idle.
+- [ ] On every car: notification icon renders correctly (alpha
+  mask); track skip from the steering-wheel buttons works.
+
+Known limitations to mention in QA notes / release notes:
+- Single-track play on `playFromMediaId` (no queue-from-parent;
+  Phase 5 follow-up).
+- No active-zone auto-switch on car-driven playback (phone
+  label may say "Local" while the car is the source).
+- Streaming artwork URIs not emitted (v1 is downloads-only).
+- No dedicated `ic_launcher_car.png` — Auto uses the regular
+  launcher icon.
+
+#### Play Console AA review prep
+
+The Play Console requires an explicit Android Auto declaration plus
+the Auto-specific review track. Materials checklist:
+
+- [ ] Release build (`flutter build appbundle --release`)
+  containing all Phase 1–8 changes.
+- [ ] Manifest declares `<uses name="media"/>` via
+  `automotive_app_desc.xml` (Phase 6 — already in place).
+- [ ] App listing under Play Console → "Setup" → "Advanced
+  settings" → "Form factors" → "Android Auto" toggled on.
+- [ ] AA-specific screenshots: at least one head-unit screenshot
+  per supported category (browse root, drilled-down list, now-
+  playing). Captured via the DHU.
+- [ ] Privacy policy URL still valid (Play requires this for
+  media apps).
+- [ ] Content rating refreshed if needed.
+- [ ] Internal testing track populated and validated end-to-end
+  before promoting.
+- [ ] Note in release notes: "v1 Android Auto support — browse
+  and play downloaded tracks."
+
+Submission timeline expectations (per Google's published SLAs):
+review for AA-eligible media apps typically takes **1–2 weeks** on
+the first submission and **3–5 business days** on subsequent ones.
+Budget a round trip for any feedback from the Auto review team.
+
+#### Definition of done (v1 ship)
+
+- DHU checklist green on a development device.
+- Real-car checklist green on at least 2 vehicles.
+- Play Console AA review passed.
+- Release notes published.
+- This document marked ✅ across all phases.
+
+Until those four items are signed off, this phase stays at 🟡 and
+the overall v1 shipping bar is *not yet* met.
 
 For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.

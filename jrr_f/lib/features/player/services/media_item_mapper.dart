@@ -18,9 +18,18 @@ class MediaItemMapper {
 
   /// Track from the downloaded-tracks table. We carry the cached artwork
   /// path inside the [DownloadedTrack] row.
-  MediaItem fromDownloadedTrack(DownloadedTrack dt) {
+  ///
+  /// When [parentPath] is supplied, the emitted media id encodes the
+  /// browse context (e.g. `cat:albums/album:<b64>/track:42`) so that
+  /// `playFromMediaId` can reconstruct the surrounding queue from the
+  /// parent rather than playing the single track in isolation. Pass
+  /// `null` when the item is being emitted for the system queue (the
+  /// just_audio sequence) where the id is informational only.
+  MediaItem fromDownloadedTrack(DownloadedTrack dt, {String? parentPath}) {
+    final trackId = 'track:${dt.fileKey}';
+    final id = parentPath == null ? trackId : '$parentPath/$trackId';
     return MediaItem(
-      id: 'track:${dt.fileKey}',
+      id: id,
       title: dt.track.name.isEmpty ? 'Unknown' : dt.track.name,
       artist: dt.track.artist.isEmpty ? null : dt.track.artist,
       album: dt.track.album.isEmpty ? null : dt.track.album,
@@ -58,6 +67,25 @@ class MediaItemMapper {
       album: subtitle,
       artUri: _artUri(artworkPath),
       playable: false,
+    );
+  }
+
+  /// Playable virtual action — e.g. "Play all" / "Shuffle all" at the
+  /// top of a list. Carries a synthetic id like `<parent>/play:all` or
+  /// `<parent>/shuffle:all` that `playFromMediaId` recognises and uses
+  /// to build a queue from the parent's full child set.
+  MediaItem playAction({
+    required String id,
+    required String title,
+    String? subtitle,
+    String? artworkPath,
+  }) {
+    return MediaItem(
+      id: id,
+      title: title,
+      album: subtitle,
+      artUri: _artUri(artworkPath),
+      playable: true,
     );
   }
 
