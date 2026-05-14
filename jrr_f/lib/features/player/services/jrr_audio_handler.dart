@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'local_player_service.dart';
 import 'android_auto_player_service.dart';
+import 'local_player_service_base.dart';
 
 /// Composite [AudioHandler] that coordinates multiple specialized players.
 ///
@@ -33,7 +34,13 @@ class JrrAudioHandler extends BaseAudioHandler {
   /// and updates the notification).
   void switchTo(BaseAudioHandler player) {
     if (_activePlayer.value != player) {
+      final oldPlayer = _activePlayer.value;
       _activePlayer.add(player);
+
+      // Stop/pause the previous player so we don't have overlapping audio.
+      if (oldPlayer is LocalPlayerServiceBase && oldPlayer.playing) {
+        oldPlayer.pause();
+      }
     }
   }
 
@@ -54,16 +61,22 @@ class JrrAudioHandler extends BaseAudioHandler {
       autoPlayer.search(query, extras);
 
   @override
-  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) =>
-      autoPlayer.playFromMediaId(mediaId, extras);
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.playFromMediaId(mediaId, extras);
+  }
 
   @override
-  Future<void> playFromSearch(String query, [Map<String, dynamic>? extras]) =>
-      autoPlayer.playFromSearch(query, extras);
+  Future<void> playFromSearch(String query, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.playFromSearch(query, extras);
+  }
 
   @override
-  Future<void> playFromUri(Uri uri, [Map<String, dynamic>? extras]) =>
-      autoPlayer.playFromUri(uri, extras);
+  Future<void> playFromUri(Uri uri, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.playFromUri(uri, extras);
+  }
 
   // ─── Transport overrides (Go to activePlayer) ─────────────────────────
 
@@ -107,16 +120,22 @@ class JrrAudioHandler extends BaseAudioHandler {
   Future<void> prepare() => activePlayer.prepare();
 
   @override
-  Future<void> prepareFromMediaId(String mediaId, [Map<String, dynamic>? extras]) =>
-      activePlayer.prepareFromMediaId(mediaId, extras);
+  Future<void> prepareFromMediaId(String mediaId, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.prepareFromMediaId(mediaId, extras);
+  }
 
   @override
-  Future<void> prepareFromSearch(String query, [Map<String, dynamic>? extras]) =>
-      activePlayer.prepareFromSearch(query, extras);
+  Future<void> prepareFromSearch(String query, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.prepareFromSearch(query, extras);
+  }
 
   @override
-  Future<void> prepareFromUri(Uri uri, [Map<String, dynamic>? extras]) =>
-      activePlayer.prepareFromUri(uri, extras);
+  Future<void> prepareFromUri(Uri uri, [Map<String, dynamic>? extras]) {
+    switchTo(autoPlayer);
+    return autoPlayer.prepareFromUri(uri, extras);
+  }
 
   @override
   Future<void> fastForward() => activePlayer.fastForward();

@@ -10,40 +10,15 @@ import '../../services/android_auto_session_service.dart';
 import '../models/zone.dart';
 import 'zone_repository.dart';
 
-const offlineZone = Zone(
-  id: 'offline',
-  name: 'Offline',
-  guid: 'offline-zone-guid',
-  isDLNA: false,
-  isLocal: false,
-  isOffline: true,
-);
-
-const localZone = Zone(
-  id: 'local',
-  name: 'Local',
-  guid: 'local-zone-guid',
-  isDLNA: false,
-  isLocal: true,
-);
-
-const androidAutoZone = Zone(
-  id: 'android-auto',
-  name: 'Android Auto',
-  guid: 'android-auto-zone-guid',
-  isDLNA: false,
-  isAndroidAuto: true,
-);
-
-const _localZones = [localZone, offlineZone];
+const _localZones = [Zone.local, Zone.offline];
 
 class ZoneRepositoryImpl implements ZoneRepository {
-  /// Appends [androidAutoZone] when an Auto session is currently bound.
+  /// Appends [Zone.androidAuto] when an Auto session is currently bound.
   /// Phase 4: detection is debounced through [AndroidAutoSessionService] —
   /// the zone disappears from the picker shortly after the car disconnects.
   List<Zone> _withAndroidAuto(List<Zone> zones) {
     if (getIt<AndroidAutoSessionService>().isConnected.value) {
-      return [...zones, androidAutoZone];
+      return [...zones, Zone.androidAuto];
     }
     return zones;
   }
@@ -56,7 +31,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
     // it's non-functional (cannot resolve streaming URLs).
     final session = getIt<ConnectionRepository>().currentToken;
     if (session == null) {
-      return right(_withAndroidAuto([offlineZone]));
+      return right(_withAndroidAuto([Zone.offline]));
     }
 
     final savedGuid = getIt<SharedPreferences>().getString(kActiveZoneGuidKey);

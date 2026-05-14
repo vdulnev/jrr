@@ -42,12 +42,25 @@ class AndroidAutoSessionService {
   /// notifier so the zone list refreshes on connect/disconnect.
   final ValueNotifier<bool> isConnected = ValueNotifier<bool>(false);
 
+  final _actionRequestedController = StreamController<void>.broadcast();
+
+  /// Emits whenever an explicit playback action is requested from the car
+  /// (playFromMediaId, playFromSearch, etc.).
+  Stream<void> get actionRequested => _actionRequestedController.stream;
+
   Timer? _timeout;
 
   // Lazy because the service is constructed inside configureDependencies(),
   // and on its first construction Talker may not be registered yet on some
   // code paths (e.g. tests that build the service directly).
   Talker? get _talker => getIt.isRegistered<Talker>() ? getIt<Talker>() : null;
+
+  /// Called when a playback action is initiated from the Android Auto head-unit.
+  void markActionRequested() {
+    _talker?.info('[AndroidAutoSessionService] markActionRequested');
+    _actionRequestedController.add(null);
+    markActive();
+  }
 
   /// Called from `AndroidAutoPlayerService.getChildren` (and any other
   /// browse-side audio_service callback) when a MediaBrowser client pings

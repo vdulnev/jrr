@@ -320,9 +320,8 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   void _onAndroidAutoActionRequested() {
-    // This is a hook for the composite handler to switch zones.
-    // For now, we'll just log it.
-    _talker.info('[AndroidAutoPlayerService] Android Auto action requested');
+    // Signal that the Android Auto zone should become active
+    getIt<AndroidAutoSessionService>().markActionRequested();
   }
 
   // ─── Browse-tree builders ─────────────────────────────────────────────

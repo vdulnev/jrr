@@ -16,6 +16,15 @@ const kActiveZoneGuidKey = 'active_zone_guid';
 class ActiveZone extends _$ActiveZone {
   @override
   Zone? build() {
+    final sessionService = getIt<AndroidAutoSessionService>();
+    final sub = sessionService.actionRequested.listen((_) {
+      getIt<Talker>().info(
+        '[activeZoneProvider] Android Auto action requested — switching zone',
+      );
+      setZone(Zone.androidAuto);
+    });
+    ref.onDispose(sub.cancel);
+
     ref.listen(zoneListProvider, (previous, next) {
       getIt<Talker>().debug(
         '[activeZoneProvider] zoneListProvider changed: previous=$previous, next=$next',
