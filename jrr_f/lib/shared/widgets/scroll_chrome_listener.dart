@@ -27,11 +27,16 @@ class _ScrollChromeListenerState extends ConsumerState<ScrollChromeListener> {
   void initState() {
     super.initState();
     _chromeNotifier = ref.read(libraryChromeVisibleProvider.notifier);
+    // Reset chrome to visible when this screen mounts so a previously
+    // hidden chrome state (from another scrolled screen) doesn't leak in.
+    Future.microtask(() => _chromeNotifier.set(true));
   }
 
   @override
   void dispose() {
-    _chromeNotifier.set(true);
+    // Defer to avoid "Tried to modify a provider while the widget tree was
+    // building" when this listener is torn down during a navigation pop.
+    Future.microtask(() => _chromeNotifier.set(true));
     super.dispose();
   }
 

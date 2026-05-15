@@ -153,3 +153,13 @@ abstract class McwsApi {
   @GET('Browse/Files?Action=JSON')
   Future<List<Track>> browseFiles({@Query('ID') required String id});
 }
+
+extension McwsApiAudioSearch on McwsApi {
+  Future<List<Track>> audioSearch({
+    required String query,
+    int startIndex = 0,
+  }) => filesSearch(
+    query: '[Media Type]=Audio [Channels]=2 $query',
+    startIndex: startIndex,
+  );
+}
