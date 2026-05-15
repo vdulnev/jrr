@@ -36,7 +36,9 @@ class JrrAudioHandler extends BaseAudioHandler {
       _activePlayer.add(player);
 
       // Stop/pause the previous player so we don't have overlapping audio.
-      if (pausePrevious && oldPlayer is LocalPlayerServiceBase && oldPlayer.playing) {
+      if (pausePrevious &&
+          oldPlayer is LocalPlayerServiceBase &&
+          oldPlayer.playing) {
         oldPlayer.pause();
       }
     }
