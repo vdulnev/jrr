@@ -280,9 +280,9 @@ class McwsClient {
 
     final term = _esc(trimmed);
     return _request(
-      () => _api.filesSearch(
+      () => _api.audioSearch(
         query:
-            '[Media Type]=Audio ([Name] contains $term OR [Artist] contains $term OR [Album] contains $term)',
+            '([Name] contains $term OR [Artist] contains $term OR [Album] contains $term)',
         startIndex: startIndex,
       ),
       (items) => right(
@@ -303,9 +303,8 @@ class McwsClient {
   }
 
   Future<Either<AppException, List<String>>> getArtists() => _request(
-    () => _api.filesSearch(
-      query:
-          '[Media Type]=Audio ~limit=-1,1,[Album Artist (auto)] ~sort=[Album Artist (auto)]',
+    () => _api.audioSearch(
+      query: '~limit=-1,1,[Album Artist (auto)] ~sort=[Album Artist (auto)]',
     ),
     (items) => right(
       items
@@ -318,21 +317,21 @@ class McwsClient {
   Future<Either<AppException, Albums>> getAlbumsByArtist(
     String artist,
   ) => _request(
-    () => _api.filesSearch(
+    () => _api.audioSearch(
       query:
-          '[Media Type]=Audio [Album Artist (auto)]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
+          '[Album Artist (auto)]=[${_esc(artist)}] ~limit=-1,1,[Album],[Filename (path)] ~sort=[Album]',
     ),
     (tracks) => right(Albums(albums: tracks.map(Album.fromTrack).toList())),
   );
 
   Future<Either<AppException, Tracks>> getAlbumTracks(Album album) {
-    final base = '[Media Type]=Audio [Album]=[${_esc(album.name)}]';
+    final base = '[Album]=[${_esc(album.name)}]';
     final filtered = album.folderPath.isNotEmpty
         ? '$base [Filename (path)]="${_esc(album.folderPath)}"'
         : base;
     final query = '$filtered ~sort=[Disc #],[Track #]';
     return _request(
-      () => _api.filesSearch(query: query),
+      () => _api.audioSearch(query: query),
       (tracks) => right(Tracks(tracks: tracks)),
     );
   }
@@ -340,18 +339,16 @@ class McwsClient {
   Future<Either<AppException, Tracks>> getTracksByFolder(
     String folderPath,
   ) => _request(
-    () => _api.filesSearch(
+    () => _api.audioSearch(
       query:
-          '[Media Type]=Audio [Filename (path)]="${_esc(folderPath)}" ~sort=[Filename (path)],[Track #]',
+          '[Filename (path)]="${_esc(folderPath)}" ~sort=[Filename (path)],[Track #]',
     ),
     (tracks) => right(Tracks(tracks: tracks)),
   );
 
   Future<Either<AppException, Albums>> getRandomAlbums() => _request(
-    () => _api.filesSearch(
-      query:
-          '[Media Type]=[Audio] ~limit=10,-1,[Album],[Filename (path)] ~n=10',
-    ),
+    () =>
+        _api.audioSearch(query: '~limit=10,-1,[Album],[Filename (path)] ~n=10'),
     (tracks) => right(Albums(albums: tracks.map(Album.fromTrack).toList())),
   );
 
