@@ -5,7 +5,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:jrr_f/features/player/data/models/repeat_mode.dart';
 import 'package:jrr_f/features/player/data/models/shuffle_mode.dart';
-import 'package:jrr_f/features/player/data/repositories/recently_played_repository.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:talker/talker.dart';
 
@@ -188,9 +187,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
   static const _idRoot = 'root';
   static const _idCatDownloads = 'cat:downloads';
-  static const _idCatRecent = 'cat:recent';
-  static const _idCatArtists = 'cat:artists';
-  static const _idCatAlbums = 'cat:albums';
   static const _segPlayAll = 'play:all';
   static const _segShuffleAll = 'shuffle:all';
 
@@ -209,9 +205,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       if (last == _idCatDownloads) {
         return await _downloadsChildren(parentMediaId);
       }
-      if (last == _idCatRecent) return await _recentChildren(parentMediaId);
-      if (last == _idCatArtists) return await _artistsChildren(parentMediaId);
-      if (last == _idCatAlbums) return await _albumsChildren(parentMediaId);
       if (last.startsWith('artist:')) {
         return await _artistAlbumsChildren(
           parentMediaId,
@@ -333,31 +326,14 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
   List<MediaItem> _rootChildren() => [
     _mapper.browseNode(id: _idCatDownloads, title: 'Downloads'),
-    _mapper.browseNode(id: _idCatRecent, title: 'Recent'),
-    _mapper.browseNode(id: _idCatArtists, title: 'Artists'),
-    _mapper.browseNode(id: _idCatAlbums, title: 'Albums'),
   ];
 
+  /// `Downloads` is the artist index for the offline library:
+  /// `Downloads → Artist → Album → Tracks`. The top-level `Recent` /
+  /// `Artists` / `Albums` shortcuts were collapsed into this single
+  /// hierarchy to keep the head-unit UI minimal while v1 still only
+  /// serves downloaded content.
   Future<List<MediaItem>> _downloadsChildren(String parentPath) async {
-    final tracks = await _downloadsTracks();
-    if (tracks.isEmpty) return const [];
-    return [
-      ..._playActions(parentPath, tracks),
-      for (final t in tracks)
-        _mapper.fromDownloadedTrack(t, parentPath: parentPath),
-    ];
-  }
-
-  Future<List<MediaItem>> _recentChildren(String parentPath) async {
-    final tracks = await _recentTracks();
-    if (tracks.isEmpty) return const [];
-    return [
-      for (final t in tracks)
-        _mapper.fromDownloadedTrack(t, parentPath: parentPath),
-    ];
-  }
-
-  Future<List<MediaItem>> _artistsChildren(String parentPath) async {
     final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
     final artists = <String>{};
     for (final t in tracks) {
@@ -374,11 +350,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
           ),
         )
         .toList(growable: false);
-  }
-
-  Future<List<MediaItem>> _albumsChildren(String parentPath) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    return _albumNodesFrom(parentPath, tracks);
   }
 
   Future<List<MediaItem>> _artistAlbumsChildren(
@@ -454,8 +425,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     String parentPath,
   ) async {
     final last = _lastSegment(parentPath);
-    if (last == _idCatDownloads) return _downloadsTracks();
-    if (last == _idCatRecent) return _recentTracks();
     if (last.startsWith('album:')) {
       return _albumTracks(_decode(last.substring('album:'.length)));
     }
@@ -463,26 +432,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       return _artistTracks(_decode(last.substring('artist:'.length)));
     }
     return const [];
-  }
-
-  Future<List<DownloadedTrack>> _downloadsTracks() async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
-    return [...tracks]..sort(
-      (a, b) =>
-          a.track.name.toLowerCase().compareTo(b.track.name.toLowerCase()),
-    );
-  }
-
-  Future<List<DownloadedTrack>> _recentTracks() async {
-    // This uses RecentlyPlayedRepository - we might want to keep it shared.
-    final keys = getIt<RecentlyPlayedRepository>().getRecent();
-    if (keys.isEmpty) return const [];
-    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
-    final byKey = {for (final d in downloaded) d.fileKey: d};
-    return [
-      for (final k in keys)
-        if (byKey[k] != null) byKey[k]!,
-    ];
   }
 
   Future<List<DownloadedTrack>> _albumTracks(String albumGroupId) async {
