@@ -16,6 +16,7 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   final AppDatabase _db;
   final Talker _talker;
   final Map<int, String> _localPathCache = {};
+  final Map<int, String> _artworkPathCache = {};
 
   DownloadsRepositoryImpl({required AppDatabase db, required Talker talker})
     : _db = db,
@@ -25,24 +26,33 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   Future<void> _initCache() async {
     final tracks = await getDownloadedTracks();
-    for (final t in tracks) {
-      _localPathCache[t.fileKey] = t.localPath;
-    }
+    _populateCaches(tracks);
     _talker.info(
       '[DownloadsRepository] Cache initialized with ${_localPathCache.length} tracks',
     );
 
     // Listen for changes to keep cache in sync
-    watchDownloadedTracks().listen((tracks) {
-      _localPathCache.clear();
-      for (final t in tracks) {
-        _localPathCache[t.fileKey] = t.localPath;
+    watchDownloadedTracks().listen(_populateCaches);
+  }
+
+  void _populateCaches(List<model.DownloadedTrack> tracks) {
+    _localPathCache
+      ..clear()
+      ..addEntries(tracks.map((t) => MapEntry(t.fileKey, t.localPath)));
+    _artworkPathCache.clear();
+    for (final t in tracks) {
+      final p = t.artworkPath;
+      if (p != null && p.isNotEmpty) {
+        _artworkPathCache[t.fileKey] = p;
       }
-    });
+    }
   }
 
   @override
   String? localPathFor(int fileKey) => _localPathCache[fileKey];
+
+  @override
+  String? artworkPathFor(int fileKey) => _artworkPathCache[fileKey];
 
   @override
   Future<void> enqueue(Track track) async {

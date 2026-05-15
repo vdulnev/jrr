@@ -19,7 +19,11 @@ part 'player_provider.g.dart';
 @Riverpod(keepAlive: true)
 class Player extends _$Player {
   PlayerController _controllerFor(Zone? zone) {
-    final isLocal = zone == null || zone.isLocal || zone.isOffline;
+    // Local, Offline, and Android Auto all share the localPlayerProvider
+    // (which switches between specialized services). Only true remote
+    // zones reach the MCWS controller.
+    final isLocal =
+        zone == null || zone.isLocal || zone.isOffline || zone.isAndroidAuto;
     return isLocal
         ? ref.read(localPlayerProvider.notifier)
         : ref.read(mcwsPlayerProvider.notifier);
@@ -42,13 +46,14 @@ class Player extends _$Player {
     if (zone == null) return null;
 
     getIt<Talker>().debug(
-      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline})',
+      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
+      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
     );
 
     // Pipe state through the active transport. Both branches return
     // AsyncValue<PlayerStatus?>; awaiting `.future` re-fires this build
     // whenever the underlying notifier emits a new value.
-    return (zone.isLocal || zone.isOffline)
+    return (zone.isLocal || zone.isOffline || zone.isAndroidAuto)
         ? await ref.watch(localPlayerProvider.future)
         : await ref.watch(mcwsPlayerProvider.future);
   }

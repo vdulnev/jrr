@@ -44,8 +44,10 @@ class Favorites extends _$Favorites {
         } else {
           await getIt<FavoritesRepository>().addFavorite(item);
         }
-        // Invalidate to refresh the list after modification
-        ref.invalidate(favoritesProvider);
+        // Re-run `build` to refresh the list after modification.
+        // `ref.invalidate(favoritesProvider)` from inside the notifier
+        // itself trips Riverpod's self-dependency assert.
+        ref.invalidateSelf();
       case AsyncLoading():
         // Optionally, you could queue the toggle action until loading is complete
         break;

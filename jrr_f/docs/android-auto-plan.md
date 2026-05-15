@@ -13,94 +13,445 @@ The app must:
 3. Surface "Now Playing" metadata, album art, and transport controls
    (play/pause, skip, seek) on the head unit.
 4. Handle voice commands ("play artist X", "skip track").
-5. Behave correctly across drive-time transitions (network loss, screen lock,
-   call interruption).
+5. Behave correctly across drive-time transitions (network loss, screen
+   lock, call interruption).
+5. Behave correctly across drive-time transitions (network loss, screen
+   lock, call interruption).
 
 The existing remote-control mode (sending MCWS commands to a server playing
 on a different zone) is **out of scope** for v1 — Android Auto playback
 requires the audio to come from the phone, so we'll only support the
-**Local zone** + **Offline zone** initially.
+**Local zone**, **Offline zone**, and the new **Android Auto virtual zone**
+described below.
 
-## 2. Why this is a substantial effort
+## 2. Architectural framing — Android Auto as a virtual zone
+
+JRR already models two non-MCWS playback targets as **virtual zones** —
+[Zone.isLocal](../lib/features/zones/data/models/zone.dart) (the phone's
+own just_audio player) and [Zone.isOffline](../lib/features/zones/data/models/zone.dart)
+(a synthetic zone backed by downloaded files only). The rest of the app
+(queue, player, library) branches on these flags to route reads/writes to
+the right backend.
+
+This plan adds a third virtual zone — **Android Auto** — following the
+same shape:
+
+- A `Zone` with `isAndroidAuto: true`, surfaced in the zone picker only
+  when an Auto session is actually connected.
+- A dedicated playback backend (the `audio_service` MediaBrowserService)
+  that the rest of the app routes to when this zone is active, in
+  exactly the same way `LocalPlayer` is routed to today for the Local
+  zone.
+- A browse hierarchy exposed to Android Auto that mirrors what the
+  active AA zone knows about — library, downloads, recents.
+
+Why a virtual zone rather than grafting AA onto the Local zone:
+
+- AA can run while the phone screen is locked, with no Flutter UI active.
+- AA has its own queue / now-playing / focus lifecycle that should not
+  fight with the Local zone's just_audio instance.
+- The user may want Local-zone playback on the phone *while* AA is
+  paused in the car (or vice versa). Two zones, two states.
+**Local zone**, **Offline zone**, and the new **Android Auto virtual zone**
+described below.
+
+## 2. Architectural framing — Android Auto as a virtual zone
+
+JRR already models two non-MCWS playback targets as **virtual zones** —
+[Zone.isLocal](../lib/features/zones/data/models/zone.dart) (the phone's
+own just_audio player) and [Zone.isOffline](../lib/features/zones/data/models/zone.dart)
+(a synthetic zone backed by downloaded files only). The rest of the app
+(queue, player, library) branches on these flags to route reads/writes to
+the right backend.
+
+This plan adds a third virtual zone — **Android Auto** — following the
+same shape:
+
+- A `Zone` with `isAndroidAuto: true`, surfaced in the zone picker only
+  when an Auto session is actually connected.
+- A dedicated playback backend (the `audio_service` MediaBrowserService)
+  that the rest of the app routes to when this zone is active, in
+  exactly the same way `LocalPlayer` is routed to today for the Local
+  zone.
+- A browse hierarchy exposed to Android Auto that mirrors what the
+  active AA zone knows about — library, downloads, recents.
+
+Why a virtual zone rather than grafting AA onto the Local zone:
+
+- AA can run while the phone screen is locked, with no Flutter UI active.
+- AA has its own queue / now-playing / focus lifecycle that should not
+  fight with the Local zone's just_audio instance.
+- The user may want Local-zone playback on the phone *while* AA is
+  paused in the car (or vice versa). Two zones, two states.
+
+## 3. Why this is a substantial effort
+## 3. Why this is a substantial effort
 
 Flutter has no first-class Android Auto support. Android Auto integrates
 with the platform via a Java/Kotlin `MediaBrowserServiceCompat` (or
-`MediaLibraryService` on Media3). The Flutter widget tree never runs in the
-car — only the metadata exposed via that service is shown. So we cannot
-"port the UI" to Auto; we must build a parallel browse hierarchy on the
-native side and bridge to Flutter for playback state.
+`MediaLibraryService` on Media3). The Flutter widget tree never runs in
+the car — only the metadata exposed via that service is shown. So we
+cannot "port the UI" to Auto; we must build a parallel browse hierarchy
+on the native side and bridge to Flutter for playback state.
+`MediaLibraryService` on Media3). The Flutter widget tree never runs in
+the car — only the metadata exposed via that service is shown. So we
+cannot "port the UI" to Auto; we must build a parallel browse hierarchy
+on the native side and bridge to Flutter for playback state.
 
 Two practical paths:
 
-- **Path A — adopt `audio_service`**: replace just_audio with
-  `audio_service` (which embeds just_audio under the hood). It provides a
-  ready-made `AudioServiceBackgroundTask`/`AudioHandler` that already
-  exposes a MediaBrowserService and integrates with Android Auto.
-  Recommended.
+- **Path A — adopt `audio_service`**: replace direct just_audio usage
+  with `audio_service` (which embeds just_audio under the hood). It
+  provides a ready-made `AudioHandler` that already exposes a
+  MediaBrowserService and integrates with Android Auto. **Recommended.**
+- **Path A — adopt `audio_service`**: replace direct just_audio usage
+  with `audio_service` (which embeds just_audio under the hood). It
+  provides a ready-made `AudioHandler` that already exposes a
+  MediaBrowserService and integrates with Android Auto. **Recommended.**
 - **Path B — write our own `MediaBrowserService`** in Kotlin and
-  communicate with Flutter over MethodChannel/EventChannel.
-  More control, far more code, error-prone synchronization.
+  communicate with Flutter over MethodChannel/EventChannel. More
+  control, far more code, error-prone synchronization.
+  communicate with Flutter over MethodChannel/EventChannel. More
+  control, far more code, error-prone synchronization.
 
 This plan assumes Path A.
 
-## 3. Phases
+## 4. Zone model and routing changes
 
-### Phase 0 — Research & spike (1–2 days)
+### 4.1 `Zone` flag
 
-- Run the official `audio_service` example app on a phone with Android Auto
-  installed; confirm it appears in the car launcher (use the Desktop Head
-  Unit emulator — DHU).
-- Verify just_audio compatibility with `audio_service` 0.18+ (current API).
-- Confirm we can set custom MediaItem `extras` for things like bitrate /
-  sample-rate badges if we want them.
-- Document any Android 14/15 background-execution restrictions that affect
-  the foreground service.
+[zone.dart](../lib/features/zones/data/models/zone.dart):
 
-**Exit criteria**: a stripped-down sample running on DHU showing one
-hard-coded MediaItem and playing one local file.
+```dart
+@freezed
+abstract class Zone with _$Zone {
+  const factory Zone({
+    required String id,
+    required String name,
+    required String guid,
+    required bool isDLNA,
+    @Default(false) bool isLocal,
+    @Default(false) bool isOffline,
+    @Default(false) bool isAndroidAuto, // NEW
+  }) = _Zone;
+}
+```
 
-### Phase 1 — Refactor playback to `audio_service` (3–5 days)
+### 4.2 Synthetic zone constant
 
-This is the bulk of the work and must not regress the existing in-app UX.
+[zone_repository_impl.dart](../lib/features/zones/data/repositories/zone_repository_impl.dart):
+
+```dart
+const androidAutoZone = Zone(
+  id: 'android-auto',
+  name: 'Android Auto',
+  guid: 'android-auto-zone-guid',
+  isDLNA: false,
+  isAndroidAuto: true,
+);
+```
+
+`getZones()` appends `androidAutoZone` only when an Auto session is
+currently connected (see §6). `setActiveZone()` short-circuits for the
+new zone the same way it does for `local` / `offline` — no MCWS call.
+
+### 4.3 Centralized branching
+
+Introduce derived providers to keep the three-way routing concise:
+
+```dart
+@riverpod
+bool isAndroidAutoActive(Ref ref) =>
+    ref.watch(activeZoneProvider)?.isAndroidAuto == true;
+
+@riverpod
+bool isVirtualZoneActive(Ref ref) {
+  final z = ref.watch(activeZoneProvider);
+  return z?.isLocal == true ||
+      z?.isOffline == true ||
+      z?.isAndroidAuto == true;
+}
+```
+
+### 4.4 Audit of existing branches
+
+Every existing consumer of `isLocal` / `isOffline` becomes three-way:
+
+- [queue_provider.dart](../lib/features/queue/providers/queue_provider.dart):
+  `build()` checks `zone.isLocal || zone.isOffline` → returns the
+  `LocalPlayer` sequence. Add a third branch: when `zone.isAndroidAuto`,
+  return the AA handler's current queue (see §7).
+- [zone_polling_provider.dart](../lib/features/zones/providers/zone_polling_provider.dart):
+  already skips MCWS polling for Local/Offline. Skip for AA too.
+- [library_providers.dart](../lib/features/library/providers/library_providers.dart):
+  many guards on `isOfflineActiveProvider`. AA's library view follows
+  the *Offline* path (downloads-only) for v1, so migrate the relevant
+  guards to `isLocalLikeActive` (offline + AA).
+- [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart):
+  the `wasOffline` → refresh logic should generalize to
+  "was-virtual-zone-without-server" and fire for `wasAndroidAuto` too.
+
+## 5. AA-side playback backend
+
+### 5.1 Handler topology
+
+```
+Android Auto head unit ──┐
+                         ▼
+            JrrAudioHandler (audio_service, background isolate)
+                         ▲
+                         │ streams + commands (AudioService.connect)
+                         ▼
+            AndroidAutoPlaybackController (UI isolate)
+                         ▲
+                         │ ref.watch / ref.read
+                         ▼
+      queueProvider / playerProvider (when isAndroidAutoActive)
+```
+
+- `JrrAudioHandler` is the owner of the AA zone's player state. Its
+  queue, current index, and playback state ARE the AA zone's
+  `queueProvider` / `playerProvider` data.
+- The handler runs even when no UI is open (background isolate on
+  Android).
+- `AndroidAutoPlaybackController` exposes the handler's streams to
+  Riverpod providers in the UI isolate, so when the user opens the
+  phone app *while the car is connected* and selects the AA zone, the
+  queue screen shows the car's current queue, the player screen shows
+  the car's now-playing, and transport buttons in Flutter forward to
+  the handler.
+
+The Local zone keeps using `LocalPlayerService` unchanged. Two players
+coexist; only one is "active" at a time per the zone selection.
+
+### 5.2 `audio_service` migration steps
+## 4. Zone model and routing changes
+
+### 4.1 `Zone` flag
+
+[zone.dart](../lib/features/zones/data/models/zone.dart):
+
+```dart
+@freezed
+abstract class Zone with _$Zone {
+  const factory Zone({
+    required String id,
+    required String name,
+    required String guid,
+    required bool isDLNA,
+    @Default(false) bool isLocal,
+    @Default(false) bool isOffline,
+    @Default(false) bool isAndroidAuto, // NEW
+  }) = _Zone;
+}
+```
+
+### 4.2 Synthetic zone constant
+
+[zone_repository_impl.dart](../lib/features/zones/data/repositories/zone_repository_impl.dart):
+
+```dart
+const androidAutoZone = Zone(
+  id: 'android-auto',
+  name: 'Android Auto',
+  guid: 'android-auto-zone-guid',
+  isDLNA: false,
+  isAndroidAuto: true,
+);
+```
+
+`getZones()` appends `androidAutoZone` only when an Auto session is
+currently connected (see §6). `setActiveZone()` short-circuits for the
+new zone the same way it does for `local` / `offline` — no MCWS call.
+
+### 4.3 Centralized branching
+
+Introduce derived providers to keep the three-way routing concise:
+
+```dart
+@riverpod
+bool isAndroidAutoActive(Ref ref) =>
+    ref.watch(activeZoneProvider)?.isAndroidAuto == true;
+
+@riverpod
+bool isVirtualZoneActive(Ref ref) {
+  final z = ref.watch(activeZoneProvider);
+  return z?.isLocal == true ||
+      z?.isOffline == true ||
+      z?.isAndroidAuto == true;
+}
+```
+
+### 4.4 Audit of existing branches
+
+Every existing consumer of `isLocal` / `isOffline` becomes three-way:
+
+- [queue_provider.dart](../lib/features/queue/providers/queue_provider.dart):
+  `build()` checks `zone.isLocal || zone.isOffline` → returns the
+  `LocalPlayer` sequence. Add a third branch: when `zone.isAndroidAuto`,
+  return the AA handler's current queue (see §7).
+- [zone_polling_provider.dart](../lib/features/zones/providers/zone_polling_provider.dart):
+  already skips MCWS polling for Local/Offline. Skip for AA too.
+- [library_providers.dart](../lib/features/library/providers/library_providers.dart):
+  many guards on `isOfflineActiveProvider`. AA's library view follows
+  the *Offline* path (downloads-only) for v1, so migrate the relevant
+  guards to `isLocalLikeActive` (offline + AA).
+- [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart):
+  the `wasOffline` → refresh logic should generalize to
+  "was-virtual-zone-without-server" and fire for `wasAndroidAuto` too.
+
+## 5. AA-side playback backend
+
+### 5.1 Handler topology
+
+```
+Android Auto head unit ──┐
+                         ▼
+            JrrAudioHandler (audio_service, background isolate)
+                         ▲
+                         │ streams + commands (AudioService.connect)
+                         ▼
+            AndroidAutoPlaybackController (UI isolate)
+                         ▲
+                         │ ref.watch / ref.read
+                         ▼
+      queueProvider / playerProvider (when isAndroidAutoActive)
+```
+
+- `JrrAudioHandler` is the owner of the AA zone's player state. Its
+  queue, current index, and playback state ARE the AA zone's
+  `queueProvider` / `playerProvider` data.
+- The handler runs even when no UI is open (background isolate on
+  Android).
+- `AndroidAutoPlaybackController` exposes the handler's streams to
+  Riverpod providers in the UI isolate, so when the user opens the
+  phone app *while the car is connected* and selects the AA zone, the
+  queue screen shows the car's current queue, the player screen shows
+  the car's now-playing, and transport buttons in Flutter forward to
+  the handler.
+
+The Local zone keeps using `LocalPlayerService` unchanged. Two players
+coexist; only one is "active" at a time per the zone selection.
+
+### 5.2 `audio_service` migration steps
 
 1. Add `audio_service: ^0.18.x` to [pubspec.yaml](../pubspec.yaml).
 2. Create `lib/features/player/services/jrr_audio_handler.dart` — an
    `AudioHandler` that:
-   - Wraps the existing `LocalPlayerService` `AudioPlayer`.
+   - Wraps an `AudioPlayer`.
+   - Wraps an `AudioPlayer`.
    - Forwards `playbackState`, `mediaItem`, and `queue` streams from
      just_audio events.
    - Implements `play`, `pause`, `stop`, `skipToNext`, `skipToPrevious`,
      `seek`, `setShuffleMode`, `setRepeatMode`, `playFromMediaId`,
-     `customAction` (used by Android Auto for transport controls).
-3. Boot the handler in [injection.dart](../lib/core/di/injection.dart) via
-   `AudioService.init(builder: () => JrrAudioHandler(...), config: ...)`
+     `playFromSearch`, `customAction`.
+3. Boot the handler in [injection.dart](../lib/core/di/injection.dart)
+   via `AudioService.init(builder: () => JrrAudioHandler(...), config: ...)`
+     `playFromSearch`, `customAction`.
+3. Boot the handler in [injection.dart](../lib/core/di/injection.dart)
+   via `AudioService.init(builder: () => JrrAudioHandler(...), config: ...)`
    instead of constructing `AudioPlayer` directly.
-4. Update [local_player_service.dart](../lib/features/player/services/local_player_service.dart)
-   to use the handler's player rather than its own — or fold its public
-   API into the handler if we'd rather collapse the layers.
-5. Keep [LocalPlayer riverpod provider](../lib/features/player/providers/local_player_provider.dart)
-   unchanged from the consumer side; it now reads streams from
-   `AudioService` instead of just_audio directly.
-6. Update [main.dart](../lib/main.dart) — `audio_service` requires
+4. Decision point — collapse vs coexist:
+   - **Collapse**: update
+     [local_player_service.dart](../lib/features/player/services/local_player_service.dart)
+     to use the handler's player. Cleaner; bigger refactor surface.
+   - **Coexist**: keep `LocalPlayerService` for the Local zone; the
+     handler owns the AA zone only. Less risk, more code.
+   Recommendation: **collapse** in Phase 2 so there's one source of
+   truth for playback. If schedule is tight, coexist for v1 and
+   collapse later.
+5. Update [main.dart](../lib/main.dart) — `audio_service` requires
+4. Decision point — collapse vs coexist:
+   - **Collapse**: update
+     [local_player_service.dart](../lib/features/player/services/local_player_service.dart)
+     to use the handler's player. Cleaner; bigger refactor surface.
+   - **Coexist**: keep `LocalPlayerService` for the Local zone; the
+     handler owns the AA zone only. Less risk, more code.
+   Recommendation: **collapse** in Phase 2 so there's one source of
+   truth for playback. If schedule is tight, coexist for v1 and
+   collapse later.
+5. Update [main.dart](../lib/main.dart) — `audio_service` requires
    initialization before `runApp`.
-7. Configure the foreground notification (channel ID, icon, action layout)
-   in `AudioServiceConfig`.
-8. Sanity check on phone: lock screen, notification controls, and app UI
-   all still work.
+6. Configure the foreground notification (channel ID, icon, action
+   layout) in `AudioServiceConfig`.
 
-**Exit criteria**: existing Local-zone playback works exactly as today,
-plus the system media notification (lock screen + pull-down) appears with
-the JRR controls.
+**Phase 2 exit**: existing Local-zone playback works exactly as today,
+plus the system media notification (lock screen + pull-down) appears
+with the JRR controls.
 
-### Phase 2 — Browse hierarchy (2–3 days)
+## 6. Detecting an Android Auto session
+
+The phone needs to know "is the car connected right now" to decide
+whether to surface the zone. Source of truth: `MediaBrowserService`
+callbacks — Android Auto calls `onGetRoot` / `onLoadChildren` when the
+head unit binds.
+
+1. Add `lib/features/zones/services/android_auto_session_service.dart`:
+   - Holds a `ValueNotifier<bool> isConnected`.
+   - Set `true` from `JrrAudioHandler.getChildren(root)` (called when
+     Auto binds) and on receipt of any client-bound event.
+   - Set `false` after a debounced "no activity" timeout, or on
+     explicit `onUnbind`.
+2. Wrap as a Riverpod provider:
+   ```dart
+   @riverpod
+   Stream<bool> androidAutoConnected(Ref ref) => /* from service */;
+   ```
+3. `ZoneRepositoryImpl.getZones()` includes/excludes the AA zone based
+   on the latest connected value.
+4. `ZoneList` provider watches `androidAutoConnectedProvider` so the
+   list refreshes when the car connects/disconnects.
+
+Edge case: if AA is the saved active zone but no car is currently
+connected, fall back to the previous zone with a snackbar (mirrors the
+current Offline-fallback behaviour).
+
+## 7. Browse hierarchy
+6. Configure the foreground notification (channel ID, icon, action
+   layout) in `AudioServiceConfig`.
+
+**Phase 2 exit**: existing Local-zone playback works exactly as today,
+plus the system media notification (lock screen + pull-down) appears
+with the JRR controls.
+
+## 6. Detecting an Android Auto session
+
+The phone needs to know "is the car connected right now" to decide
+whether to surface the zone. Source of truth: `MediaBrowserService`
+callbacks — Android Auto calls `onGetRoot` / `onLoadChildren` when the
+head unit binds.
+
+1. Add `lib/features/zones/services/android_auto_session_service.dart`:
+   - Holds a `ValueNotifier<bool> isConnected`.
+   - Set `true` from `JrrAudioHandler.getChildren(root)` (called when
+     Auto binds) and on receipt of any client-bound event.
+   - Set `false` after a debounced "no activity" timeout, or on
+     explicit `onUnbind`.
+2. Wrap as a Riverpod provider:
+   ```dart
+   @riverpod
+   Stream<bool> androidAutoConnected(Ref ref) => /* from service */;
+   ```
+3. `ZoneRepositoryImpl.getZones()` includes/excludes the AA zone based
+   on the latest connected value.
+4. `ZoneList` provider watches `androidAutoConnectedProvider` so the
+   list refreshes when the car connects/disconnects.
+
+Edge case: if AA is the saved active zone but no car is currently
+connected, fall back to the previous zone with a snackbar (mirrors the
+current Offline-fallback behaviour).
+
+## 7. Browse hierarchy
 
 `audio_service` calls `getChildren(parentMediaId)` whenever Android Auto
-requests a folder. Implement this to expose:
+requests a folder. Expose:
+requests a folder. Expose:
 
 ```
 ROOT
 ├── Recent
-├── Downloads (offline-only)
+├── Downloads
+├── Downloads
 ├── Artists
 │   └── <Artist Name>
 │       └── <Album>
@@ -111,32 +462,64 @@ ROOT
 └── Random
 ```
 
-Tasks:
+When the AA zone is active, what the *car* sees and what the *phone UI*
+sees must match — the browse hierarchy is computed from the same
+providers the phone library screens use, scoped to offline-safe sources:
+When the AA zone is active, what the *car* sees and what the *phone UI*
+sees must match — the browse hierarchy is computed from the same
+providers the phone library screens use, scoped to offline-safe sources:
 
-1. Add `MediaItem` factory helpers in `lib/features/player/services/media_item_mapper.dart`
-   that convert JRR `Track`/`AlbumGroup`/`Artist` models to `MediaItem`s,
-   including artwork URI (use the MCWS artwork endpoint with the active
-   session token, or local-file URI for downloaded tracks).
+1. Add `MediaItem` factory helpers in
+   `lib/features/player/services/media_item_mapper.dart` that convert
+   JRR `Track`/`AlbumGroup`/`Artist` models to `MediaItem`s, including
+   artwork URI.
+1. Add `MediaItem` factory helpers in
+   `lib/features/player/services/media_item_mapper.dart` that convert
+   JRR `Track`/`AlbumGroup`/`Artist` models to `MediaItem`s, including
+   artwork URI.
 2. In `JrrAudioHandler.getChildren`, route by `parentMediaId` prefix:
    - `root` → top-level categories
-   - `artists` → list of artists from the existing
-     [LibraryRepository](../lib/features/library/data/repositories/library_repository.dart)
-   - `artist:<id>` → that artist's albums
-   - `album:<id>` → tracks
+   - `artists` / `artist:<id>` / `album:<id>` → drilled-down library
+     (from [LibraryRepository](../lib/features/library/data/repositories/library_repository.dart))
+   - `artists` / `artist:<id>` / `album:<id>` → drilled-down library
+     (from [LibraryRepository](../lib/features/library/data/repositories/library_repository.dart))
    - `downloads` → from
      [DownloadsRepository](../lib/features/offline/data/repositories/downloads_repository.dart)
-   - `recent` → recently played (need to add a "recent" persistence layer
-     if we don't have one — or pull from MCWS Files/Search by date).
+   - `recent` → from a new small `RecentlyPlayedRepository` (SharedPrefs
+     or sqflite, capped at ~100 items)
+   - `recent` → from a new small `RecentlyPlayedRepository` (SharedPrefs
+     or sqflite, capped at ~100 items)
 3. Implement `playFromMediaId(mediaId)` — translate the ID back to a
-   `Track`, build a queue, hand off to `LocalPlayer`.
-4. Search support — implement `search(query)` to query the existing
-   library search and return `MediaItem`s. Android Auto routes voice
-   commands through this.
+   `Track`, build a queue, hand off to the handler's player.
+4. Search support — implement `search(query)` and `playFromSearch(query)`
+   against the existing library search; this is how Auto routes voice
+   commands.
 
-**Exit criteria**: opening JRR in DHU shows the full browse tree, tapping
-a track plays it, voice "play artist X" works.
+**Library mode for AA when server IS reachable**: the
+downloads-only restriction applies to the **car-side** browse tree
+(MediaItems sent to the head unit), not to the phone UI when AA is the
+active zone. Phone screens keep using `isOfflineActiveProvider` and
+browse the live MCWS library normally — the user can pick tracks on the
+phone and have them play through the car. Only `getChildren`
+(implemented in this phase) is downloads-only for v1, to avoid
+token-in-URL artwork rotation pain on cached `MediaItem`s.
 
-### Phase 3 — Android Auto manifest & validation (1–2 days)
+## 8. Android Auto manifest & validation
+   `Track`, build a queue, hand off to the handler's player.
+4. Search support — implement `search(query)` and `playFromSearch(query)`
+   against the existing library search; this is how Auto routes voice
+   commands.
+
+**Library mode for AA when server IS reachable**: the
+downloads-only restriction applies to the **car-side** browse tree
+(MediaItems sent to the head unit), not to the phone UI when AA is the
+active zone. Phone screens keep using `isOfflineActiveProvider` and
+browse the live MCWS library normally — the user can pick tracks on the
+phone and have them play through the car. Only `getChildren`
+(implemented in this phase) is downloads-only for v1, to avoid
+token-in-URL artwork rotation pain on cached `MediaItem`s.
+
+## 8. Android Auto manifest & validation
 
 1. Create `android/app/src/main/res/xml/automotive_app_desc.xml`:
    ```xml
@@ -150,133 +533,981 @@ a track plays it, voice "play artist X" works.
      android:name="com.google.android.gms.car.application"
      android:resource="@xml/automotive_app_desc"/>
    ```
-3. Declare the foreground service permissions:
+3. Declare foreground service permissions:
+3. Declare foreground service permissions:
    - `FOREGROUND_SERVICE`
    - `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (Android 14+)
-4. Add the Android Auto launcher icon (`ic_launcher_car.png`) at densities
-   mdpi/hdpi/xhdpi/xxhdpi.
-5. Validate via `adb shell dumpsys car_service` and the Auto desktop
-   validator (`https://developer.android.com/training/cars/testing`).
+4. Add the Android Auto launcher icon (`ic_launcher_car.png`) at
+   densities mdpi/hdpi/xhdpi/xxhdpi.
+5. Validate via `adb shell dumpsys car_service` and the
+   [Auto desktop validator](https://developer.android.com/training/cars/testing).
+4. Add the Android Auto launcher icon (`ic_launcher_car.png`) at
+   densities mdpi/hdpi/xhdpi/xxhdpi.
+5. Validate via `adb shell dumpsys car_service` and the
+   [Auto desktop validator](https://developer.android.com/training/cars/testing).
 
-### Phase 4 — Auth & connectivity (2–3 days)
+## 9. Auth, connectivity, now-playing, transport, voice
 
-In-car edge cases that matter:
+### 9.1 Auth & connectivity
+## 9. Auth, connectivity, now-playing, transport, voice
 
-- The phone may have an authenticated session **or** be cold-started in the
-  car. Currently a session restore happens via
+### 9.1 Auth & connectivity
+
+In-car edge cases:
+In-car edge cases:
+
+- The phone may have an authenticated session **or** be cold-started in
+  the car. Session restore happens via
+- The phone may have an authenticated session **or** be cold-started in
+  the car. Session restore happens via
   [Session._attemptSilentReconnect()](../lib/features/connection/providers/session_provider.dart);
-  ensure this completes before `getChildren(root)` returns, otherwise the
-  user sees an empty library.
-- If the user has only ever logged in via SSL, the saved-server SSL trust
-  list (see [ssl_trust.dart](../lib/core/network/ssl_trust.dart)) must be
-  populated **during** the headless audio service startup — not later
-  during widget tree build.
-- Network loss: `playFromMediaId` of a streaming track must show a clear
-  error to Android Auto (use `playbackState.errorMessage`). Downloaded
-  tracks must keep working with no network.
-- Implement an **offline-first** root: if the saved server is unreachable,
-  show "Downloads" as the only child of root rather than a confusing empty
+  ensure this completes before `getChildren(root)` returns, otherwise
+  the user sees an empty library.
+- If the user has only ever logged in via SSL, the saved-server SSL
+  trust list (see [ssl_trust.dart](../lib/core/network/ssl_trust.dart))
+  must be populated **during** the headless audio service startup —
+  not later during widget tree build.
+- Network loss: `playFromMediaId` of a streaming track must show a
+  clear error to Android Auto (use `playbackState.errorMessage`).
+  Downloaded tracks must keep working with no network.
+- Offline-first root: if the saved server is unreachable, show
+  "Downloads" as the only child of root rather than a confusing empty
+  ensure this completes before `getChildren(root)` returns, otherwise
+  the user sees an empty library.
+- If the user has only ever logged in via SSL, the saved-server SSL
+  trust list (see [ssl_trust.dart](../lib/core/network/ssl_trust.dart))
+  must be populated **during** the headless audio service startup —
+  not later during widget tree build.
+- Network loss: `playFromMediaId` of a streaming track must show a
+  clear error to Android Auto (use `playbackState.errorMessage`).
+  Downloaded tracks must keep working with no network.
+- Offline-first root: if the saved server is unreachable, show
+  "Downloads" as the only child of root rather than a confusing empty
   list.
 
-### Phase 5 — Now Playing metadata & artwork (1 day)
+### 9.2 Now Playing metadata & artwork
+### 9.2 Now Playing metadata & artwork
 
-1. Emit `MediaItem` updates whenever the local player advances tracks —
+1. Emit `MediaItem` updates whenever the player advances tracks —
+1. Emit `MediaItem` updates whenever the player advances tracks —
    include `title`, `artist`, `album`, `duration`, `artUri`.
 2. Choose artwork URI strategy:
    - **Downloaded tracks**: `file://` URI to the cached artwork.
    - **Streaming tracks**: HTTPS URI to the JRR `File/GetImage` MCWS
      endpoint with the session token. Risk: token is in URL; rotate it
-     when the session changes.
+     when the session changes. (Sidestepped in v1 — see §7.)
+     when the session changes. (Sidestepped in v1 — see §7.)
 3. Verify the head unit's small/large artwork sizes (Auto requests
    192x192 and 800x800 typically).
 
-### Phase 6 — Transport / playback state (0.5 days)
+### 9.3 Transport / playback state
 
-The `audio_service` library wires this up automatically once the handler
-emits proper `PlaybackState`. Verify:
+`audio_service` wires this up automatically once the handler emits
+proper `PlaybackState`. Verify:
+### 9.3 Transport / playback state
 
-- Skip-next / skip-previous in the car
-- Scrubber position updates while playing
-- Pause/resume on transient interruptions (incoming call) — `audio_service`
-  handles audio focus
-- Repeat / shuffle controls (if visible on the head unit's UI)
+`audio_service` wires this up automatically once the handler emits
+proper `PlaybackState`. Verify:
 
-### Phase 7 — Voice & search polish (1–2 days)
+- Skip-next / skip-previous in the car.
+- Scrubber position updates while playing.
+- Pause/resume on transient interruptions (incoming call) —
+  `audio_service` handles audio focus.
+- Repeat / shuffle controls (if visible on the head unit's UI).
+- Skip-next / skip-previous in the car.
+- Scrubber position updates while playing.
+- Pause/resume on transient interruptions (incoming call) —
+  `audio_service` handles audio focus.
+- Repeat / shuffle controls (if visible on the head unit's UI).
+
+### 9.4 Voice & search polish
+### 9.4 Voice & search polish
 
 - Implement `playFromSearch(query)` for natural-language queries.
 - Map common spoken intents:
-  - "play <artist>" → search artists, queue all
-  - "play album <title>" → search albums
-  - "shuffle <artist>" → shuffle on + queue all artist tracks
+  - `play <artist>` → search artists, queue all
+  - `play album <title>` → search albums
+  - `shuffle <artist>` → shuffle on + queue all artist tracks
 
-Test with the actual head unit voice button — Auto delivers a transcribed
+Test with the real head unit voice button — Auto delivers a transcribed
+Test with the real head unit voice button — Auto delivers a transcribed
 string plus extras like `EXTRA_MEDIA_ARTIST`.
 
-### Phase 8 — QA & store submission (2–3 days)
+## 10. Phases & effort
 
-1. Run **all** items on Android Auto's
-   [DHU validation checklist](https://developer.android.com/training/cars/testing#validation):
-   - "Drive distraction" rules (no excessive UI updates while driving)
-   - Browseable item counts (Auto truncates after a limit)
-   - Loading states (spinners are fine, but mustn't last >10s)
-2. Real-car testing: at least 2 cars (one wired, one wireless), one ride
-   from cold-start to several hour drive.
-3. Submit to Play Console and request the **Android Auto** review track —
-   Google reviews this separately from the regular store listing and can
-   reject for distraction violations.
+Status legend: 🟢 done · 🟡 in progress · ⚪ pending · ⏸ deferred
 
-## 4. Risks and unknowns
+| Phase | Scope | Days | Status |
+|---|---|---|---|
+| 0 — Spike | Stripped-down `audio_service` sample on DHU; one hard-coded MediaItem playing one local file | 1–2 | ⏸ user-side (needs DHU + device) |
+| 1 — Zone model | Add `isAndroidAuto`; insert synthetic zone; routing audit (`isVirtualZoneActive` derived providers; refactor existing `isOffline`/`isLocal` guards) | 2 | 🟢 done |
+| 2 — `audio_service` migration | `JrrAudioHandler`; collapse vs coexist decision for `LocalPlayerService`; foreground notification config | 3–5 | 🟢 done |
+| 3 — UI ↔ handler bridge | `AndroidAutoPlaybackController`; wire `queueProvider` / `playerProvider` to read from handler when AA is active | 2–3 | 🟢 done |
+| 4 — Session detection | `androidAutoConnectedProvider`; zone-list refresh on connect/disconnect; fallback for saved-active-zone-AA-but-no-car | 1–2 | 🟢 done |
+| 5 — Browse hierarchy | `MediaItem` mapping; `getChildren` routing; `playFromMediaId`; `RecentlyPlayedRepository` | 2–3 | 🟢 done |
+| 6 — Manifest & validation | `automotive_app_desc.xml`; manifest meta-data; permissions; car launcher icon | 1 | 🟢 done |
+| 7 — Phone-side AA zone screens | Queue / Player show car state; transport controls forward to handler | 1–2 | 🟢 done |
+| 8 — Voice & search polish | `playFromSearch`; common-intent mappings | 1–2 | 🟢 done |
+| 9 — QA & store submission | DHU validation checklist; real-car testing (2 cars min); Play Console AA review | 2–3 | 🟡 user-side (checklist ready, hardware testing pending) |
+| **Total** | | **16–25 days** | |
 
-- **`audio_service` migration scope**: replacing `AudioPlayer` direct
-  usage may surface state-sync bugs in
-  [LocalPlayer](../lib/features/player/providers/local_player_provider.dart)
-  that were hidden by the current single-instance setup. Budget time for
-  flake.
-- **Background isolate**: `audio_service` runs the handler in a separate
-  isolate on Android (depending on config). Anything in the handler must
-  not touch widget-tree-only state. Riverpod providers used in the
-  handler must be created inside the audio isolate's container, not the UI
-  one. This is a common foot-gun.
-- **Token-in-URL artwork**: if the auth token rotates while a `MediaItem`
-  is cached on the head unit, artwork will 401. Mitigation: include the
-  current token at emission time and re-emit `MediaItem` on session
-  refresh.
-- **MCWS over HTTPS in-car**: SSL trust hosts must be re-applied in the
-  audio isolate, since `JRiverHttpOverrides` is process-global but not
-  isolate-shared in some Flutter versions.
-- **Battery / data**: in-car streaming over phone LTE while the user
-  drives away from their LAN — current code assumes LAN-only. Need to
-  detect "server unreachable" gracefully (we already partially handle
-  this with the offline zone).
+### Phase 1 — Completion notes
 
-## 5. Estimated effort
+Changes landed:
 
-| Phase | Days |
-|---|---|
-| 0 — Spike | 1–2 |
-| 1 — `audio_service` migration | 3–5 |
-| 2 — Browse hierarchy | 2–3 |
-| 3 — Manifest & validation | 1–2 |
-| 4 — Auth & connectivity | 2–3 |
-| 5 — Now Playing metadata | 1 |
-| 6 — Transport state | 0.5 |
-| 7 — Voice & search | 1–2 |
-| 8 — QA & submission | 2–3 |
-| **Total** | **13–21 days** |
+- [zone.dart](../lib/features/zones/data/models/zone.dart): added
+  `isAndroidAuto` flag (default `false`).
+- [zone_repository_impl.dart](../lib/features/zones/data/repositories/zone_repository_impl.dart):
+  hoisted `offlineZone` and `localZone` to top-level constants, added
+  exported `androidAutoZone` constant, and extended `setActiveZone`
+  short-circuit list to include `android-auto`. The AA zone is **not**
+  yet returned from `getZones()` — that lands in Phase 4 with session
+  detection.
+- [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart):
+  added `isAndroidAutoActiveProvider`, `isOfflineLikeActiveProvider`
+  (offline + AA, for library guards), and `isVirtualZoneActiveProvider`
+  (all three virtual zones). Generalized the previous `wasOffline` refresh
+  trigger in `setZone` to cover any serverless virtual zone.
+- Routing hardened so the AA zone, if it ever becomes active before
+  Phase 3 wiring, never dispatches to MCWS:
+  - [player_polling_provider.dart](../lib/features/player/providers/player_polling_provider.dart)
+    now uses `isVirtualZoneActiveProvider` (skips polling for AA —
+    MCWS player isn't the active transport, and LocalPlayer is
+    event-driven).
+  - [zone_polling_provider.dart](../lib/features/zones/providers/zone_polling_provider.dart)
+    keeps polling for both Local and Android Auto: in both cases the
+    phone still has a live MCWS session, and the user must be able to
+    pick a real zone from the picker. Only Offline skips polling
+    (no server context).
+  - [player_provider.dart](../lib/features/player/providers/player_provider.dart)
+    routes AA to the local controller (placeholder until Phase 3 swaps
+    in the AA handler).
+  - [mcws_player_provider.dart](../lib/features/player/providers/mcws_player_provider.dart)
+    early-returns for AA in `build`, `refresh`, and `_run`.
+  - [queue_provider.dart](../lib/features/queue/providers/queue_provider.dart)
+    returns empty queue for AA and turns mutating methods (`removeItem`,
+    `moveItem`, `clearQueue`) into no-ops with `Phase 3` TODO markers.
+- `isOfflineLikeActiveProvider` is **defined but not yet used** —
+  reserved for Phase 5 to scope the *car-side* `getChildren` browse
+  tree to downloads-only. Phone-side library widgets continue to use
+  `isOfflineActiveProvider` (Offline only), so when the AA zone is
+  active on the phone, the user can still browse the live MCWS library
+  normally. The token-rotation concern that motivated downloads-only
+  applies to `MediaItem`s cached on the head unit, not to the phone UI
+  itself.
 
-For a single engineer, plan on **3–4 calendar weeks** including review,
+Verification: `flutter analyze` clean, all 38 existing tests pass,
+`dart format` applied.
+
+Deferred / not done in Phase 1:
+
+- AA zone is intentionally invisible (no session detection yet — Phase 4).
+- `local_player_provider` still early-returns for AA via its existing
+  `isLocal || isOffline` guards; Phase 3 will replace this with the
+  handler bridge.
+
+### Phase 2 — Completion notes
+
+Decisions (confirmed with user):
+- **Collapse, not coexist.** `LocalPlayerService` itself now extends
+  `BaseAudioHandler with SeekHandler` and is the single owner of the
+  `just_audio` `AudioPlayer`. No second handler class introduced —
+  keeps the diff small and consumers untouched.
+- **Package version:** `audio_service: ^0.18.18` (latest stable).
+
+Changes landed:
+
+- [pubspec.yaml](../pubspec.yaml): added `audio_service: ^0.18.18`
+  (and its transitive `rxdart` dependency).
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  class now extends `BaseAudioHandler with SeekHandler`. Existing public
+  surface (state getters, just_audio streams, `setTracks`, `playNow`,
+  `seekTo`, `setShuffle`, `setRepeat`, etc.) is preserved so all
+  consumers in [local_player_provider.dart](../lib/features/player/providers/local_player_provider.dart)
+  keep working unchanged. Added:
+  - `audio_service` transport overrides: `play`, `pause`, `stop`,
+    `seek`, `skipToNext`, `skipToPrevious`, `setShuffleMode`,
+    `setRepeatMode`. These route to the underlying `_player` and are
+    invoked from the system notification, lock screen, and (Phase 3+)
+    Android Auto head unit.
+  - Stream forwarding from `just_audio` to `audio_service`: a
+    `_bindPlayerToAudioServiceStreams()` binder fires on construction,
+    listens to `playbackEventStream` and `sequenceStateStream`, and
+    pushes `PlaybackState` / `MediaItem` / `queue` updates to the
+    audio_service `BehaviorSubject`s.
+  - `_mapPlaybackState`: just_audio `PlaybackEvent` →
+    audio_service `PlaybackState` (controls, system actions, processing
+    state, position, buffered position, speed, queue index).
+  - `_toMediaItem`: `Track` → `MediaItem` (id from `fileKey`, title /
+    artist / album / duration). Artwork URI not wired yet — Phase 5.
+- [main.dart](../lib/main.dart): now calls `AudioService.init(builder,
+  config)` before `runApp`, constructs the `AudioPlayer` and
+  `LocalPlayerService` there, and registers both into `getIt`. Notification
+  channel ID `com.jriver.remote.audio`, ongoing notification, foreground
+  stops on pause.
+- [injection.dart](../lib/core/di/injection.dart): removed direct
+  `AudioPlayer()` / `LocalPlayerService` construction (moved to
+  `main.dart`); imports cleaned up.
+- [AndroidManifest.xml](../android/app/src/main/AndroidManifest.xml):
+  added `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and
+  `WAKE_LOCK` permissions (the last is **required** — audio_service
+  acquires a `PARTIAL_WAKE_LOCK` inside `enterPlayingState` between
+  `startForegroundService` and `startForeground`; without it,
+  `SecurityException` aborts the method and the system ANRs the
+  foreground service it was asked to start); added `<service>` for
+  `com.ryanheise.audioservice.AudioService`
+  (`foregroundServiceType="mediaPlayback"`, intent filter
+  `android.media.browse.MediaBrowserService`) and `<receiver>` for
+  `com.ryanheise.audioservice.MediaButtonReceiver` (intent filter
+  `android.intent.action.MEDIA_BUTTON`). Added `xmlns:tools` so the
+  required `tools:ignore="Instantiatable"` attribute parses. Full
+  Phase 6 manifest work (`automotive_app_desc.xml`, car launcher icon,
+  AA meta-data) still pending.
+- [MainActivity.kt](../android/app/src/main/kotlin/com/jrr/jrr_f/MainActivity.kt):
+  now extends `com.ryanheise.audioservice.AudioServiceActivity`
+  instead of `FlutterActivity`. Required by `audio_service` so its
+  MethodChannel can find the correct `FlutterEngine`; without this
+  `AudioService.init` throws a `PlatformException` at startup.
+- [ic_audio_service_notification.xml](../android/app/src/main/res/drawable/ic_audio_service_notification.xml):
+  added a monochrome vector drawable as the notification icon.
+  Android requires notification icons to be alpha-masks (the system
+  tints them); the default `mipmap/ic_launcher` is a multicolor PNG
+  that silently crashes the foreground service on some devices when
+  the first notification is posted, ending up as "Lost connection to
+  device" with no Dart-visible error.
+- [main.dart](../lib/main.dart) `AudioServiceConfig`:
+  - `androidNotificationIcon: 'drawable/ic_audio_service_notification'`
+    points at the new drawable.
+  - `androidStopForegroundOnPause` removed (was `true`). In
+    `audio_service ^0.18.x` on Android 12+ this triggers a native
+    crash when the foreground service tries to detach while
+    `FOREGROUND_SERVICE_MEDIA_PLAYBACK` is the only justification for
+    being foreground. Safer default is to leave the service in the
+    foreground while paused; we can revisit once the rest of the
+    pipeline is stable.
+
+Known not-yet-Phase-2 issues observed during runtime testing:
+
+- Riverpod state-change log storm: every 200ms position tick fires
+  `localPlayerPositionProvider` →
+  `localPlayerProvider` → `playerProvider` → `queueProvider`
+  through AsyncLoading→AsyncData transitions, and
+  [TalkerRiverpodObserver](../lib/main.dart) dumps the full Tracks
+  list each time. Pre-existing; not blocking Phase 2 but worth a
+  cleanup pass before Phase 3 since it amplifies any I/O pressure
+  from `audio_service`'s notification updates. Either drop the
+  observer from the production `ProviderScope` or trim its included
+  providers list.
+- [Info.plist](../ios/Runner/Info.plist): added `UIBackgroundModes`
+  with `audio` so iOS playback continues when the app is backgrounded.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
+
+Runtime verification (requires a device, **user-side**):
+- Confirm Local-zone playback works as before.
+- Confirm a system media notification appears with title/artist/album
+  and play/pause/skip controls.
+- Lock-screen controls forward to the handler.
+- (iOS) Backgrounding the app continues playback.
+- (Android) `adb shell dumpsys media_session` lists the JRR session.
+
+### Phase 3 — Completion notes
+
+Because Phase 2 **collapsed** `LocalPlayerService` into the single
+`BaseAudioHandler`, the planned separate `JrrAudioHandler` +
+`AndroidAutoPlaybackController` pair from §5.1 is **not needed**. There is
+one handler, one `AudioPlayer`. Phase 3 reduces to: route the AA zone
+through the existing local handler with its own persisted queue, and
+remove the Phase 1 placeholder early-returns.
+
+Changes landed:
+
+- [local_player_provider.dart](../lib/features/player/providers/local_player_provider.dart):
+  - `build()` zone-id resolution now maps `isAndroidAuto` to a third
+    persisted-queue id `'android-auto'`. The existing per-zone
+    SharedPreferences keys (`local_player_<zone>_index`,
+    `local_player_<zone>_position_ms`) and `LocalQueueRepository` keys
+    automatically give AA its own queue / index / position state,
+    independent of Local and Offline.
+  - The `localPlaybackStateProvider` listener and the initial
+    `_calculateStatus` snapshot now treat AA the same as Local/Offline,
+    so `playerProvider` receives `PlayerStatus` updates when the AA
+    zone is active.
+- [queue_provider.dart](../lib/features/queue/providers/queue_provider.dart):
+  - Removed the AA early-return in `build()` and the three AA
+    `Phase 3: wire to AA handler` no-ops on `removeItem` / `moveItem`
+    / `clearQueue`. AA now falls through to the local-zone branch and
+    operates on the same handler.
+- [player_provider.dart](../lib/features/player/providers/player_provider.dart):
+  - Updated the `_controllerFor` comment to reflect that Local/Offline/AA
+    all share the single audio_service-backed handler — Phase 3
+    placeholder language removed. The actual dispatch was already
+    correct from Phase 1's hardening pass.
+
+Not needed (vs the original plan):
+
+- **No `AndroidAutoPlaybackController` class.** Subsumed by the
+  collapsed handler. The handler streams already feed the
+  `localPlayer*Provider` family, which the unified `playerProvider`
+  and `queueProvider` read from when AA is the active zone.
+- **No queue-state divergence between car and phone.** With one
+  handler, "what the car sees" and "what the phone sees while AA is
+  the active zone" are the same `MediaItem` / `queue` /
+  `PlaybackState` streams. No additional bridge required.
+
+Implication for later phases:
+
+- Phase 4 (session detection) — when AA binds and the car-side
+  `getChildren` callback fires, the existing handler can be left
+  alone; we only need to surface the AA zone in `getZones()` and let
+  the user pick it (or auto-pick it on connect, TBD §12).
+- Phase 5 (`playFromMediaId`) — wires directly to
+  `LocalPlayerService.playNow` (or a thin AA-flavoured variant that
+  also sets the active zone). No new player object is introduced.
+- The "two-player coexistence" risk in §11 is **resolved by the Phase
+  2 collapse decision** — there is one player. AA and Local can't
+  fight each other; switching the active zone simply swaps which
+  persisted queue is loaded.
+
+Deferred / not done in Phase 3:
+
+- AA zone is still invisible (no session detection — Phase 4).
+- The AA zone's queue is empty until `playFromMediaId` lands in
+  Phase 5; manually switching to the AA zone from the picker (once
+  Phase 4 surfaces it) will show an empty queue, which is correct.
+- The `localPlayerProvider` quality-change / downloads-change reload
+  listeners (L265–332) fire regardless of active zone. That's fine
+  for v1 — AA's queue is downloads-only per §7 so the streaming-URL
+  swap path is a no-op for AA tracks, and quality changes are still
+  user-driven from the same settings screen. Revisit only if we
+  expose quality settings inside the car-side UI.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
+
+### Phase 4 — Completion notes
+
+Changes landed:
+
+- [android_auto_session_service.dart](../lib/features/zones/services/android_auto_session_service.dart):
+  new `AndroidAutoSessionService` (no Riverpod dependency). Holds a
+  `ValueNotifier<bool> isConnected`, exposes `markActive()` which
+  flips to `true` on the first ping and refreshes a 5-minute
+  inactivity debounce on every subsequent ping, plus a `markInactive()`
+  escape hatch for future use (logout / app shutdown / a platform-
+  channel `onUnbind` hook). The 5-minute debounce is deliberately
+  long: Auto caches browse results aggressively and may go quiet for
+  minutes mid-playlist; a shorter timeout would falsely flip the
+  zone off the picker while the car is still connected.
+- [injection.dart](../lib/core/di/injection.dart): registers
+  `AndroidAutoSessionService` as a singleton. It's constructed in
+  `configureDependencies` (not `main.dart`) so it exists *before*
+  `AudioService.init` runs and `LocalPlayerService` resolves it
+  during its first `getChildren` call.
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  overrides three `BaseAudioHandler` browse callbacks —
+  `getChildren`, `getMediaItem`, and `search`. Each one calls
+  `markActive()` on the session service. For Phase 4 the bodies
+  return empty / null; Phase 5 will replace them with the real
+  browse hierarchy and `playFromMediaId` routing.
+- [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart):
+  added `AndroidAutoConnected` `Notifier<bool>` provider that
+  mirrors the session service's `ValueNotifier`. Riverpod's
+  `keepAlive: true` is deliberate — the listener stays attached for
+  the lifetime of the app so we never miss a connect/disconnect.
+- [zone_repository_impl.dart](../lib/features/zones/data/repositories/zone_repository_impl.dart):
+  every `getZones()` return path now passes through `_withAndroidAuto`,
+  which appends `androidAutoZone` when the session service reports
+  connected. The unauthenticated branch (offline-only) also includes
+  AA — Phase 4 leaves the gating *only* to the connection flag, so
+  the user could in principle have AA + Offline both visible. In
+  practice the unauthenticated branch is reached when the saved
+  session can't be restored, and AA at that point would still be
+  useful for playing downloaded tracks through the car.
+- [zone_provider.dart](../lib/features/zones/providers/zone_provider.dart):
+  `ZoneList.build` now also watches `androidAutoConnectedProvider`,
+  so the picker re-fetches when the car binds or the inactivity
+  debounce fires. The existing `ActiveZone._restoreZone` listener
+  picks up the new list automatically.
+
+Saved-active-zone fallback (the §6 edge case): handled implicitly by
+the existing `_restoreZone` logic in [active_zone_provider.dart](../lib/features/zones/providers/active_zone_provider.dart).
+If the saved guid is `android-auto-zone-guid` but AA isn't in the
+fetched list (no car connected), `firstWhere(orElse: () => zones.first)`
+falls back to the first available zone — same path the offline-zone
+fallback already exercises. No snackbar yet; matches the silent
+fallback used for other "saved zone disappeared" cases. A user-
+visible toast could be added later if the silent swap is confusing
+in practice.
+
+Not built in Phase 4 (deferred to later phases or future work):
+
+- **Native `onUnbind` hook.** Truly immediate disconnect detection
+  would need a small platform-channel notification from a custom
+  `MediaBrowserService` subclass — not worth the cost given the
+  5-min debounce already covers the common cases (drive ends, phone
+  unplugged). Revisit if QA reports the AA chip lingering visibly
+  after the car disconnects.
+- **Auto-switch active zone to AA on connect.** Phase 5 is the
+  right place — when the user taps a track on the head unit and
+  `playFromMediaId` fires, that's the unambiguous signal to make
+  AA the active zone. Flipping it on bare connect would steal the
+  active zone from a user who's still using the phone UI in their
+  driveway before they actually press play in the car.
+
+Verification: `flutter analyze` clean, all 38 tests pass, `dart format`
+applied.
+
+Runtime verification (requires a device + DHU or real car, **user-side**):
+- With the app open and authenticated, connect the phone to the
+  Android Auto desktop head unit (DHU). The "Android Auto" zone
+  should appear in the zone picker within ~1 second.
+- Disconnect Auto. The zone disappears from the picker within the
+  debounce window (≤5 min).
+- If the saved active zone is AA and the app cold-starts without a
+  car connection, the picker should restore the first available
+  zone instead of leaving AA orphaned.
+
+### Phase 5 — Completion notes
+
+Scope reminder: per §7, the **car-side** browse tree is **downloads-only**
+for v1. Phone-side library screens continue using the live MCWS library
+unchanged.
+
+MediaId grammar (final shape that landed):
+
+| Id                       | Kind     | Children                             |
+|--------------------------|----------|--------------------------------------|
+| `root`                   | category | `cat:downloads/recent/artists/albums`|
+| `cat:downloads`          | category | all downloaded tracks                |
+| `cat:recent`             | category | recently-played downloaded tracks    |
+| `cat:artists`            | category | `artist:<base64url(name)>` nodes     |
+| `cat:albums`             | category | `album:<base64url(albumGroupId)>`    |
+| `artist:<b64>`           | browse   | album nodes for that artist          |
+| `album:<b64>`            | browse   | `track:<fileKey>` items (disc/track sorted) |
+| `track:<fileKey>`        | playable | (leaf)                               |
+
+URL-safe base64 keeps `/` and `:` available as structural separators in
+the grammar even when artist/album names contain them. Padding is
+stripped so Auto's id-stable caching is well-behaved.
+
+Changes landed:
+
+- [recently_played_repository.dart](../lib/features/player/data/repositories/recently_played_repository.dart):
+  new `RecentlyPlayedRepository` backed by a single
+  `SharedPreferences` key holding a JSON-encoded list of file keys.
+  `markPlayed` dedupes and caps at 100 entries; a head-dedupe guard
+  avoids storage churn on re-emission of the same MediaItem. Survives
+  a corrupt stored payload. Tested in
+  [recently_played_repository_test.dart](../test/features/player/data/repositories/recently_played_repository_test.dart)
+  (7 new tests).
+- [injection.dart](../lib/core/di/injection.dart): registered the
+  repo as a singleton (depends on the SharedPreferences singleton
+  already in scope).
+- [media_item_mapper.dart](../lib/features/player/services/media_item_mapper.dart):
+  new `MediaItemMapper` with `fromDownloadedTrack` / `fromTrack` /
+  `browseNode` factories. Emits a `file://` `artUri` when the
+  downloaded artwork path exists on disk and `null` otherwise — Auto
+  silently falls back to a generic icon in the latter case. Streaming
+  artwork URIs are intentionally not yet emitted (would require
+  `MediaItem` re-emission on session refresh, deferred).
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  - Replaced the Phase 4 stub overrides with full
+    `getChildren` / `getMediaItem` / `search` / `playFromMediaId` /
+    `playFromSearch` implementations.
+  - Browse routing dispatches on id prefix (`cat:`, `artist:`,
+    `album:`, `track:`); category root returns the four top-level
+    nodes.
+  - Sort orders: Downloads → track name; Artists → artist name;
+    Albums → album title; Album tracks → disc # then track #.
+    Recent preserves repository order (most-recent first), dropping
+    keys whose downloads have since been deleted.
+  - `playFromMediaId` resolves a `track:<fileKey>` against the
+    downloads table and calls the existing `playNow(Tracks)` path.
+    v1 is single-track play; queue-from-parent-context is a known
+    limitation (see below).
+  - `playFromSearch` runs the same simple substring match as `search`
+    (name + artist + album, case-insensitive) and plays all
+    matches as a queue.
+  - Added a recently-played write inside the existing
+    `_bindPlayerToAudioServiceStreams` block — when the active
+    track in `sequenceStateStream` changes, the file key is pushed
+    to the repository. A local `lastRecordedFileKey` dedupe guards
+    against double-writes on unrelated re-emissions (shuffle/loop
+    toggles).
+
+**Known v1 limitations** (documented for Phase 9 QA and future work):
+
+- **No queue-from-parent-context on `playFromMediaId`.** When the user
+  picks a track from Downloads or an album, only that single track
+  plays; the queue does not auto-expand to the surrounding category.
+  audio_service's `playFromMediaId` doesn't carry the browse parent
+  out of the box, and encoding it inside the track media-id would
+  give the same track different ids depending on the browse path and
+  pollute Auto's caches. Practical fix later: pass parent context
+  through `extras` when Auto supports it on more head units, or
+  expose explicit "Play all" / "Shuffle all" playable nodes inside
+  each category.
+- **No active-zone auto-switch on `playFromMediaId`.** With Phase 2's
+  collapse there's one player; calling `playNow` from the handler
+  replaces whatever queue the Local zone had loaded. Auto-switching
+  the active zone to AA from inside the handler would cross the
+  Riverpod/handler boundary and race with `LocalPlayer._loadQueue`.
+  Acceptable for v1 (the audio still plays correctly through the
+  car), but the phone-side zone label may show "Local" while the
+  car is the source. Revisit by surfacing a "play requested from
+  AA" event on `AndroidAutoSessionService` that a Riverpod listener
+  consumes to switch the zone.
+- **Streaming artwork URIs not emitted.** Downloaded artwork uses
+  `file://`; streaming tracks (none, in the v1 car tree) would need
+  the §7 token-rotation handling.
+
+Verification: `flutter analyze` clean, all 45 tests pass (7 new for
+`RecentlyPlayedRepository`), `dart format` applied.
+
+Runtime verification (user-side, requires DHU or real car):
+- Connect Auto and open the JRR media app — root shows
+  Downloads / Recent / Artists / Albums.
+- Drill into each category; verify list contents match the phone's
+  Downloads screen.
+- Tap a track in the car — it plays through the car speakers.
+- Play 2–3 tracks, then check the Recent category — order is
+  most-recent first, no duplicates.
+- Use the voice button: "play <artist|album|track name>" should
+  trigger `playFromSearch` and start matching tracks.
+
+### Phase 6 — Completion notes
+
+Changes landed:
+
+- [automotive_app_desc.xml](../android/app/src/main/res/xml/automotive_app_desc.xml):
+  new file declaring `<uses name="media"/>`. This is what Android
+  Auto's package-discovery scanner looks for when deciding which
+  apps to surface in the in-car media picker.
+- [AndroidManifest.xml](../android/app/src/main/AndroidManifest.xml):
+  added two new `<meta-data>` elements inside `<application>`:
+  - `com.google.android.gms.car.application` →
+    `@xml/automotive_app_desc` (the descriptor above).
+  - `com.google.android.gms.car.notification.SmallIcon` →
+    `@drawable/ic_audio_service_notification` (the monochrome
+    drawable added in Phase 2). Auto enforces the same alpha-mask
+    rule the system notification path does; reusing the existing
+    drawable keeps a single source of truth.
+
+Already in place from earlier phases (re-verified for §8 conformance):
+
+- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and
+  `WAKE_LOCK` permissions (Phase 2).
+- `com.ryanheise.audioservice.AudioService` declaration with
+  `foregroundServiceType="mediaPlayback"` and the
+  `android.media.browse.MediaBrowserService` intent filter (Phase 2)
+  — this is the service Auto binds to and calls `getChildren` /
+  `playFromMediaId` on.
+- `com.ryanheise.audioservice.MediaButtonReceiver` for media-button
+  / Bluetooth headset events (Phase 2).
+- `MainActivity` extending `com.ryanheise.audioservice.AudioServiceActivity`
+  so the audio_service MethodChannel resolves the right
+  FlutterEngine (Phase 2).
+
+**Deferred / not done in this phase:**
+
+- **Dedicated car launcher icon** (`ic_launcher_car.png` at
+  mdpi/hdpi/xhdpi/xxhdpi). The plan called for this but it's an
+  asset task — Android Auto falls back to `android:icon` from
+  `<application>` (the existing `@mipmap/ic_launcher`) when no car-
+  specific icon is supplied, so the app is functionally surfaced in
+  the car media picker without it. A purpose-designed transparent-
+  background icon optimised for the car carousel can be added later
+  once design provides a source.
+- **Runtime validation via `adb shell dumpsys car_service` and the
+  Desktop Head Unit (DHU)** — both require a physical device and
+  the DHU set up locally. Belongs to Phase 9 QA (and §10's "user-
+  side" notes).
+
+Verification: `flutter analyze` clean, all 45 tests pass. Manifest
+parses (no Android build error from a `flutter test` build), but the
+real "is the app actually discoverable by Auto" check has to happen on
+a device — see the Phase 9 / DHU checklist.
+
+Runtime verification (user-side, requires DHU or real car):
+- Run `adb shell dumpsys car_service | grep -i jrr` after launching
+  the JRR app with the DHU attached — the package should appear.
+- Use Google's Auto desktop validator (`apk-analyzer` /
+  `android-auto-validator`) on a release build to confirm the
+  manifest descriptor is picked up.
+- Open the car media picker — JRR should appear as a selectable
+  media app and, when chosen, show the root browse tree built in
+  Phase 5.
+
+### Phase 7 — Completion notes
+
+Most of the §10 Phase 7 scope ("Queue / Player show car state;
+transport controls forward to handler") is **already satisfied by
+Phase 2's collapse + Phase 3's routing**. There's one shared
+`audio_service` handler, and `queueProvider` / `playerProvider` route
+the AA zone through the same `localPlayerProvider` family that the
+Local zone uses. The queue screen, now-playing screen, and
+mini-player panel have **no zone-flag branches** (verified via grep
+on `isLocal|isOffline|isAndroidAuto` in
+`lib/features/queue/widgets/` and `lib/features/player/widgets/`)
+— they read providers directly and reflect the active handler state
+regardless of whether the zone is Local, Offline, or AA. Transport
+buttons in those screens already dispatch through `playerProvider`,
+which forwards to the handler for AA.
+
+What was missing for Phase 7 was purely cosmetic on the zone picker:
+
+- [zone_list_screen.dart](../lib/features/zones/widgets/zone_list_screen.dart):
+  the `_ZoneTile` icon and badge branch on `zone.isLocal /
+  isDLNA`. Added an `isAndroidAuto` branch so AA renders with a
+  `Icons.directions_car_rounded` leading icon and an
+  `ANDROID AUTO` mono-label badge. The audio-quality popup (used
+  for picking streaming quality at source) is also surfaced for
+  AA since AA streams through the same just_audio handler as the
+  Local zone.
+
+Phone-side library widgets continue to use `isOfflineActiveProvider`
+(unchanged from Phase 3's design decision): when AA is the active
+zone, the user can still browse the live MCWS library on the phone
+and queue tracks that play through the car. The car-side browse tree
+remains downloads-only (§7).
+
+Verification: `flutter analyze` clean, all 45 tests pass,
+`dart format` applied.
+
+Runtime verification (user-side, requires car connection):
+- With AA connected, open the zone picker on the phone — the
+  "Android Auto" zone shows with the car icon and ANDROID AUTO
+  badge.
+- Switch to the AA zone; play a track from the car; the phone's
+  now-playing / mini-player / queue screens should reflect the
+  same track and queue.
+- Tap pause/skip in the phone UI while AA is active — the head
+  unit's playback should update too (both route to the same
+  handler).
+
+### Phase 8 — Completion notes
+
+Phase 5 already shipped a basic `playFromSearch` (substring search
+across name/artist/album). Phase 8 upgrades it to honor Android Auto's
+structured voice-search [extras][extras-ref] (Google Assistant fills
+these in when it parses an utterance like "play album X"), and to
+recognize a `shuffle` prefix in the raw query.
+
+[extras-ref]: https://developer.android.com/reference/android/provider/MediaStore#EXTRA_MEDIA_ARTIST
+
+Changes landed:
+
+- [voice_intent_resolver.dart](../lib/features/player/services/voice_intent_resolver.dart):
+  new pure Dart resolver — no `getIt`, no `audio_service`, no Flutter
+  bindings — so the intent-parsing logic is unit-testable in
+  isolation. Inputs: raw query, extras map, downloaded library.
+  Output: `VoiceIntent { tracks, shuffle }`. Selection rules
+  (first match wins):
+  1. `focus = artist` + artist extra → all that artist's tracks
+     (album-artist column preferred, falls back to track artist).
+  2. `focus = album` + album extra → that album's tracks. If
+     `artist` is also present, narrows by artist — disambiguates
+     "Greatest Hits" hits from multiple artists.
+  3. `focus = audio` + title extra → tracks matching the title.
+  4. `focus = genre` + genre extra → tracks in that genre.
+  5. Non-empty query (after stripping `shuffle `): substring
+     search across name / artist / album.
+  6. Empty query (e.g. "play music"): the entire library, with
+     shuffle forced on regardless of the prefix.
+  - Edge: `focus` set but the corresponding extra missing falls
+    through to query-substring search rather than returning empty.
+    Some head units set focus speculatively and Auto's Assistant
+    layer doesn't always fill in the matching extra.
+- [local_player_service.dart](../lib/features/player/services/local_player_service.dart):
+  `playFromSearch` now defers all matching to `resolveVoiceIntent`,
+  then explicitly applies shuffle mode and calls `playNow`. The
+  explicit `setShuffle(off)` on non-shuffle intents prevents a
+  stale shuffle flag from a previous voice command leaking into
+  the next.
+
+Tests: [voice_intent_resolver_test.dart](../test/features/player/services/voice_intent_resolver_test.dart)
+covers all six selection rules, the `shuffle <artist>` prefix,
+bare `shuffle`, the focus-without-extra fallback, and the
+album-narrowed-by-artist case. 10 new tests; suite is now 55 green.
+
+Mappings to the §9.4 examples from the plan:
+
+| Spoken intent           | Expected extras (Auto)                 | Resolver result           |
+|-------------------------|----------------------------------------|---------------------------|
+| "play <artist>"         | `focus=artist`, `artist=<name>`        | all that artist's tracks  |
+| "play album <title>"    | `focus=album`, `album=<title>`         | that album's tracks       |
+| "play <title> by <a>"   | `focus=audio`, `title=…`, `artist=…`   | title-match (artist is informational only in v1; revisit if scoping helps) |
+| "play music by <a>"     | `focus=artist`, `artist=<name>`        | same as "play <artist>"   |
+| "shuffle <artist>"      | `focus=artist`, `artist=<name>` *or* raw query "shuffle <name>" | artist's tracks, shuffle on |
+| "play music" / "shuffle"| (none)                                 | whole library, shuffle on |
+
+Verification: `flutter analyze` clean, all 55 tests pass,
+`dart format` applied.
+
+Runtime verification (user-side, requires DHU or real car):
+- Press the head-unit voice button and say "play the beatles" /
+  "play album <X>" / "shuffle <Y>" — each should immediately load
+  the appropriate queue and begin playback. Check the talker log
+  for the `playFromSearch` line; it dumps the resolved
+  `tracks.length` and `shuffle` flag.
+
+### Phase 9 — Completion notes
+
+Phase 9 is the **release runway**. The code work is done; everything
+remaining is exercised on real hardware and through the Play Console.
+
+Status:
+- ⏸ DHU validation — requires DHU + paired phone, user-side.
+- ⏸ Real-car validation — requires 2+ vehicles (at minimum: one
+  long-trip car with AA, one short-trip / older AA stack).
+- ⏸ Play Console AA submission — requires release build,
+  store listing copy/screenshots, and the AA-eligibility review.
+
+The rest of this section consolidates the scattered runtime checks
+from Phases 2–8 into one walkthrough, plus the Play Console prep.
+
+#### DHU validation checklist
+
+Setup (run once):
+1. Install the Desktop Head Unit per
+   [developer.android.com/training/cars/testing][dhu-install].
+2. Enable Developer Mode in Android Auto on the phone (tap the
+   version row in Auto's settings 10×) and turn on "Unknown sources".
+3. Pair the phone over USB; start the DHU.
+
+[dhu-install]: https://developer.android.com/training/cars/testing
+
+App-launch + zone surfacing (Phase 4):
+- [ ] DHU sees JRR in the media-app picker. (If not: check
+  `automotive_app_desc.xml` is bundled and the manifest meta-data
+  is present.)
+- [ ] Pick JRR; root browse shows Downloads / Recent / Artists / Albums.
+- [ ] Open the phone — the "Android Auto" zone appears in the
+  picker within ~1 s. Icon is the car glyph; badge reads
+  ANDROID AUTO.
+- [ ] Disconnect the DHU. The AA zone disappears from the phone
+  picker within the 5-min debounce (≤5 min).
+- [ ] Set AA as saved active zone; restart the app cold without
+  the DHU. Picker restores the first available zone (silent
+  fallback) instead of staying stuck on AA.
+
+Browse tree (Phase 5):
+- [ ] Downloads: count + order match the phone's Downloads screen.
+- [ ] Recent: starts empty; after playing 3 tracks shows most-
+  recent-first, no dupes.
+- [ ] Artists drill-down: list is alphabetised; tapping an artist
+  shows their albums.
+- [ ] Albums drill-down: same shape, with album artwork visible
+  in the car carousel for tracks whose `artworkPath` exists on disk.
+- [ ] Tap a track in the car → audio plays through the car
+  speakers within ~2 s. Lock screen + system notification update
+  with the same title.
+- [ ] Pause/skip on the head unit; the phone's now-playing screen
+  reflects the change in real time (Phase 7 wiring).
+
+Voice (Phase 8):
+- [ ] "Play <artist>" → all tracks by that artist (downloads-only).
+- [ ] "Play album <title>" → the album's tracks.
+- [ ] "Play album <title> by <artist>" → narrowed if the same
+  album exists for multiple artists.
+- [ ] "Shuffle <artist>" → shuffle on + that artist's tracks.
+- [ ] "Play music" → shuffle the whole downloaded library.
+- [ ] "Play <something we don't have>" → graceful no-op
+  (no crash, no infinite loading spinner). Check talker for
+  `no matches for "..."` line.
+
+System integration (Phases 2 & 6):
+- [ ] Lock-screen controls (play/pause/skip) work while the phone
+  screen is off.
+- [ ] System media notification persists across foreground/
+  background transitions; notification icon is monochrome (not
+  the multicolour app launcher).
+- [ ] Incoming phone call duck/pause behavior works on a real
+  vehicle (audio_service handles audio focus).
+- [ ] `adb shell dumpsys media_session` lists the JRR session
+  while playback is active.
+- [ ] `adb shell dumpsys car_service | grep -i jrr` (with DHU
+  attached) shows the package as a registered media app.
+
+Edge cases:
+- [ ] Mid-playback DHU disconnect: playback **stops** rather than
+  silently continuing on the phone (matches today's remote-zone
+  disappearance behaviour — see §12).
+- [ ] Network loss during a streamed track (if the user ever
+  routes a streaming source through AA in future iterations) —
+  not in v1 scope, v1 is downloads-only.
+- [ ] Logout while AA is active: AA zone disappears with the
+  rest of the picker; handler stops cleanly.
+
+#### Real-car checklist
+
+Run the DHU checklist again on each test vehicle. Specifically:
+- [ ] Car A (modern AA, ≥2022): all browse, voice, transport,
+  artwork checks pass.
+- [ ] Car B (older AA, 2018–2020 stack): manifest is accepted,
+  browse + transport pass. Voice search may be limited to title
+  queries — note any extras gaps in the bug tracker.
+- [ ] (Optional) Car C with **wireless AA**: bind/unbind
+  semantics differ slightly; confirm the 5-min inactivity
+  debounce doesn't trip while the car is parked and idle.
+- [ ] On every car: notification icon renders correctly (alpha
+  mask); track skip from the steering-wheel buttons works.
+
+Known limitations to mention in QA notes / release notes:
+- Single-track play on `playFromMediaId` (no queue-from-parent;
+  Phase 5 follow-up).
+- No active-zone auto-switch on car-driven playback (phone
+  label may say "Local" while the car is the source).
+- Streaming artwork URIs not emitted (v1 is downloads-only).
+- No dedicated `ic_launcher_car.png` — Auto uses the regular
+  launcher icon.
+
+#### Play Console AA review prep
+
+The Play Console requires an explicit Android Auto declaration plus
+the Auto-specific review track. Materials checklist:
+
+- [ ] Release build (`flutter build appbundle --release`)
+  containing all Phase 1–8 changes.
+- [ ] Manifest declares `<uses name="media"/>` via
+  `automotive_app_desc.xml` (Phase 6 — already in place).
+- [ ] App listing under Play Console → "Setup" → "Advanced
+  settings" → "Form factors" → "Android Auto" toggled on.
+- [ ] AA-specific screenshots: at least one head-unit screenshot
+  per supported category (browse root, drilled-down list, now-
+  playing). Captured via the DHU.
+- [ ] Privacy policy URL still valid (Play requires this for
+  media apps).
+- [ ] Content rating refreshed if needed.
+- [ ] Internal testing track populated and validated end-to-end
+  before promoting.
+- [ ] Note in release notes: "v1 Android Auto support — browse
+  and play downloaded tracks."
+
+Submission timeline expectations (per Google's published SLAs):
+review for AA-eligible media apps typically takes **1–2 weeks** on
+the first submission and **3–5 business days** on subsequent ones.
+Budget a round trip for any feedback from the Auto review team.
+
+#### Definition of done (v1 ship)
+
+- DHU checklist green on a development device.
+- Real-car checklist green on at least 2 vehicles.
+- Play Console AA review passed.
+- Release notes published.
+- This document marked ✅ across all phases.
+
+Until those four items are signed off, this phase stays at 🟡 and
+the overall v1 shipping bar is *not yet* met.
+
+For a single engineer, plan on **4–5 calendar weeks** including review,
 DHU iteration, and one round of Play Console feedback.
 
-## 6. Out-of-scope (future)
+## 11. Risks and unknowns
+
+- **`audio_service` migration scope**: replacing direct `AudioPlayer`
+  usage may surface state-sync bugs in
+  [LocalPlayer](../lib/features/player/providers/local_player_provider.dart)
+  that were hidden by the current single-instance setup. Budget time
+  for flake.
+- **Background isolate**: `audio_service` runs the handler in a
+  separate isolate on Android (depending on config). Anything in the
+  handler must not touch widget-tree-only state. Riverpod providers
+  used in the handler must be created inside the audio isolate's
+  container, not the UI one. Common foot-gun.
+- **Token-in-URL artwork**: if the auth token rotates while a
+  `MediaItem` is cached on the head unit, artwork will 401. Mitigation
+  (when we enable live MCWS browsing post-v1): include the current
+  token at emission time and re-emit `MediaItem` on session refresh.
+- **MCWS over HTTPS in-car**: SSL trust hosts must be re-applied in
+  the audio isolate, since `JRiverHttpOverrides` is process-global but
+  not isolate-shared in some Flutter versions.
+  that were hidden by the current single-instance setup. Budget time
+  for flake.
+- **Background isolate**: `audio_service` runs the handler in a
+  separate isolate on Android (depending on config). Anything in the
+  handler must not touch widget-tree-only state. Riverpod providers
+  used in the handler must be created inside the audio isolate's
+  container, not the UI one. Common foot-gun.
+- **Token-in-URL artwork**: if the auth token rotates while a
+  `MediaItem` is cached on the head unit, artwork will 401. Mitigation
+  (when we enable live MCWS browsing post-v1): include the current
+  token at emission time and re-emit `MediaItem` on session refresh.
+- **MCWS over HTTPS in-car**: SSL trust hosts must be re-applied in
+  the audio isolate, since `JRiverHttpOverrides` is process-global but
+  not isolate-shared in some Flutter versions.
+- **Battery / data**: in-car streaming over phone LTE while the user
+  drives away from their LAN — current code assumes LAN-only. The
+  v1 downloads-only AA library sidesteps this; v2 needs graceful
+  "server unreachable" detection (we already partially handle this
+  with the offline zone).
+- **Two-player coexistence (if we don't collapse in Phase 2)**:
+  `audio_service` traditionally assumes a single `AudioHandler`. We
+  will *not* run two simultaneously — the handler is the only player
+  in the collapsed design. If we coexist, the active zone gates which
+  player accepts commands; race conditions on zone switch are the
+  risk.
+
+## 12. Open questions
+
+- **Saved-active-zone = AA, but no car connected at startup**: silent
+  fallback to the previous zone with a snackbar (recommended) vs a
+  "Connect to Android Auto" placeholder screen.
+- **Auto disconnects mid-playback**: handler is still alive — auto-
+  switch the active zone to Local and continue on the phone, or stop?
+  Recommend stop (matches today's behaviour when a remote zone
+  disappears).
+- **Library mode for AA when server IS reachable**: downloads-only
+  for v1 (recommended) vs live MCWS browse with token-rotation
+  handling.
+- **Collapse `LocalPlayerService` into the handler in Phase 2** vs
+  keep both and gate by active zone. Decide before Phase 2 starts.
+  drives away from their LAN — current code assumes LAN-only. The
+  v1 downloads-only AA library sidesteps this; v2 needs graceful
+  "server unreachable" detection (we already partially handle this
+  with the offline zone).
+- **Two-player coexistence (if we don't collapse in Phase 2)**:
+  `audio_service` traditionally assumes a single `AudioHandler`. We
+  will *not* run two simultaneously — the handler is the only player
+  in the collapsed design. If we coexist, the active zone gates which
+  player accepts commands; race conditions on zone switch are the
+  risk.
+
+## 12. Open questions
+
+- **Saved-active-zone = AA, but no car connected at startup**: silent
+  fallback to the previous zone with a snackbar (recommended) vs a
+  "Connect to Android Auto" placeholder screen.
+- **Auto disconnects mid-playback**: handler is still alive — auto-
+  switch the active zone to Local and continue on the phone, or stop?
+  Recommend stop (matches today's behaviour when a remote zone
+  disappears).
+- **Library mode for AA when server IS reachable**: downloads-only
+  for v1 (recommended) vs live MCWS browse with token-rotation
+  handling.
+- **Collapse `LocalPlayerService` into the handler in Phase 2** vs
+  keep both and gate by active zone. Decide before Phase 2 starts.
+
+## 13. Out of scope (future)
+## 13. Out of scope (future)
 
 - **Remote zone playback over Android Auto**: streaming a remote MCWS
   zone (e.g. an amp at home) to the car. Possible but requires a
   separate "play to phone" mode in MCWS, or a phone-side proxy that
   pulls audio from the server and re-streams to the car. Big work.
-- **Android Automotive (AAOS)**: cars with built-in Google Auto OS (no
-  phone). This is a different product — separate manifest, no phone
-  app context, different review track. Reuses ~80% of the work above
-  but with extra packaging and entitlements.
+- **Android Automotive (AAOS)**: cars with built-in Google Auto OS
+  (no phone). Different product — separate manifest, no phone app
+  context, different review track. Reuses ~80% of the work above but
+  with extra packaging and entitlements.
+- **Android Automotive (AAOS)**: cars with built-in Google Auto OS
+  (no phone). Different product — separate manifest, no phone app
+  context, different review track. Reuses ~80% of the work above but
+  with extra packaging and entitlements.
 - **CarPlay (iOS)**: parallel iOS effort. Shares the conceptual model
   (browse hierarchy + playback) but uses entirely different APIs
-  (`MPPlayableContentManager`/`CPNowPlayingTemplate`). Plan separately.
+  (`MPPlayableContentManager` / `CPNowPlayingTemplate`). Plan
+  separately.
+  (`MPPlayableContentManager` / `CPNowPlayingTemplate`). Plan
+  separately.

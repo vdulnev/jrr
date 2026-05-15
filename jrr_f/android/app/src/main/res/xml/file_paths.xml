@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider path strategy used to expose cached album artwork to
+  Android Auto.
+
+  Android Auto runs in a separate process (the gearhead host on the
+  phone, or the system projection host on AAOS), so it cannot read
+  `file://` URIs that point into this app's private storage. We
+  therefore re-emit MediaItem.artUri as `content://...fileprovider/...`,
+  served by the `androidx.core.content.FileProvider` declared in
+  AndroidManifest.xml.
+
+  `<root-path>` is intentional: path_provider's
+  `getApplicationDocumentsDirectory()` resolves to `<dataDir>/app_flutter`,
+  which is a sibling of `getFilesDir()` and so isn't covered by
+  `<files-path>`. The blast radius is contained by the provider being
+  `exported=false` plus per-URI grants — only the specific artwork
+  URIs we explicitly hand to AA are reachable.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <root-path name="root" path="/" />
+</paths>

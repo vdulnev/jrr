@@ -26,7 +26,9 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
   @override
   FutureOr<PlayerStatus?> build() async {
     final zone = ref.watch(activeZoneProvider);
-    if (zone == null || zone.isLocal || zone.isOffline) return null;
+    if (zone == null || zone.isLocal || zone.isOffline || zone.isAndroidAuto) {
+      return null;
+    }
 
     getIt<Talker>().debug(
       '[McwsPlayer] build: zone=${zone.name} (id=${zone.id})',
@@ -40,7 +42,9 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
   @override
   Future<void> refresh() async {
     final zone = ref.read(activeZoneProvider);
-    if (zone == null || zone.isLocal || zone.isOffline) return;
+    if (zone == null || zone.isLocal || zone.isOffline || zone.isAndroidAuto) {
+      return;
+    }
 
     final result = await AsyncValue.guard(() async {
       final r = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
@@ -147,7 +151,9 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
     Zone? zoneToRun,
   }) async {
     final zone = zoneToRun ?? ref.read(activeZoneProvider);
-    if (zone == null || zone.isLocal || zone.isOffline) return;
+    if (zone == null || zone.isLocal || zone.isOffline || zone.isAndroidAuto) {
+      return;
+    }
     await cmd(zone.id);
     await refresh();
   }

@@ -1,9 +1,11 @@
 import 'dart:ui';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_audio/just_audio.dart' show PlayerInterruptedException;
+import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
@@ -11,6 +13,10 @@ import 'app.dart';
 import 'core/di/injection.dart';
 import 'core/logging/file_log_observer.dart';
 import 'core/network/ssl_trust.dart';
+import 'features/player/data/models/local_audio_quality.dart';
+import 'features/player/services/local_player_service.dart';
+import 'features/player/services/android_auto_player_service.dart';
+import 'features/player/services/jrr_audio_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +42,45 @@ void main() async {
   await configureDependencies();
 
   final talker = getIt<Talker>();
+
+  // Initialize audio_service. The handler manages multiple sub-players
+  // (LocalPlayerService for phone, AndroidAutoPlayerService for the car).
+  final localAudioPlayer = AudioPlayer();
+  final autoAudioPlayer = AudioPlayer();
+
+  final localHandler = LocalPlayerService(
+    player: localAudioPlayer,
+    talker: talker,
+    qualityResolver: () => LocalAudioQuality.fromName(
+      getIt<SharedPreferences>().getString('local_audio_quality'),
+    ),
+  );
+
+  final autoHandler = AndroidAutoPlayerService(
+    player: autoAudioPlayer,
+    talker: talker,
+    qualityResolver: () => LocalAudioQuality.fromName(
+      getIt<SharedPreferences>().getString('local_audio_quality'),
+    ),
+  );
+
+  final mainHandler = await AudioService.init(
+    builder: () =>
+        JrrAudioHandler(localPlayer: localHandler, autoPlayer: autoHandler),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.jriver.remote.audio',
+      androidNotificationChannelName: 'JRiver Remote playback',
+      androidNotificationIcon: 'drawable/ic_audio_service_notification',
+      androidNotificationOngoing: true,
+    ),
+  );
+
+  await localHandler.init();
+  await autoHandler.init();
+
+  getIt.registerSingleton<LocalPlayerService>(localHandler);
+  getIt.registerSingleton<AndroidAutoPlayerService>(autoHandler);
+  getIt.registerSingleton<JrrAudioHandler>(mainHandler);
 
   // Flutter framework errors (widget build exceptions, layout overflows, etc.)
   // Use details.toStringDeep() so the diagnostic property tree is captured —
@@ -68,7 +113,7 @@ void main() async {
 
   runApp(
     ProviderScope(
-      observers: [TalkerRiverpodObserver(talker: talker)],
+      observers: [TalkerRiverpodObserver(talker: getIt<Talker>())],
       child: const App(),
     ),
   );

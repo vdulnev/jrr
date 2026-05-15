@@ -25,17 +25,20 @@ class ZonePolling extends _$ZonePolling {
 
     final session = ref.watch(sessionProvider);
     final activeZone = ref.watch(activeZoneProvider);
-    final isLocalOrOffline =
-        activeZone?.isLocal == true || activeZone?.isOffline == true;
+    // Skip polling only for the Offline zone — it has no server at all.
+    // Local and Android Auto both still have a live MCWS session, so we
+    // keep polling so the user can switch back to a real MCWS zone from
+    // the picker.
+    final skipPolling = activeZone?.isOffline == true;
 
-    if (session is Authenticated && !isLocalOrOffline) {
+    if (session is Authenticated && !skipPolling) {
       _talker.debug(
         '[ZonePolling] Session authenticated — starting zone polling',
       );
       _start();
     } else {
       _talker.debug(
-        '[ZonePolling] Session unauthenticated or local/offline — stopping zone polling',
+        '[ZonePolling] Session unauthenticated or offline zone — stopping zone polling',
       );
       _stop();
     }

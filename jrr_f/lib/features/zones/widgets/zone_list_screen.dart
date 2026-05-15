@@ -129,7 +129,9 @@ class _ZoneTile extends ConsumerWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                zone.isLocal
+                zone.isAndroidAuto
+                    ? Icons.directions_car_rounded
+                    : zone.isLocal
                     ? Icons.smartphone_rounded
                     : (zone.isDLNA
                           ? Icons.cast_rounded
@@ -190,16 +192,23 @@ class _ZoneTile extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  if (zone.isDLNA || zone.isLocal)
+                  if (zone.isDLNA || zone.isLocal || zone.isAndroidAuto)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
                         children: [
                           Text(
-                            zone.isLocal ? 'LOCAL' : 'DLNA',
+                            zone.isAndroidAuto
+                                ? 'ANDROID AUTO'
+                                : zone.isLocal
+                                ? 'LOCAL'
+                                : 'DLNA',
                             style: AppTextStyles.monoLabel,
                           ),
-                          if (zone.isLocal) ...[
+                          // Audio-quality popup applies to any zone that
+                          // streams through the local just_audio handler —
+                          // Local and Android Auto.
+                          if (zone.isLocal || zone.isAndroidAuto) ...[
                             const SizedBox(width: 6),
                             const Text('·', style: AppTextStyles.monoLabel),
                             const SizedBox(width: 6),

@@ -19,9 +19,16 @@ class Queue extends _$Queue {
     final zone = ref.watch(activeZoneProvider);
     if (zone == null) return Tracks.empty;
 
-    if (zone.isLocal || zone.isOffline) {
-      // Ensure LocalPlayer has finished loading/swapping the queue
-      await ref.watch(localPlayerProvider.future);
+    if (zone.isLocal || zone.isOffline || zone.isAndroidAuto) {
+      // Wait for the local player to finish loading the queue, but use
+      // `ref.read` — `ref.watch(localPlayerProvider.future)` re-fires
+      // queueProvider's build on every position tick (~5x/sec), causing
+      // a queueProvider AsyncLoading→AsyncData storm and visibly
+      // stuttering audio on slower devices. The sequence we actually
+      // care about is watched separately via localPlayerSequenceProvider,
+      // which only emits when the queue or current index actually
+      // changes.
+      await ref.read(localPlayerProvider.future);
 
       final sequence = ref.watch(localPlayerSequenceProvider);
       return sequence?.sequence ?? Tracks.empty;
@@ -39,7 +46,9 @@ class Queue extends _$Queue {
 
   Future<void> removeItem(int index) async {
     final zone = ref.read(activeZoneProvider);
-    if (zone?.isLocal == true || zone?.isOffline == true) {
+    if (zone?.isLocal == true ||
+        zone?.isOffline == true ||
+        zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).removeTrack(index);
     } else {
       await _run((id) => getIt<QueueRepository>().removeItem(id, index));
@@ -48,7 +57,9 @@ class Queue extends _$Queue {
 
   Future<void> moveItem(int source, int target) async {
     final zone = ref.read(activeZoneProvider);
-    if (zone?.isLocal == true || zone?.isOffline == true) {
+    if (zone?.isLocal == true ||
+        zone?.isOffline == true ||
+        zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).moveTrack(source, target);
     } else {
       await _run((id) => getIt<QueueRepository>().moveItem(id, source, target));
@@ -57,7 +68,9 @@ class Queue extends _$Queue {
 
   Future<void> clearQueue() async {
     final zone = ref.read(activeZoneProvider);
-    if (zone?.isLocal == true || zone?.isOffline == true) {
+    if (zone?.isLocal == true ||
+        zone?.isOffline == true ||
+        zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).setTracks(Tracks.empty);
     } else {
       await _run((id) => getIt<QueueRepository>().clearQueue(id));

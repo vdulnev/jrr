@@ -37,6 +37,10 @@ abstract class DownloadsRepository {
   /// Returns the local file path for a downloaded track synchronously from cache.
   String? localPathFor(int fileKey);
 
+  /// Returns the cached local artwork path for a downloaded track, or `null`
+  /// if not downloaded or has no artwork.
+  String? artworkPathFor(int fileKey);
+
   /// Returns the local file path for a downloaded track, or null if not downloaded.
 
   Future<String?> getLocalPath(int fileKey);

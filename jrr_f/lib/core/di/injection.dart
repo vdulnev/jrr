@@ -2,7 +2,6 @@ import 'dart:io' show Platform;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import '../db/app_database.dart';
@@ -19,14 +18,14 @@ import '../../features/offline/data/repositories/downloads_repository_impl.dart'
 import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
-import '../../features/player/data/models/local_audio_quality.dart';
-import '../../features/player/services/local_player_service.dart';
+import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
+import '../../features/zones/services/android_auto_session_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -85,19 +84,25 @@ Future<void> configureDependencies() async {
   downloadService.start();
   getIt.registerSingleton<DownloadService>(downloadService);
 
-  // Audio Player for local playback
-  final player = AudioPlayer();
-  getIt.registerSingleton<AudioPlayer>(player);
+  // Note: AudioPlayer instances and specialized player services are
+  // constructed in main.dart via AudioService.init so that audio_service
+  // is initialized before the widget tree builds. Everything is registered
+  // into getIt from there.
 
-  final localPlayerService = LocalPlayerService(
-    player: player,
-    talker: getIt<Talker>(),
-    qualityResolver: () => LocalAudioQuality.fromName(
-      getIt<SharedPreferences>().getString('local_audio_quality'),
-    ),
+  // Android Auto session detection — flipped to "connected" the first time
+  // Auto calls into the audio handler's browse API and back to "disconnected"
+  // after a debounced inactivity timeout. Lives outside main.dart so
+  // AndroidAutoPlayerService can resolve it during its getChildren override.
+  getIt.registerSingleton<AndroidAutoSessionService>(
+    AndroidAutoSessionService(),
   );
-  await localPlayerService.init();
-  getIt.registerSingleton<LocalPlayerService>(localPlayerService);
+
+  // Recently-played history backs the Android Auto "Recent" browse
+  // category and (later) phone-side UI. Stored in SharedPreferences as a
+  // capped list of file keys.
+  getIt.registerSingleton<RecentlyPlayedRepository>(
+    RecentlyPlayedRepository(prefs),
+  );
 
   // Favorites repository — manages favorite items from browse screen
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
