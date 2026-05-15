@@ -30,13 +30,13 @@ class JrrAudioHandler extends BaseAudioHandler {
 
   /// Switches the active player (the one that responds to transport commands
   /// and updates the notification).
-  void switchTo(BaseAudioHandler player) {
+  void switchTo(BaseAudioHandler player, {bool pausePrevious = true}) {
     if (_activePlayer.value != player) {
       final oldPlayer = _activePlayer.value;
       _activePlayer.add(player);
 
       // Stop/pause the previous player so we don't have overlapping audio.
-      if (oldPlayer is LocalPlayerServiceBase && oldPlayer.playing) {
+      if (pausePrevious && oldPlayer is LocalPlayerServiceBase && oldPlayer.playing) {
         oldPlayer.pause();
       }
     }
@@ -45,6 +45,10 @@ class JrrAudioHandler extends BaseAudioHandler {
   BaseAudioHandler get activePlayer => _activePlayer.value;
 
   // ─── MediaBrowser overrides (Always go to autoPlayer) ─────────────────
+
+  @override
+  ValueStream<Map<String, dynamic>> subscribeToChildren(String parentMediaId) =>
+      autoPlayer.subscribeToChildren(parentMediaId);
 
   @override
   Future<List<MediaItem>> getChildren(
