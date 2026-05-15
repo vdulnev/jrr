@@ -36,7 +36,7 @@ final class FavoritesProvider
   Favorites create() => Favorites();
 }
 
-String _$favoritesHash() => r'b7ed1d832d1b4c5c24b3e569b9c570fb4cc0cdf8';
+String _$favoritesHash() => r'e363e7019ff5ccaa90b3d072cb0323fc8b9edd1f';
 
 /// List of favorited browse items
 

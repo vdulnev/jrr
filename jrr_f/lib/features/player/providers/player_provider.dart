@@ -54,7 +54,6 @@ class Player extends _$Player {
     // AsyncValue<PlayerStatus?>; awaiting `.future` re-fires this build
     // whenever the underlying notifier emits a new value.
     return (zone.isLocal || zone.isOffline || zone.isAndroidAuto)
-    return (zone.isLocal || zone.isOffline || zone.isAndroidAuto)
         ? await ref.watch(localPlayerProvider.future)
         : await ref.watch(mcwsPlayerProvider.future);
   }

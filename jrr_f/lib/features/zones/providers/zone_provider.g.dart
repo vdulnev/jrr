@@ -32,7 +32,7 @@ final class ZoneListProvider extends $AsyncNotifierProvider<ZoneList, Zones> {
   ZoneList create() => ZoneList();
 }
 
-String _$zoneListHash() => r'3f94208c666cbd745540fb5f0be9711c5da92b94';
+String _$zoneListHash() => r'1fa5089238ac242a9967b2dc03dd75df337a6ed9';
 
 abstract class _$ZoneList extends $AsyncNotifier<Zones> {
   FutureOr<Zones> build();
