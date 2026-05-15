@@ -85,12 +85,13 @@ class MediaItemMapper {
     required String title,
     String? subtitle,
     String? artworkPath,
+    Uri? artUri,
   }) {
     return MediaItem(
       id: id,
       title: title,
       album: subtitle,
-      artUri: _artUri(artworkPath),
+      artUri: artUri ?? _artUri(artworkPath),
       playable: false,
     );
   }
@@ -104,12 +105,13 @@ class MediaItemMapper {
     required String title,
     String? subtitle,
     String? artworkPath,
+    Uri? artUri,
   }) {
     return MediaItem(
       id: id,
       title: title,
       album: subtitle,
-      artUri: _artUri(artworkPath),
+      artUri: artUri ?? _artUri(artworkPath),
       playable: true,
     );
   }

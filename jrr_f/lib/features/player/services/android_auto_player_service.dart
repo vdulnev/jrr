@@ -836,7 +836,8 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       id: _join(parentPath, 'oalbum:${_encodeAlbum(album)}'),
       title: album.name.isEmpty ? 'Unknown Album' : album.name,
       subtitle: album.albumArtist,
-    )..extras?['artUri'] = _httpArtUri(album.artworkFileKey)?.toString();
+      artUri: _httpArtUri(album.artworkFileKey),
+    );
   }
 
   /// MediaItem for a track shown inside a browse list. We can't use the
@@ -1200,13 +1201,17 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     final artworkPath = getIt<DownloadsRepository>().artworkPathFor(
       track.fileKey,
     );
+    final artUri = artworkPath != null
+        ? MediaItemMapper.artUriForPath(artworkPath)
+        : _httpArtUri(track.fileKey);
+
     return MediaItem(
       id: track.fileKey.toString(),
       title: track.name,
       artist: track.artist.isEmpty ? null : track.artist,
       album: track.album.isEmpty ? null : track.album,
       duration: Duration(milliseconds: (track.duration * 1000).round()),
-      artUri: MediaItemMapper.artUriForPath(artworkPath),
+      artUri: artUri,
     );
   }
 }
