@@ -178,7 +178,6 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
   late SharedPreferences _prefs;
   late Talker _talker;
 
-
   String _currentZoneId = '';
 
   bool _isReloading = false;
@@ -211,13 +210,23 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
       '[LocalPlayer] build: activeZone=${activeZone?.name}, newZoneId=$newZoneId, _currentZoneId=$_currentZoneId',
     );
 
-    // Initial load or swap
+    // Initial load or swap.
+    //
+    // For the Android Auto zone we deliberately skip `_loadQueue`: the AA
+    // player drives its queue from explicit head-unit play actions
+    // (`playFromMediaId`, `playFromSearch`, voice search), not from the
+    // persisted local-zone queue. Loading any leftover queue here would
+    // block the main isolate with `setAudioSources` right when Android is
+    // already counting down the 5s `startForeground` window opened by the
+    // MediaBrowserService bind.
     if (newZoneId != _currentZoneId) {
       _talker.info(
         '[LocalPlayer] Zone changed from "$_currentZoneId" to "$newZoneId". Swapping queues...',
       );
       _currentZoneId = newZoneId;
-      await _loadQueue(_currentZoneId);
+      if (newZoneId != 'android-auto') {
+        await _loadQueue(_currentZoneId);
+      }
     }
 
     // Register listeners for the CURRENT zone.

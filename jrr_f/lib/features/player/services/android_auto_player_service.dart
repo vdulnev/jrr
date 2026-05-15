@@ -16,7 +16,6 @@ import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
-import '../../zones/services/android_auto_session_service.dart';
 import '../data/models/local_audio_quality.dart';
 import 'media_item_mapper.dart';
 import 'voice_intent_resolver.dart';
@@ -36,6 +35,18 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   /// Resolves the currently selected audio quality.
   LocalAudioQuality Function() qualityResolver;
 
+  /// Placeholder item published before any real track is queued so that
+  /// `audio_service` has a non-null `MediaItem` to render a notification
+  /// from. This is what lets the plugin call `startForeground()` within
+  /// the 5s window that Android 12+ enforces after `startForegroundService`,
+  /// which Android Auto triggers as soon as it binds the
+  /// `MediaBrowserService`.
+  static const MediaItem _placeholderMediaItem = MediaItem(
+    id: 'placeholder',
+    title: 'JRiver Remote',
+    album: 'Android Auto',
+  );
+
   AndroidAutoPlayerService({
     required AudioPlayer player,
     required Talker talker,
@@ -43,8 +54,14 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }) : _player = player,
        _talker = talker,
        qualityResolver = qualityResolver ?? (() => LocalAudioQuality.lossless) {
+    // Seed with `ready` (not `idle`) so the audio_service plugin treats the
+    // handler as foreground-eligible and promotes the service via
+    // `startForeground()` immediately on bind. With `idle` the plugin defers
+    // promotion and Android fires a "did not call Service.startForeground"
+    // ANR within ~5s.
+    mediaItem.add(_placeholderMediaItem);
     playbackState.add(
-      _baseState(playing: false, processing: AudioProcessingState.idle),
+      _baseState(playing: false, processing: AudioProcessingState.ready),
     );
     _bindPlayerToAudioServiceStreams();
   }
@@ -94,7 +111,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
   @override
   Future<void> setTracks(Tracks tracks) async {
-    _talker.info('[AndroidAutoPlayerService] setTracks: ${tracks.length} tracks');
+    _talker.info(
+      '[AndroidAutoPlayerService] setTracks: ${tracks.length} tracks',
+    );
     final sources = tracks.tracks.map((t) => _createSource(t)).toList();
 
     try {
@@ -183,7 +202,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     Map<String, dynamic>? options,
   ]) async {
     _talker.debug('[AndroidAutoPlayerService] getChildren: $parentMediaId');
-    getIt<AndroidAutoSessionService>().markActive();
 
     try {
       final last = _lastSegment(parentMediaId);
@@ -215,7 +233,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   @override
   Future<MediaItem?> getMediaItem(String mediaId) async {
     _talker.debug('[AndroidAutoPlayerService] getMediaItem: $mediaId');
-    getIt<AndroidAutoSessionService>().markActive();
     final leaf = _lastSegment(mediaId);
     if (!leaf.startsWith('track:')) return null;
     final fileKey = int.tryParse(leaf.substring('track:'.length));
@@ -230,7 +247,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     Map<String, dynamic>? extras,
   ]) async {
     _talker.debug('[AndroidAutoPlayerService] search: $query');
-    getIt<AndroidAutoSessionService>().markActive();
     if (query.trim().isEmpty) return const [];
     final tracks = await _searchDownloaded(query);
     return tracks.map(_mapper.fromDownloadedTrack).toList(growable: false);
@@ -242,10 +258,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     Map<String, dynamic>? extras,
   ]) async {
     _talker.info('[AndroidAutoPlayerService] playFromMediaId: $mediaId');
-    getIt<AndroidAutoSessionService>().markActive();
-
-    // Signal that the Android Auto zone should become active
-    _onAndroidAutoActionRequested();
 
     final segments = mediaId.split('/');
     if (segments.isEmpty) return;
@@ -303,8 +315,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     Map<String, dynamic>? extras,
   ]) async {
     _talker.info('[AndroidAutoPlayerService] playFromSearch: "$query"');
-    getIt<AndroidAutoSessionService>().markActive();
-    _onAndroidAutoActionRequested();
 
     final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
     final intent = resolveVoiceIntent(
@@ -317,11 +327,6 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
     await setShuffle(intent.shuffle ? ShuffleMode.on : ShuffleMode.off);
     await playNow(Tracks(tracks: intent.tracks));
-  }
-
-  void _onAndroidAutoActionRequested() {
-    // Signal that the Android Auto zone should become active
-    getIt<AndroidAutoSessionService>().markActionRequested();
   }
 
   // ─── Browse-tree builders ─────────────────────────────────────────────
@@ -716,8 +721,11 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
               queueIndex: _player.currentIndex,
             ),
           ),
-          onError: (Object e, StackTrace st) =>
-              _talker.error('[AndroidAutoPlayerService] playbackEventStream', e, st),
+          onError: (Object e, StackTrace st) => _talker.error(
+            '[AndroidAutoPlayerService] playbackEventStream',
+            e,
+            st,
+          ),
         );
 
     _player.sequenceStateStream.listen(

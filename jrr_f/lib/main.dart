@@ -65,10 +65,8 @@ void main() async {
   );
 
   final mainHandler = await AudioService.init(
-    builder: () => JrrAudioHandler(
-      localPlayer: localHandler,
-      autoPlayer: autoHandler,
-    ),
+    builder: () =>
+        JrrAudioHandler(localPlayer: localHandler, autoPlayer: autoHandler),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.jriver.remote.audio',
       androidNotificationChannelName: 'JRiver Remote playback',
@@ -83,7 +81,6 @@ void main() async {
   getIt.registerSingleton<LocalPlayerService>(localHandler);
   getIt.registerSingleton<AndroidAutoPlayerService>(autoHandler);
   getIt.registerSingleton<JrrAudioHandler>(mainHandler);
-
 
   // Flutter framework errors (widget build exceptions, layout overflows, etc.)
   // Use details.toStringDeep() so the diagnostic property tree is captured —

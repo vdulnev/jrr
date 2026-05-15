@@ -18,10 +18,8 @@ class JrrAudioHandler extends BaseAudioHandler {
   /// controls.
   final BehaviorSubject<BaseAudioHandler> _activePlayer;
 
-  JrrAudioHandler({
-    required this.localPlayer,
-    required this.autoPlayer,
-  }) : _activePlayer = BehaviorSubject<BaseAudioHandler>.seeded(localPlayer) {
+  JrrAudioHandler({required this.localPlayer, required this.autoPlayer})
+    : _activePlayer = BehaviorSubject<BaseAudioHandler>.seeded(localPlayer) {
     // Pipe streams from the active player to our own output streams.
     // This ensures the system notification and lock screen always reflect
     // the state of the "active" zone's player.
@@ -49,16 +47,20 @@ class JrrAudioHandler extends BaseAudioHandler {
   // ─── MediaBrowser overrides (Always go to autoPlayer) ─────────────────
 
   @override
-  Future<List<MediaItem>> getChildren(String parentMediaId, [Map<String, dynamic>? options]) =>
-      autoPlayer.getChildren(parentMediaId, options);
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) => autoPlayer.getChildren(parentMediaId, options);
 
   @override
   Future<MediaItem?> getMediaItem(String mediaId) =>
       autoPlayer.getMediaItem(mediaId);
 
   @override
-  Future<List<MediaItem>> search(String query, [Map<String, dynamic>? extras]) =>
-      autoPlayer.search(query, extras);
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) => autoPlayer.search(query, extras);
 
   @override
   Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) {
@@ -99,7 +101,8 @@ class JrrAudioHandler extends BaseAudioHandler {
   Future<void> skipToPrevious() => activePlayer.skipToPrevious();
 
   @override
-  Future<void> skipToQueueItem(int index) => activePlayer.skipToQueueItem(index);
+  Future<void> skipToQueueItem(int index) =>
+      activePlayer.skipToQueueItem(index);
 
   @override
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) =>
@@ -120,7 +123,10 @@ class JrrAudioHandler extends BaseAudioHandler {
   Future<void> prepare() => activePlayer.prepare();
 
   @override
-  Future<void> prepareFromMediaId(String mediaId, [Map<String, dynamic>? extras]) {
+  Future<void> prepareFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) {
     switchTo(autoPlayer);
     return autoPlayer.prepareFromMediaId(mediaId, extras);
   }
