@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../../shared/widgets/sub_screen_header.dart';
 import '../../../shared/widgets/tracks_popup_menu.dart';
 import '../data/models/tracks.dart';
@@ -53,7 +54,6 @@ class TrackListScaffold extends ConsumerWidget {
                 orElse: () => null,
               ),
             ),
-            // Content
             Expanded(
               child: tracksState.when(
                 loading: () => const LoadingView(),
@@ -66,17 +66,26 @@ class TrackListScaffold extends ConsumerWidget {
                   final isMultiDisc = tracks.tracks.any(
                     (t) => t.totalDiscs > 1 || t.discNumber > 1,
                   );
-                  if (isMultiDisc) {
-                    return MultiDiscList(tracks: tracks.tracks);
-                  }
-                  return ListView.builder(
-                    itemCount: tracks.length,
-                    itemBuilder: (_, i) => LibraryItemTile(
-                      item: tracks[i],
-                      trackNumber: tracks[i].trackNumber > 0
-                          ? tracks[i].trackNumber
-                          : i + 1,
-                      collapsedByDefault: true,
+                  return ScrollChromeListener(
+                    child: CustomScrollView(
+                      slivers: [
+                        if (isMultiDisc)
+                          MultiDiscSliverList(tracks: tracks.tracks)
+                        else
+                          SliverList.builder(
+                            itemCount: tracks.length,
+                            itemBuilder: (_, i) => LibraryItemTile(
+                              item: tracks[i],
+                              trackNumber: tracks[i].trackNumber > 0
+                                  ? tracks[i].trackNumber
+                                  : i + 1,
+                              collapsedByDefault: true,
+                            ),
+                          ),
+                        const SliverPadding(
+                          padding: EdgeInsets.only(bottom: 16),
+                        ),
+                      ],
                     ),
                   );
                 },
