@@ -789,12 +789,16 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   MediaItem _toMediaItem(Track track) {
+    final artworkPath = getIt<DownloadsRepository>().artworkPathFor(
+      track.fileKey,
+    );
     return MediaItem(
       id: track.fileKey.toString(),
       title: track.name,
       artist: track.artist.isEmpty ? null : track.artist,
       album: track.album.isEmpty ? null : track.album,
       duration: Duration(milliseconds: (track.duration * 1000).round()),
+      artUri: MediaItemMapper.artUriForPath(artworkPath),
     );
   }
 }

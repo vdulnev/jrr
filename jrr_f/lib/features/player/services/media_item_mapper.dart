@@ -9,12 +9,37 @@ import '../../offline/data/models/downloaded_track.dart';
 /// Android Auto browse tree.
 ///
 /// v1 is downloads-only (see §7 of `docs/android-auto-plan.md`), so the
-/// only artwork URIs we surface are `file://` paths to locally-cached
-/// album art. The MCWS-token-in-URL path for streaming artwork is
-/// deferred — it requires re-emitting `MediaItem`s on session refresh,
-/// which we don't have plumbing for yet.
+/// only artwork URIs we surface are `content://` paths to locally-cached
+/// album art, served by the FileProvider declared in AndroidManifest.xml.
+/// The MCWS-token-in-URL path for streaming artwork is deferred — it
+/// requires re-emitting `MediaItem`s on session refresh, which we don't
+/// have plumbing for yet.
 class MediaItemMapper {
   const MediaItemMapper();
+
+  /// Authority of the FileProvider declared in AndroidManifest.xml.
+  /// Kept in sync with `${applicationId}.fileprovider` and the
+  /// `<root-path name="root" .../>` element in res/xml/file_paths.xml.
+  static const String _fileProviderAuthority = 'com.jrr.jrr_f.fileprovider';
+
+  /// Builds a FileProvider content:// URI for a local artwork file, or
+  /// `null` if [path] is empty / missing. Public so the AA player can
+  /// share the same authority/encoding when emitting now-playing items.
+  ///
+  /// Android Auto runs in a different process from this app and so
+  /// can't read `file://` URIs into app-private storage; AA silently
+  /// falls back to a generic icon. The content URI scheme, paired with
+  /// the FileProvider's `grantUriPermissions=true`, lets the
+  /// MediaBrowserService binder pass per-URI read access through.
+  static Uri? artUriForPath(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (!File(path).existsSync()) return null;
+    return Uri(
+      scheme: 'content',
+      host: _fileProviderAuthority,
+      pathSegments: ['root', ...path.split('/').where((s) => s.isNotEmpty)],
+    );
+  }
 
   /// Track from the downloaded-tracks table. We carry the cached artwork
   /// path inside the [DownloadedTrack] row.
@@ -89,13 +114,5 @@ class MediaItemMapper {
     );
   }
 
-  Uri? _artUri(String? path) {
-    if (path == null || path.isEmpty) return null;
-    // Defensive: artworkPath rows can occasionally point at files that
-    // have been deleted out-of-band. Auto will silently fall back to a
-    // generic icon, but we avoid emitting URIs that we know won't
-    // resolve.
-    if (!File(path).existsSync()) return null;
-    return Uri.file(path);
-  }
+  Uri? _artUri(String? path) => artUriForPath(path);
 }

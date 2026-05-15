@@ -96,6 +96,22 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+
+        <!-- Exposes cached album artwork to Android Auto via content:// URIs.
+             AA runs in a different process and cannot read file:// URIs
+             into app-private storage, so MediaItem.artUri is emitted as
+             content://com.jrr.jrr_f.fileprovider/root/<absolute-path>.
+             grantUriPermissions=true lets the MediaBrowserService binder
+             pass per-URI read access to the AA client. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
