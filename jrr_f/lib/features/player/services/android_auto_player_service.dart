@@ -230,16 +230,22 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
   @override
   ValueStream<Map<String, dynamic>> subscribeToChildren(String parentMediaId) {
-    _talker.debug('[AndroidAutoPlayerService] subscribeToChildren: $parentMediaId');
-    return _browseSubjects.putIfAbsent(
-      parentMediaId,
-      () => BehaviorSubject.seeded(const <String, dynamic>{}),
-    ).stream;
+    _talker.debug(
+      '[AndroidAutoPlayerService] subscribeToChildren: $parentMediaId',
+    );
+    return _browseSubjects
+        .putIfAbsent(
+          parentMediaId,
+          () => BehaviorSubject.seeded(const <String, dynamic>{}),
+        )
+        .stream;
   }
 
   /// Triggers a refresh for the given folder on the head unit.
   void notifyChildrenChanged(String parentMediaId) {
-    _talker.info('[AndroidAutoPlayerService] notifyChildrenChanged: $parentMediaId');
+    _talker.info(
+      '[AndroidAutoPlayerService] notifyChildrenChanged: $parentMediaId',
+    );
     _browseSubjects[parentMediaId]?.add({
       'refresh': DateTime.now().millisecondsSinceEpoch,
     });
@@ -259,7 +265,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       final last = _lastSegment(parentMediaId);
 
       if (last == _idActionRefresh) {
-        _talker.info('[AndroidAutoPlayerService] Manual refresh triggered for all categories');
+        _talker.info(
+          '[AndroidAutoPlayerService] Manual refresh triggered for all categories',
+        );
         // Signal refresh for all top-level categories
         notifyChildrenChanged(_idCatArtists);
         notifyChildrenChanged(_idCatRandom);
@@ -349,7 +357,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     }
     final dt = await _findDownloadedTrack(fileKey);
     if (dt != null) {
-      _talker.debug('[AndroidAutoPlayerService] getMediaItem: found downloaded');
+      _talker.debug(
+        '[AndroidAutoPlayerService] getMediaItem: found downloaded',
+      );
       return _mapper.fromDownloadedTrack(dt);
     }
     final track = await _findOnlineTrack(fileKey);
@@ -408,7 +418,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     } else if (action.startsWith('track:')) {
       final fileKey = int.tryParse(action.substring('track:'.length));
       if (fileKey == null) {
-        _talker.error('[AndroidAutoPlayerService] invalid track action: $action');
+        _talker.error(
+          '[AndroidAutoPlayerService] invalid track action: $action',
+        );
         return;
       }
       final idx = queue.indexWhere((t) => t.fileKey == fileKey);
@@ -463,7 +475,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     );
 
     if (intent.tracks.isEmpty) {
-      _talker.warning('[AndroidAutoPlayerService] voice intent resolved no tracks');
+      _talker.warning(
+        '[AndroidAutoPlayerService] voice intent resolved no tracks',
+      );
       return;
     }
 
@@ -731,9 +745,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   Future<List<MediaItem>> _libRandomChildren(String parentPath) async {
     final result = await getIt<LibraryRepository>().getRandomAlbums();
     final albums = result.fold((_) => const <Album>[], (a) => a.albums);
-    return [
-      for (final album in albums) _onlineAlbumNode(parentPath, album),
-    ];
+    return [for (final album in albums) _onlineAlbumNode(parentPath, album)];
   }
 
   Future<List<MediaItem>> _libFavoritesChildren(String parentPath) async {
@@ -756,9 +768,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       artistName,
     );
     final albums = result.fold((_) => const <Album>[], (a) => a.albums);
-    return [
-      for (final album in albums) _onlineAlbumNode(parentPath, album),
-    ];
+    return [for (final album in albums) _onlineAlbumNode(parentPath, album)];
   }
 
   Future<List<MediaItem>> _onlineAlbumChildren(
@@ -769,8 +779,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     if (tracks.isEmpty) return const [];
     return [
       ..._onlinePlayActions(parentPath, tracks.length),
-      for (final t in tracks)
-        _onlineTrackBrowseItem(t, parentPath: parentPath),
+      for (final t in tracks) _onlineTrackBrowseItem(t, parentPath: parentPath),
     ];
   }
 
@@ -785,10 +794,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     final childrenResult = await getIt<LibraryRepository>().browseChildren(
       mcwsId,
     );
-    final children = childrenResult.fold(
-      (_) => const <BrowseItem>[],
-      (l) => l,
-    );
+    final children = childrenResult.fold((_) => const <BrowseItem>[], (l) => l);
     if (children.isNotEmpty) {
       return [
         for (final c in children)
@@ -802,8 +808,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     if (tracks.isEmpty) return const [];
     return [
       ..._onlinePlayActions(parentPath, tracks.length),
-      for (final t in tracks)
-        _onlineTrackBrowseItem(t, parentPath: parentPath),
+      for (final t in tracks) _onlineTrackBrowseItem(t, parentPath: parentPath),
     ];
   }
 
