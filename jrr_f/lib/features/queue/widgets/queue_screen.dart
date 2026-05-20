@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/providers.dart';
 import 'package:jrr_f/features/library/data/models/track.dart';
 import 'package:jrr_f/features/library/data/models/tracks.dart';
 
@@ -9,55 +8,41 @@ import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../../shared/widgets/vu_meter.dart';
-import '../../player/providers/player_provider.dart';
-import '../providers/queue_provider.dart';
+import '../providers/queue_view_model.dart';
 
 class QueueScreen extends ConsumerWidget {
   const QueueScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = ref.read(talkerProvider);
+    final state = ref.watch(queueViewModelProvider);
+    final vm = ref.read(queueViewModelProvider.notifier);
 
-    final state = ref.watch(
-      queueProvider.select((q) => (tracks: q.value, error: q.error)),
-    );
-    final currentIndex = ref.watch(playingNowPositionProvider);
-
-    talker.debug(
-      '[QueueScreen]: state: error ${state.error}, tracks ${state.tracks}',
-    );
-    talker.debug('[QueueScreen]: currentIndex: $currentIndex');
-
-    Future<void> onClearTap() => _confirmClear(context, ref);
+    Future<void> onClearTap() => _confirmClear(context, vm);
 
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: ScrollChromeListener(
-          child: switch (state) {
-            (tracks: _, error: final e?) => ErrorView(error: e),
-            (tracks: null, error: _) => const LoadingView(),
-            (tracks: final t?, error: _) when t.isEmpty => _EmptyView(
-              tracks: t,
-              onClearTap: onClearTap,
-            ),
-            (tracks: final t?, error: _) => _DataView(
-              items: t,
-              currentIndex: currentIndex,
-              onTap: (index) =>
-                  ref.read(playerProvider.notifier).playByIndex(index),
-              onRemove: (index) =>
-                  ref.read(queueProvider.notifier).removeItem(index),
-              onClearTap: onClearTap,
-            ),
-          },
+          child: state.hasError
+              ? ErrorView(error: state.error!)
+              : state.isLoading
+              ? const LoadingView()
+              : state.isEmpty
+              ? _EmptyView(tracks: state.tracks, onClearTap: onClearTap)
+              : _DataView(
+                  items: state.tracks!,
+                  currentIndex: state.currentIndex,
+                  onTap: vm.playByIndex,
+                  onRemove: vm.removeItem,
+                  onClearTap: onClearTap,
+                ),
         ),
       ),
     );
   }
 
-  Future<void> _confirmClear(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmClear(BuildContext context, QueueViewModel vm) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -81,7 +66,7 @@ class QueueScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true) {
-      await ref.read(queueProvider.notifier).clearQueue();
+      await vm.clearQueue();
     }
   }
 }
