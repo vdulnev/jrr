@@ -11,6 +11,7 @@ import 'package:talker_riverpod_logger/talker_riverpod_logger_observer.dart';
 
 import 'app.dart';
 import 'core/di/injection.dart';
+import 'core/di/providers.dart';
 import 'core/logging/file_log_observer.dart';
 import 'core/network/ssl_trust.dart';
 import 'features/player/data/models/local_audio_quality.dart';
@@ -42,6 +43,7 @@ void main() async {
   await configureDependencies();
 
   final talker = getIt<Talker>();
+  final prefs = getIt<SharedPreferences>();
 
   // Initialize audio_service. The handler manages multiple sub-players
   // (LocalPlayerService for phone, AndroidAutoPlayerService for the car).
@@ -113,7 +115,19 @@ void main() async {
 
   runApp(
     ProviderScope(
-      observers: [TalkerRiverpodObserver(talker: getIt<Talker>())],
+      // Hand pre-initialized async values to Riverpod so providers don't
+      // have to delegate to getIt to resolve them. getIt still holds the
+      // same instances during the in-progress migration; call sites move
+      // to ref.read in subsequent steps.
+      overrides: [
+        talkerProvider.overrideWithValue(talker),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        localPlayerServiceProvider.overrideWithValue(localHandler),
+        androidAutoPlayerServiceProvider.overrideWithValue(autoHandler),
+        jrrAudioHandlerProvider.overrideWithValue(mainHandler),
+        audioHandlerProvider.overrideWithValue(mainHandler),
+      ],
+      observers: [TalkerRiverpodObserver(talker: talker)],
       child: const App(),
     ),
   );
