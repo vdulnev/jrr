@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/data/models/download_state.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_status_provider.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
@@ -201,7 +200,7 @@ class _LibraryItemTileState extends ConsumerState<LibraryItemTile> {
 
   Future<void> _handleAction(String action, Track item) async {
     final tracks = Tracks(tracks: [item]);
-    final downloadsRepo = getIt<DownloadsRepository>();
+    final downloadsRepo = ref.read(downloadsRepositoryProvider);
 
     switch (action) {
       case 'play':

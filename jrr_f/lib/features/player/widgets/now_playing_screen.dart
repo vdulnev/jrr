@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:talker/talker.dart';
+import 'package:jrr_f/core/di/providers.dart';
 import '../../library/providers/library_providers.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -23,7 +22,7 @@ class NowPlayingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
     ref.watch(playerPollingProvider);
 
     final activeZone = ref.watch(activeZoneProvider);
@@ -189,7 +188,7 @@ class _VolumeControl extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final volume = ref.watch(
       playerProvider.select((status) => status.value?.volume ?? 0.0),
@@ -215,7 +214,7 @@ class _RepeatButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final isOn = ref.watch(
       playerProvider.select(
@@ -239,7 +238,7 @@ class _ShuffleButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final isOn = ref.watch(
       playerProvider.select(
@@ -263,7 +262,7 @@ class _PlayPauseIcon extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final isPlaying = ref.watch(
       playerProvider.select(
@@ -283,7 +282,7 @@ class _ProgressSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final positionMs = ref.watch(
       playerProvider.select((status) => status.value?.positionMs ?? 0),
@@ -341,7 +340,7 @@ class _TrackAlbumLine extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final album = ref.watch(
       playerProvider.select((status) => status.value?.album ?? ''),
@@ -374,7 +373,7 @@ class _TrackArtist extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final artist = ref.watch(
       playerProvider.select((status) => status.value?.artist ?? ''),
@@ -394,7 +393,7 @@ class _TrackTitle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final name = ref.watch(
       playerProvider.select((status) => status.value?.name ?? ''),
@@ -414,7 +413,7 @@ class _ArtworkConsumerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final fileKey = ref.watch(
       playerProvider.select((status) => status.value?.fileKey),
@@ -430,7 +429,7 @@ class _PlayingNowPosition extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final playingNowPosition = ref.watch(
       playerProvider.select((status) => status.value?.playingNowPosition ?? 0),

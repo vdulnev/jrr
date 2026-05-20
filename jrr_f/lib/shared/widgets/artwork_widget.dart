@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/injection.dart';
-import '../../features/connection/data/repositories/connection_repository.dart';
+import '../../core/di/providers.dart';
 import '../../features/connection/providers/session_provider.dart';
 import '../../features/connection/providers/session_state.dart';
 
@@ -20,7 +19,7 @@ class ArtworkWidget extends ConsumerWidget {
     final session = ref.read(sessionProvider);
     if (session is! Authenticated) return _placeholder(context);
 
-    final token = getIt<ConnectionRepository>().currentToken;
+    final token = ref.read(connectionRepositoryProvider).currentToken;
     final baseAddress = session.serverInfo.address;
     final tokenParam = token != null ? '&Token=$token' : '';
     final fullUrl = '$baseAddress/MCWS/v1/File/GetImage?File=$key$tokenParam';

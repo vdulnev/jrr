@@ -2,7 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -10,7 +10,6 @@ import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../library/data/models/tracks.dart';
 import '../../player/providers/player_provider.dart';
-import '../data/repositories/downloads_repository.dart';
 import '../providers/downloaded_tracks_provider.dart';
 import 'confirm_delete_dialog.dart';
 
@@ -180,9 +179,9 @@ class _ArtistRow extends ConsumerWidget {
               'Delete all ${artistTracks.length} downloaded tracks for "$artist"?',
         );
         if (!confirmed) return;
-        await getIt<DownloadsRepository>().deleteAll(
-          artistTracks.map((t) => t.fileKey).toList(),
-        );
+        await ref
+            .read(downloadsRepositoryProvider)
+            .deleteAll(artistTracks.map((t) => t.fileKey).toList());
     }
   }
 }

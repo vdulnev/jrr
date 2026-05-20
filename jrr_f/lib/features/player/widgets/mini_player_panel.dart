@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:talker/talker.dart';
+import 'package:jrr_f/core/di/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
@@ -156,7 +155,7 @@ class _Volume extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
     final volume = ref.watch(
       playerProvider.select((status) => status.value?.volume ?? 1.0),
     );
@@ -235,7 +234,7 @@ class _Cover extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
     final fileKey = ref.watch(
       playerProvider.select((status) => status.value?.fileKey),
     );
@@ -249,7 +248,7 @@ class _ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
     final progress = ref.watch(
       playerProvider.select((status) {
         final double progress;

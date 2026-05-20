@@ -2,12 +2,11 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
 import '../../offline/data/models/download_state.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../offline/widgets/album_download_progress_indicator.dart';
@@ -255,7 +254,7 @@ class AlbumRowTile extends ConsumerWidget {
       return;
     }
 
-    final downloadsRepo = getIt<DownloadsRepository>();
+    final downloadsRepo = ref.read(downloadsRepositoryProvider);
 
     final isOffline = ref.read(isOfflineActiveProvider);
 

@@ -11,8 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/providers/download_jobs_provider.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../providers/session_provider.dart';
 import '../providers/session_state.dart';
 
@@ -244,7 +243,7 @@ class _StorageSection extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              getIt<DownloadsRepository>().clearAll();
+              ref.read(downloadsRepositoryProvider).clearAll();
               Navigator.pop(context);
             },
             child: const Text(
@@ -273,7 +272,7 @@ class _FailedDownloadsSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final repo = getIt<DownloadsRepository>();
+    final repo = ref.read(downloadsRepositoryProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

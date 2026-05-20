@@ -1,8 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:talker/talker.dart';
+import 'package:jrr_f/core/di/providers.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -24,7 +23,7 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final artistsState = ref.watch(artistsProvider);
 

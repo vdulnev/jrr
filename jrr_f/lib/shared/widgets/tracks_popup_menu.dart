@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/injection.dart';
+import '../../core/di/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/tracks.dart';
-import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/player/providers/player_provider.dart';
 import '../../features/zones/providers/active_zone_provider.dart';
 
@@ -136,7 +135,7 @@ class TracksPopupMenu extends ConsumerWidget {
   }
 
   void _handleAction(BuildContext context, WidgetRef ref, String action) {
-    final downloadsRepo = getIt<DownloadsRepository>();
+    final downloadsRepo = ref.read(downloadsRepositoryProvider);
     switch (action) {
       case 'play':
         ref.read(playerProvider.notifier).playNow(tracks);
