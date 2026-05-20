@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/providers.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -23,11 +22,10 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final talker = ref.read(talkerProvider);
-
+    // artistsProvider already exposes loading/error/data plus an invalidate
+    // hook, so it functions as this screen's view model directly — no
+    // wrapper provider needed.
     final artistsState = ref.watch(artistsProvider);
-
-    talker.debug('[ArtistsTabScreen]: artistsState: $artistsState');
 
     return artistsState.when(
       loading: () => const LoadingView(),
