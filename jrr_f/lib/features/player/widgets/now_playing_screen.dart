@@ -17,7 +17,33 @@ class NowPlayingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(nowPlayingViewModelProvider);
+    // Skip the high-churn `positionMs` / `durationMs` fields at the screen
+    // level so the position tick doesn't rebuild the entire subtree;
+    // _ProgressSection subscribes to those directly through the same VM
+    // provider. A record `.select` ensures we only rebuild on the
+    // low-churn fields actually rendered here.
+    final state = ref.watch(
+      nowPlayingViewModelProvider.select(
+        (s) => (
+          activeZone: s.activeZone,
+          fileKey: s.fileKey,
+          dateReadable: s.track?.dateReadable,
+          name: s.name,
+          artist: s.artist,
+          album: s.album,
+          volume: s.volume,
+          isMuted: s.isMuted,
+          isPlaying: s.isPlaying,
+          repeatMode: s.repeatMode,
+          shuffleMode: s.shuffleMode,
+          playingNowPosition: s.playingNowPosition,
+          playingNowTracks: s.playingNowTracks,
+          fileType: s.fileType,
+          bitDepth: s.bitDepth,
+          sampleRate: s.sampleRate,
+        ),
+      ),
+    );
     final vm = ref.read(nowPlayingViewModelProvider.notifier);
 
     if (state.activeZone == null) {
@@ -112,19 +138,16 @@ class NowPlayingScreen extends ConsumerWidget {
                         const SizedBox(height: 2),
                         _TrackAlbumLine(
                           album: state.album,
-                          dateReadable: state.track?.dateReadable,
+                          dateReadable: state.dateReadable,
                         ),
                       ],
                     ),
                   ),
 
-                  // Progress bar
+                  // Progress bar — its own ConsumerWidget so the position
+                  // tick doesn't rebuild the rest of the screen.
                   const SizedBox(height: 16),
-                  _ProgressSection(
-                    positionMs: state.positionMs,
-                    durationMs: state.durationMs,
-                    onSeek: vm.seekTo,
-                  ),
+                  const _ProgressSection(),
                   // Transport controls
                   const SizedBox(height: 20),
                   Row(
@@ -249,19 +272,19 @@ class _PlayPauseIcon extends StatelessWidget {
   }
 }
 
-class _ProgressSection extends StatelessWidget {
-  const _ProgressSection({
-    required this.positionMs,
-    required this.durationMs,
-    required this.onSeek,
-  });
-
-  final int positionMs;
-  final int durationMs;
-  final ValueChanged<int> onSeek;
+class _ProgressSection extends ConsumerWidget {
+  const _ProgressSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slice = ref.watch(
+      nowPlayingViewModelProvider.select(
+        (s) => (positionMs: s.positionMs, durationMs: s.durationMs),
+      ),
+    );
+    final vm = ref.read(nowPlayingViewModelProvider.notifier);
+    final positionMs = slice.positionMs;
+    final durationMs = slice.durationMs;
     final progress = durationMs > 0
         ? (positionMs / durationMs).clamp(0.0, 1.0)
         : 0.0;
@@ -272,7 +295,7 @@ class _ProgressSection extends StatelessWidget {
       children: [
         AppProgressBar(
           progress: progress,
-          onChanged: (v) => onSeek((v * durationMs).round()),
+          onChanged: (v) => vm.seekTo((v * durationMs).round()),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
