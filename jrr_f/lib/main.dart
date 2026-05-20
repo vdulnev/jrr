@@ -122,8 +122,8 @@ void main() async {
       overrides: [
         talkerProvider.overrideWithValue(talker),
         sharedPreferencesProvider.overrideWithValue(prefs),
-        localPlayerServiceProvider.overrideWithValue(localHandler),
-        androidAutoPlayerServiceProvider.overrideWithValue(autoHandler),
+        localPlayerInstanceProvider.overrideWithValue(localHandler),
+        androidAutoPlayerInstanceProvider.overrideWithValue(autoHandler),
         jrrAudioHandlerProvider.overrideWithValue(mainHandler),
         audioHandlerProvider.overrideWithValue(mainHandler),
       ],

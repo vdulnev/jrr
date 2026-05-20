@@ -5,10 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
-import '../../queue/data/repositories/local_queue_repository.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/local_palyback_state.dart';
 import '../data/models/playback_state.dart';
@@ -17,9 +16,6 @@ import '../data/models/player_status.dart';
 import '../data/models/sequence_state_data.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
-import '../services/local_player_service.dart';
-import '../services/android_auto_player_service.dart';
-import '../services/jrr_audio_handler.dart';
 import '../services/local_player_service_base.dart';
 import 'local_audio_quality_provider.dart';
 import 'player_controller.dart';
@@ -31,14 +27,14 @@ part 'local_player_provider.g.dart';
 @Riverpod(keepAlive: true)
 LocalPlayerServiceBase localPlayerService(Ref ref) {
   final activeZone = ref.watch(activeZoneProvider);
-  final handler = getIt<JrrAudioHandler>();
+  final handler = ref.read(jrrAudioHandlerProvider);
 
   if (activeZone?.isAndroidAuto == true) {
-    final service = getIt<AndroidAutoPlayerService>();
+    final service = ref.read(androidAutoPlayerInstanceProvider);
     handler.switchTo(service);
     return service;
   } else {
-    final service = getIt<LocalPlayerService>();
+    final service = ref.read(localPlayerInstanceProvider);
     handler.switchTo(service);
     return service;
   }
@@ -49,7 +45,7 @@ class LocalPlayerPosition extends _$LocalPlayerPosition {
   @override
   Duration build() {
     final service = ref.watch(localPlayerServiceProvider);
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final sub = service.positionStream.listen(
       (pos) => state = pos,
@@ -67,7 +63,7 @@ class LocalPlayerState extends _$LocalPlayerState {
   @override
   PlayerStateData build() {
     final service = ref.watch(localPlayerServiceProvider);
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final sub = service.playerStateStream.listen(
       (s) => state = PlayerStateData(
@@ -91,7 +87,7 @@ class LocalPlayerSequence extends _$LocalPlayerSequence {
   @override
   SequenceStateData? build() {
     final service = ref.watch(localPlayerServiceProvider);
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final sub = service.sequenceStateStream.listen((s) {
       if (s == null) {
@@ -132,7 +128,7 @@ class LocalPlayerVolume extends _$LocalPlayerVolume {
   @override
   double build() {
     final service = ref.watch(localPlayerServiceProvider);
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final sub = service.volumeStream.listen(
       (v) => state = v,
@@ -150,7 +146,7 @@ class LocalPlayerDuration extends _$LocalPlayerDuration {
   @override
   Duration? build() {
     final service = ref.watch(localPlayerServiceProvider);
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
 
     final sub = service.durationStream.listen(
       (d) => state = d,
@@ -186,9 +182,9 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
   @override
   FutureOr<PlayerStatus?> build() async {
     _service = ref.watch(localPlayerServiceProvider);
-    _prefs = getIt<SharedPreferences>();
-    _talker = getIt<Talker>();
-    final queueRepo = getIt<LocalQueueRepository>();
+    _prefs = ref.read(sharedPreferencesProvider);
+    _talker = ref.read(talkerProvider);
+    final queueRepo = ref.read(localQueueRepositoryProvider);
 
     final activeZone = ref.watch(activeZoneProvider);
     final String newZoneId;
@@ -485,7 +481,7 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
 
   Future<void> _loadQueue(String zoneId) async {
     _talker.info('[LocalPlayer] Loading queue for $zoneId');
-    final queueRepo = getIt<LocalQueueRepository>();
+    final queueRepo = ref.read(localQueueRepositoryProvider);
     final tracks = (await queueRepo.getTracks(
       zoneId,
     )).getOrElse((e) => Tracks.empty);
@@ -518,7 +514,7 @@ class LocalPlayer extends _$LocalPlayer implements PlayerController {
   }
 
   Future<void> _saveQueue(String zoneId, Tracks tracks) async {
-    final queueRepo = getIt<LocalQueueRepository>();
+    final queueRepo = ref.read(localQueueRepositoryProvider);
     await queueRepo.setTracks(zoneId, tracks);
     _talker.debug(
       '[LocalPlayer] [$zoneId] Saved queue with ${tracks.length} tracks',

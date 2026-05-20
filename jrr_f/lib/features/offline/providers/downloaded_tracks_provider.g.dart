@@ -33,7 +33,7 @@ final class DownloadedTracksProvider
   DownloadedTracks create() => DownloadedTracks();
 }
 
-String _$downloadedTracksHash() => r'93129a86b1db6dd94983bb55a7c5874b5edaa48f';
+String _$downloadedTracksHash() => r'08e3b50438ad0fac03abff46f851bacc44b417c9';
 
 abstract class _$DownloadedTracks
     extends $StreamNotifier<List<DownloadedTrack>> {

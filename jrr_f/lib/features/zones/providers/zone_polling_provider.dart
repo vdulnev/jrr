@@ -4,7 +4,7 @@ import 'package:jrr_f/features/zones/providers/active_zone_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../connection/providers/session_provider.dart';
 import '../../connection/providers/session_state.dart';
 import 'zone_provider.dart';
@@ -15,7 +15,7 @@ part 'zone_polling_provider.g.dart';
 class ZonePolling extends _$ZonePolling {
   Timer? _timer;
 
-  Talker get _talker => getIt<Talker>();
+  Talker get _talker => ref.read(talkerProvider);
 
   @override
   void build() {

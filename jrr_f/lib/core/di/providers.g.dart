@@ -773,10 +773,10 @@ final class RecentlyPlayedRepositoryProvider
 String _$recentlyPlayedRepositoryHash() =>
     r'cd15d9d672ac753d443d83d8f3ca0275f64d3831';
 
-@ProviderFor(localPlayerService)
-final localPlayerServiceProvider = LocalPlayerServiceProvider._();
+@ProviderFor(localPlayerInstance)
+final localPlayerInstanceProvider = LocalPlayerInstanceProvider._();
 
-final class LocalPlayerServiceProvider
+final class LocalPlayerInstanceProvider
     extends
         $FunctionalProvider<
           LocalPlayerService,
@@ -784,19 +784,19 @@ final class LocalPlayerServiceProvider
           LocalPlayerService
         >
     with $Provider<LocalPlayerService> {
-  LocalPlayerServiceProvider._()
+  LocalPlayerInstanceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'localPlayerServiceProvider',
+        name: r'localPlayerInstanceProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$localPlayerServiceHash();
+  String debugGetCreateSourceHash() => _$localPlayerInstanceHash();
 
   @$internal
   @override
@@ -806,7 +806,7 @@ final class LocalPlayerServiceProvider
 
   @override
   LocalPlayerService create(Ref ref) {
-    return localPlayerService(ref);
+    return localPlayerInstance(ref);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -818,13 +818,13 @@ final class LocalPlayerServiceProvider
   }
 }
 
-String _$localPlayerServiceHash() =>
-    r'3dbf6f855055c424c90fb73bf0a41266ca2586bf';
+String _$localPlayerInstanceHash() =>
+    r'fc12352c21ceebbb6d6f21e5262247798a746ccb';
 
-@ProviderFor(androidAutoPlayerService)
-final androidAutoPlayerServiceProvider = AndroidAutoPlayerServiceProvider._();
+@ProviderFor(androidAutoPlayerInstance)
+final androidAutoPlayerInstanceProvider = AndroidAutoPlayerInstanceProvider._();
 
-final class AndroidAutoPlayerServiceProvider
+final class AndroidAutoPlayerInstanceProvider
     extends
         $FunctionalProvider<
           AndroidAutoPlayerService,
@@ -832,19 +832,19 @@ final class AndroidAutoPlayerServiceProvider
           AndroidAutoPlayerService
         >
     with $Provider<AndroidAutoPlayerService> {
-  AndroidAutoPlayerServiceProvider._()
+  AndroidAutoPlayerInstanceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'androidAutoPlayerServiceProvider',
+        name: r'androidAutoPlayerInstanceProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$androidAutoPlayerServiceHash();
+  String debugGetCreateSourceHash() => _$androidAutoPlayerInstanceHash();
 
   @$internal
   @override
@@ -854,7 +854,7 @@ final class AndroidAutoPlayerServiceProvider
 
   @override
   AndroidAutoPlayerService create(Ref ref) {
-    return androidAutoPlayerService(ref);
+    return androidAutoPlayerInstance(ref);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -866,8 +866,8 @@ final class AndroidAutoPlayerServiceProvider
   }
 }
 
-String _$androidAutoPlayerServiceHash() =>
-    r'349cdfe27cfd2355169222920debd5eaa328ab9b';
+String _$androidAutoPlayerInstanceHash() =>
+    r'b1756f960e8d9a2caf1a64f3138b4f6f55ba3286';
 
 @ProviderFor(jrrAudioHandler)
 final jrrAudioHandlerProvider = JrrAudioHandlerProvider._();

@@ -40,7 +40,7 @@ final class ZonePollingProvider extends $NotifierProvider<ZonePolling, void> {
   }
 }
 
-String _$zonePollingHash() => r'b171a0e95b2bcc036c8a402f08054f43d3ee5454';
+String _$zonePollingHash() => r'3dcf6cf0b775379ed5840c93eac55441c8692581';
 
 abstract class _$ZonePolling extends $Notifier<void> {
   void build();

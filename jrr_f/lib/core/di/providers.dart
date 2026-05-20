@@ -89,11 +89,16 @@ AndroidAutoSessionService androidAutoSessionService(Ref ref) =>
 RecentlyPlayedRepository recentlyPlayedRepository(Ref ref) =>
     getIt<RecentlyPlayedRepository>();
 
+// The local_player_provider feature already exposes a derived
+// `localPlayerServiceProvider` that picks between these two concrete
+// instances per-zone. The providers below provide raw access to each
+// pre-built singleton (overridden in main.dart) without clashing with that
+// derived provider.
 @Riverpod(keepAlive: true)
-LocalPlayerService localPlayerService(Ref ref) => getIt<LocalPlayerService>();
+LocalPlayerService localPlayerInstance(Ref ref) => getIt<LocalPlayerService>();
 
 @Riverpod(keepAlive: true)
-AndroidAutoPlayerService androidAutoPlayerService(Ref ref) =>
+AndroidAutoPlayerService androidAutoPlayerInstance(Ref ref) =>
     getIt<AndroidAutoPlayerService>();
 
 @Riverpod(keepAlive: true)

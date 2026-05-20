@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
@@ -11,7 +11,6 @@ import '../data/models/albums.dart';
 import '../data/models/browse_item.dart';
 import '../data/models/track.dart';
 import '../data/models/tracks.dart';
-import '../data/repositories/library_repository.dart';
 
 part 'library_providers.g.dart';
 
@@ -36,32 +35,37 @@ final libraryChromeVisibleProvider =
 Future<Tracks> librarySearch(Ref ref, String query) async {
   if (query.trim().isEmpty) return Tracks.empty;
   if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
-  final result = await getIt<LibraryRepository>().search(query.trim());
+  final result = await ref.read(libraryRepositoryProvider).search(query.trim());
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<String>> artists(Ref ref) async {
   if (ref.watch(isOfflineActiveProvider)) return const [];
-  final result = await getIt<LibraryRepository>().getArtists();
+  final result = await ref.read(libraryRepositoryProvider).getArtists();
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Albums> albumsByArtist(Ref ref, String artist) async {
   if (ref.watch(isOfflineActiveProvider)) return Albums.empty;
-  final result = await getIt<LibraryRepository>().getAlbumsByArtist(artist);
+  final result = await ref
+      .read(libraryRepositoryProvider)
+      .getAlbumsByArtist(artist);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<AlbumGroup>> albumGroupsByArtist(Ref ref, String artist) async {
   final albums = await ref.watch(albumsByArtistProvider(artist).future);
-  return _buildAlbumGroups(artist, albums);
+  return _buildAlbumGroups(ref.read(talkerProvider), artist, albums);
 }
 
-List<AlbumGroup> _buildAlbumGroups(String artist, Albums albums) {
-  final talker = getIt<Talker>();
+List<AlbumGroup> _buildAlbumGroups(
+  Talker talker,
+  String artist,
+  Albums albums,
+) {
   const tag = '[albumGroupsByArtistProvider]';
 
   talker.debug('$tag [$artist] Received ${albums.length} album row(s)');
@@ -167,35 +171,39 @@ List<AlbumGroup> _buildAlbumGroups(String artist, Albums albums) {
 @riverpod
 Future<Tracks> albumTracks(Ref ref, Album album) async {
   if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
-  final result = await getIt<LibraryRepository>().getAlbumTracks(album);
+  final result = await ref
+      .read(libraryRepositoryProvider)
+      .getAlbumTracks(album);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Tracks> folderTracks(Ref ref, String folderPath) async {
   if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
-  final result = await getIt<LibraryRepository>().getTracksByFolder(folderPath);
+  final result = await ref
+      .read(libraryRepositoryProvider)
+      .getTracksByFolder(folderPath);
   return result.getOrElse((e) => throw e);
 }
 
 @Riverpod(keepAlive: true)
 Future<Albums> randomAlbums(Ref ref) async {
   if (ref.watch(isOfflineActiveProvider)) return Albums.empty;
-  final result = await getIt<LibraryRepository>().getRandomAlbums();
+  final result = await ref.read(libraryRepositoryProvider).getRandomAlbums();
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<List<BrowseItem>> browseChildren(Ref ref, String id) async {
   if (ref.watch(isOfflineActiveProvider)) return const [];
-  final result = await getIt<LibraryRepository>().browseChildren(id);
+  final result = await ref.read(libraryRepositoryProvider).browseChildren(id);
   return result.getOrElse((e) => throw e);
 }
 
 @riverpod
 Future<Tracks> browseFiles(Ref ref, String id) async {
   if (ref.watch(isOfflineActiveProvider)) return Tracks.empty;
-  final result = await getIt<LibraryRepository>().browseFiles(id);
+  final result = await ref.read(libraryRepositoryProvider).browseFiles(id);
   return result.getOrElse((e) => throw e);
 }
 
@@ -208,7 +216,9 @@ Future<Track?> searchByFileKey(Ref ref, int fileKey) async {
         .firstOrNull;
     return match?.track;
   }
-  final result = await getIt<LibraryRepository>().searchByFileKey(fileKey);
+  final result = await ref
+      .read(libraryRepositoryProvider)
+      .searchByFileKey(fileKey);
   return result.getOrElse((e) => throw e);
 }
 

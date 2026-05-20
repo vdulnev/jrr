@@ -4,9 +4,8 @@ import 'package:jrr_f/features/zones/data/models/zones.dart';
 import 'package:jrr_f/features/zones/providers/active_zone_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../data/models/zone.dart';
-import '../data/repositories/zone_repository.dart';
 
 part 'zone_provider.g.dart';
 
@@ -23,12 +22,12 @@ class ZoneList extends _$ZoneList {
     // We skip the repository call as it's already guarded, but this is a
     // secondary guard at the provider level.
     if (session is Authenticated && session.serverInfo.address.isEmpty) {
-      final result = await getIt<ZoneRepository>().getZones();
+      final result = await ref.read(zoneRepositoryProvider).getZones();
       final rawZones = result.getOrElse((_) => []);
       return Zones(zones: isAutoConnected ? [Zone.androidAuto] : rawZones);
     }
 
-    final result = await getIt<ZoneRepository>().getZones();
+    final result = await ref.read(zoneRepositoryProvider).getZones();
     final zones = result.getOrElse(
       (e) => throw e,
     ); // Try to refresh zones when session becomes available.
@@ -40,7 +39,7 @@ class ZoneList extends _$ZoneList {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final isAutoConnected = ref.read(androidAutoConnectedProvider);
-      final result = await getIt<ZoneRepository>().getZones();
+      final result = await ref.read(zoneRepositoryProvider).getZones();
       final zones = result.getOrElse((e) => throw e);
 
       // Re-apply the same strict filtering as in build()

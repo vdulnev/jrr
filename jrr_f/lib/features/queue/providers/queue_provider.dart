@@ -2,13 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/error/app_exception.dart';
 import '../../player/providers/local_player_provider.dart';
 import '../../player/providers/player_provider.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../../library/data/models/tracks.dart';
-import '../data/repositories/queue_repository.dart';
 
 part 'queue_provider.g.dart';
 
@@ -32,7 +31,7 @@ class Queue extends _$Queue {
       ),
     );
 
-    final result = await getIt<QueueRepository>().getQueue(zone.id);
+    final result = await ref.read(queueRepositoryProvider).getQueue(zone.id);
     return result.getOrElse((e) => throw e);
   }
 
@@ -43,7 +42,9 @@ class Queue extends _$Queue {
         zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).removeTrack(index);
     } else {
-      await _run((id) => getIt<QueueRepository>().removeItem(id, index));
+      await _run(
+        (id) => ref.read(queueRepositoryProvider).removeItem(id, index),
+      );
     }
   }
 
@@ -54,7 +55,9 @@ class Queue extends _$Queue {
         zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).moveTrack(source, target);
     } else {
-      await _run((id) => getIt<QueueRepository>().moveItem(id, source, target));
+      await _run(
+        (id) => ref.read(queueRepositoryProvider).moveItem(id, source, target),
+      );
     }
   }
 
@@ -65,7 +68,7 @@ class Queue extends _$Queue {
         zone?.isAndroidAuto == true) {
       await ref.read(localPlayerProvider.notifier).setTracks(Tracks.empty);
     } else {
-      await _run((id) => getIt<QueueRepository>().clearQueue(id));
+      await _run((id) => ref.read(queueRepositoryProvider).clearQueue(id));
     }
   }
 

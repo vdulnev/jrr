@@ -55,7 +55,7 @@ final class LocalPlayerServiceProvider
 }
 
 String _$localPlayerServiceHash() =>
-    r'70ea846828e19f3768815e429731f9c5217cfc02';
+    r'95c9ed32307b83a50c4d6a1fe7bf39bcf8f44c4a';
 
 @ProviderFor(LocalPlayerPosition)
 final localPlayerPositionProvider = LocalPlayerPositionProvider._();
@@ -90,7 +90,7 @@ final class LocalPlayerPositionProvider
 }
 
 String _$localPlayerPositionHash() =>
-    r'4343dc64d00a7b978685b65784c544df885c47a3';
+    r'100a1b54afb6718ddeeb43216db2088b4a518809';
 
 abstract class _$LocalPlayerPosition extends $Notifier<Duration> {
   Duration build();
@@ -142,7 +142,7 @@ final class LocalPlayerStateProvider
   }
 }
 
-String _$localPlayerStateHash() => r'dddb723e7e6985f445df075161add502d3a5ccca';
+String _$localPlayerStateHash() => r'88604d2dda321049dd9578c62efd816a755c04b2';
 
 abstract class _$LocalPlayerState extends $Notifier<PlayerStateData> {
   PlayerStateData build();
@@ -195,7 +195,7 @@ final class LocalPlayerSequenceProvider
 }
 
 String _$localPlayerSequenceHash() =>
-    r'a182f5c60951d7ade9a4a3c38f7a48b884e87bf4';
+    r'fd1f99e8f23f298763320333309e52fe0b889ebb';
 
 abstract class _$LocalPlayerSequence extends $Notifier<SequenceStateData?> {
   SequenceStateData? build();
@@ -247,7 +247,7 @@ final class LocalPlayerVolumeProvider
   }
 }
 
-String _$localPlayerVolumeHash() => r'fee731899d6590aa47dcbd298955416b9fae3bf6';
+String _$localPlayerVolumeHash() => r'7bb8bce754df76feb7b0feb69961cbed01524960';
 
 abstract class _$LocalPlayerVolume extends $Notifier<double> {
   double build();
@@ -300,7 +300,7 @@ final class LocalPlayerDurationProvider
 }
 
 String _$localPlayerDurationHash() =>
-    r'e589b8c873cd764cdc81c5d693da616780fc6c35';
+    r'6f4b1430ce4de3b0e33d40a91ffc18ecab15ba45';
 
 abstract class _$LocalPlayerDuration extends $Notifier<Duration?> {
   Duration? build();
@@ -357,7 +357,7 @@ final class LocalPlayerProvider
   LocalPlayer create() => LocalPlayer();
 }
 
-String _$localPlayerHash() => r'faae0f77501ec9821e9e72fadcf365f983f2e92a';
+String _$localPlayerHash() => r'74227d862d41c4e34aa817559fa800555b7d8094';
 
 /// Owns local (just_audio) playback and emits a [PlayerStatus] view of it.
 ///

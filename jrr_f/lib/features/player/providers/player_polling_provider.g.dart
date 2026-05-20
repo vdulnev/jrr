@@ -41,7 +41,7 @@ final class PlayerPollingProvider
   }
 }
 
-String _$playerPollingHash() => r'49f0d0d1db095ff351e39b7d412c49e6452e0867';
+String _$playerPollingHash() => r'2d6fd7592ce33e2c62038eea3a9af6d5636d1ed4';
 
 abstract class _$PlayerPolling extends $Notifier<void> {
   void build();
