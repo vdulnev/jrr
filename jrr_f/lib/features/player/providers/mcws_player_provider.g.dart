@@ -48,7 +48,7 @@ final class McwsPlayerProvider
   McwsPlayer create() => McwsPlayer();
 }
 
-String _$mcwsPlayerHash() => r'5f9089a643fd0895dbc4bf9a1839c768261a313a';
+String _$mcwsPlayerHash() => r'f2a4ad190bc18013c3c69b18325ef876478d95a1';
 
 /// Owns all MCWS-driven (remote) playback control.
 ///

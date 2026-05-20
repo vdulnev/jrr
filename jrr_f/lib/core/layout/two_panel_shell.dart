@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../router/navigation_notifier.dart';
+import '../../features/library/providers/library_providers.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/queue/widgets/queue_screen.dart';
@@ -36,24 +37,33 @@ class _MainPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showMiniPlayer = activeTab != AppTab.nowPlaying;
+    final chromeVisible = ref.watch(libraryChromeVisibleProvider);
+    final showMiniPlayer = activeTab != AppTab.nowPlaying && chromeVisible;
 
     return Column(
       children: [
         Expanded(child: _ContentArea(activeTab: activeTab)),
-        if (showMiniPlayer)
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.bg1,
-              border: Border(top: BorderSide(color: AppColors.line)),
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: MiniPlayerPanel(
-              onItemTap: () {
-                ref.read(activeTabProvider.notifier).select(AppTab.nowPlaying);
-              },
-            ),
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: showMiniPlayer
+              ? Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.bg1,
+                    border: Border(top: BorderSide(color: AppColors.line)),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                  child: MiniPlayerPanel(
+                    onItemTap: () {
+                      ref
+                          .read(activeTabProvider.notifier)
+                          .select(AppTab.nowPlaying);
+                    },
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
       ],
     );
   }

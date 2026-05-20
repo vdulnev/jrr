@@ -1,20 +1,18 @@
 import 'package:jrr_f/core/db/app_database.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/error/app_exception.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/server_info.dart';
-import '../data/repositories/connection_repository.dart';
 import 'session_state.dart';
 
 part 'session_provider.g.dart';
 
 @riverpod
 class Session extends _$Session {
-  Talker get _talker => getIt<Talker>();
+  Talker get _talker => ref.read(talkerProvider);
 
   @override
   SessionState build() {
@@ -25,10 +23,10 @@ class Session extends _$Session {
 
   Future<void> _attemptSilentReconnect() async {
     _talker.info('[Session] Attempting silent reconnect');
-    final repo = getIt<ConnectionRepository>();
+    final repo = ref.read(connectionRepositoryProvider);
     final server = await getServerInfo();
 
-    final prefs = getIt<SharedPreferences>();
+    final prefs = ref.read(sharedPreferencesProvider);
     final lastZoneGuid = prefs.getString(kActiveZoneGuidKey);
 
     if (server == null) {
@@ -102,14 +100,14 @@ class Session extends _$Session {
 
     // Set the pref so ActiveZone picks it up when it rebuilds in response
     // to the session state change below.
-    final prefs = getIt<SharedPreferences>();
+    final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(kActiveZoneGuidKey, 'offline-zone-guid');
 
     state = const SessionState.authenticated(serverInfo: ServerInfo.offline);
   }
 
   Future<String?> getPassword() async {
-    final repo = getIt<ConnectionRepository>();
+    final repo = ref.read(connectionRepositoryProvider);
     final server = await getServerInfo();
     if (server == null) return null;
     final password = await repo.getPassword(server.passwordKey);
@@ -117,7 +115,7 @@ class Session extends _$Session {
   }
 
   Future<SavedServer?> getServerInfo() async {
-    final repo = getIt<ConnectionRepository>();
+    final repo = ref.read(connectionRepositoryProvider);
     return await repo.getLastServerWithToken();
   }
 
@@ -134,14 +132,16 @@ class Session extends _$Session {
       '[Session] Connecting to $host:$port as $username '
       '(ssl=$useSsl, sslPort=$sslPort)',
     );
-    final result = await getIt<ConnectionRepository>().connect(
-      host: host,
-      port: port,
-      username: username,
-      password: password,
-      useSsl: useSsl,
-      sslPort: sslPort,
-    );
+    final result = await ref
+        .read(connectionRepositoryProvider)
+        .connect(
+          host: host,
+          port: port,
+          username: username,
+          password: password,
+          useSsl: useSsl,
+          sslPort: sslPort,
+        );
     return result.fold(
       (e) {
         _talker.error('[Session] Connect failed', e);
@@ -160,7 +160,7 @@ class Session extends _$Session {
 
   Future<void> logout() async {
     _talker.info('[Session] Logout');
-    await getIt<ConnectionRepository>().clearSession();
+    await ref.read(connectionRepositoryProvider).clearSession();
     state = const SessionState.unauthenticated();
   }
 }

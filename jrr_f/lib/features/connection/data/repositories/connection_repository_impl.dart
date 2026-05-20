@@ -8,7 +8,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:talker/talker.dart';
 
 import '../../../../core/db/app_database.dart';
-import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/dio_factory.dart';
 import '../../../../core/network/jriver_lookup_api.dart';
@@ -18,13 +17,12 @@ import '../../../../core/network/ssl_trust.dart';
 import '../models/server_info.dart';
 import 'connection_repository.dart';
 
-const _sessionScopeName = 'session';
-
 class ConnectionRepositoryImpl implements ConnectionRepository {
   final AppDatabase _db;
   final FlutterSecureStorage _secureStorage;
   final McwsXmlParser _parser;
   final Talker _talker;
+  final ValueNotifier<McwsClient?> _clientNotifier = ValueNotifier(null);
 
   String? _token;
 
@@ -40,6 +38,9 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
 
   @override
   String? get currentToken => _token;
+
+  @override
+  ValueListenable<McwsClient?> get clientListenable => _clientNotifier;
 
   @override
   Future<String?> getPassword(String key) => _secureStorage.read(key: key);
@@ -189,10 +190,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       ),
     );
 
-    getIt.pushNewScope(
-      scopeName: _sessionScopeName,
-      init: (gi) => gi.registerSingleton<McwsClient>(client),
-    );
+    _clientNotifier.value = client;
 
     try {
       await _persistServer(
@@ -214,7 +212,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
 
   @override
   Future<void> restoreSession(SavedServer server) async {
-    await _popScope();
+    _clientNotifier.value = null;
 
     if (server.useSsl) {
       JRiverHttpOverrides.instance.trustHost(server.host);
@@ -230,10 +228,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
     _token = server.authToken;
     final client = buildClient(baseUrl, () => _token);
 
-    getIt.pushNewScope(
-      scopeName: _sessionScopeName,
-      init: (gi) => gi.registerSingleton<McwsClient>(client),
-    );
+    _clientNotifier.value = client;
   }
 
   @override
@@ -249,13 +244,7 @@ class ConnectionRepositoryImpl implements ConnectionRepository {
       // Ignore database errors (e.g., in tests with mocks)
     }
 
-    await _popScope();
-  }
-
-  FutureOr<void> _popScope() async {
-    if (getIt.currentScopeName == _sessionScopeName) {
-      await getIt.popScope();
-    }
+    _clientNotifier.value = null;
   }
 
   @override

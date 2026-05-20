@@ -116,4 +116,4 @@ final class LastServerProvider
   }
 }
 
-String _$lastServerHash() => r'8e3d91b2ff2259bfd89558b7c2af9705ee94aac9';
+String _$lastServerHash() => r'fa8cdbdcb8e0cf7ec984a13e0b6653bc9d73050a';

@@ -33,7 +33,7 @@ final class DownloadJobsProvider
   DownloadJobs create() => DownloadJobs();
 }
 
-String _$downloadJobsHash() => r'f3cca2fc9b500c798da46fc640b081e9427fd68e';
+String _$downloadJobsHash() => r'2cba3ca4c4e53fa00663e7686488e58cee1b5727';
 
 abstract class _$DownloadJobs extends $StreamNotifier<List<DownloadJob>> {
   Stream<List<DownloadJob>> build();

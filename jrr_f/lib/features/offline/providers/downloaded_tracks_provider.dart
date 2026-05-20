@@ -1,8 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../core/di/injection.dart';
-import '../../../../shared/extensions/string_extensions.dart';
+import '../../../core/di/providers.dart';
+import '../../../shared/extensions/string_extensions.dart';
 import '../data/models/downloaded_track.dart';
-import '../data/repositories/downloads_repository.dart';
 
 import '../../library/data/models/album.dart';
 import '../../library/data/models/tracks.dart';
@@ -13,7 +12,7 @@ part 'downloaded_tracks_provider.g.dart';
 class DownloadedTracks extends _$DownloadedTracks {
   @override
   Stream<List<DownloadedTrack>> build() {
-    return getIt<DownloadsRepository>().watchDownloadedTracks();
+    return ref.read(downloadsRepositoryProvider).watchDownloadedTracks();
   }
 }
 

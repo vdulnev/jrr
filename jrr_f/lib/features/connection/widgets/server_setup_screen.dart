@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
-import '../providers/last_server_provider.dart';
-import '../providers/session_provider.dart';
-import '../providers/server_setup_provider.dart';
+import '../providers/server_setup_view_model.dart';
+import '../providers/server_setup_view_state.dart';
 
 enum _ConnectMode { accessKey, manual }
 
@@ -34,7 +33,14 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _prefill());
+    // The view model may already have the prefill ready by the time we
+    // first paint (e.g. lastServerProvider resolved earlier). Apply it
+    // once on the post-frame so `setState` is valid.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final initial = ref.read(serverSetupViewModelProvider).prefill;
+      if (initial != null) _applyPrefill(initial);
+    });
   }
 
   @override
@@ -48,10 +54,8 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
     super.dispose();
   }
 
-  Future<void> _prefill() async {
-    if (!mounted || _prefilled) return;
-    final data = await ref.read(lastServerProvider.future);
-    if (!mounted || data == null) return;
+  void _applyPrefill(ServerSetupPrefill data) {
+    if (_prefilled || !mounted) return;
     _prefilled = true;
     _hostController.text = data.host;
     _portController.text = data.port.toString();
@@ -67,19 +71,19 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
 
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final notifier = ref.read(serverSetupFormProvider.notifier);
+    final vm = ref.read(serverSetupViewModelProvider.notifier);
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
     switch (_mode) {
       case _ConnectMode.accessKey:
-        await notifier.connectWithAccessKey(
+        await vm.connectWithAccessKey(
           accessKey: _accessKeyController.text.trim(),
           username: username,
           password: password,
           useSsl: _useSsl,
         );
       case _ConnectMode.manual:
-        await notifier.connectWithHost(
+        await vm.connectWithHost(
           host: _hostController.text.trim(),
           port: int.parse(_portController.text.trim()),
           username: username,
@@ -92,8 +96,17 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final connectState = ref.watch(serverSetupFormProvider);
-    final isLoading = connectState is AsyncLoading;
+    // Apply prefill if it becomes available after the first frame.
+    ref.listen(serverSetupViewModelProvider.select((s) => s.prefill), (
+      _,
+      prefill,
+    ) {
+      if (prefill != null) _applyPrefill(prefill);
+    });
+
+    final state = ref.watch(serverSetupViewModelProvider);
+    final vm = ref.read(serverSetupViewModelProvider.notifier);
+    final isLoading = state.isConnecting;
 
     return Scaffold(
       body: SafeArea(
@@ -251,8 +264,8 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                           onFieldSubmitted: (_) => _connect(),
                         ),
                         const SizedBox(height: 32),
-                        if (connectState is AsyncError) ...[
-                          ErrorView(error: connectState.error),
+                        if (state.hasError) ...[
+                          ErrorView(error: state.connectError!),
                           const SizedBox(height: 16),
                         ],
                         FilledButton(
@@ -270,11 +283,7 @@ class _ServerSetupScreenState extends ConsumerState<ServerSetupScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextButton(
-                          onPressed: isLoading
-                              ? null
-                              : () => ref
-                                    .read(sessionProvider.notifier)
-                                    .enterOfflineMode(),
+                          onPressed: isLoading ? null : vm.enterOfflineMode,
                           child: const Text('Continue Offline'),
                         ),
                       ],

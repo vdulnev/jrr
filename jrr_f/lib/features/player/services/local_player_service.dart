@@ -7,7 +7,6 @@ import 'package:jrr_f/features/player/data/models/shuffle_mode.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../library/data/models/track.dart';
@@ -24,6 +23,10 @@ import 'local_player_service_base.dart';
 class LocalPlayerService extends LocalPlayerServiceBase with SeekHandler {
   final AudioPlayer _player;
   final Talker _talker;
+  final DownloadsRepository _downloadsRepo;
+  final ConnectionRepository _connectionRepo;
+  final RecentlyPlayedRepository _recentlyPlayedRepo;
+  final McwsClient Function() _mcwsClientResolver;
 
   /// Resolves the currently selected audio quality. Read on every
   /// `_createSource` call so changes apply to subsequent track loads.
@@ -32,9 +35,17 @@ class LocalPlayerService extends LocalPlayerServiceBase with SeekHandler {
   LocalPlayerService({
     required AudioPlayer player,
     required Talker talker,
+    required DownloadsRepository downloadsRepo,
+    required ConnectionRepository connectionRepo,
+    required RecentlyPlayedRepository recentlyPlayedRepo,
+    required McwsClient Function() mcwsClientResolver,
     LocalAudioQuality Function()? qualityResolver,
   }) : _player = player,
        _talker = talker,
+       _downloadsRepo = downloadsRepo,
+       _connectionRepo = connectionRepo,
+       _recentlyPlayedRepo = recentlyPlayedRepo,
+       _mcwsClientResolver = mcwsClientResolver,
        qualityResolver = qualityResolver ?? (() => LocalAudioQuality.lossless) {
     playbackState.add(
       _baseState(playing: false, processing: AudioProcessingState.idle),
@@ -308,8 +319,7 @@ class LocalPlayerService extends LocalPlayerServiceBase with SeekHandler {
   // ─── Source factory ───────────────────────────────────────────────────
 
   AudioSource _createSource(Track track) {
-    final downloadsRepo = getIt<DownloadsRepository>();
-    final localPath = downloadsRepo.localPathFor(track.fileKey);
+    final localPath = _downloadsRepo.localPathFor(track.fileKey);
 
     if (localPath != null && File(localPath).existsSync()) {
       _talker.debug(
@@ -318,8 +328,8 @@ class LocalPlayerService extends LocalPlayerServiceBase with SeekHandler {
       return AudioSource.uri(Uri.file(localPath), tag: track);
     }
 
-    final client = getIt<McwsClient>();
-    final repo = getIt<ConnectionRepository>();
+    final client = _mcwsClientResolver();
+    final repo = _connectionRepo;
     final baseUrl = client.baseUrl;
     final token = repo.currentToken;
 
@@ -390,11 +400,7 @@ class LocalPlayerService extends LocalPlayerServiceBase with SeekHandler {
           mediaItem.add(_toMediaItem(currentTrack));
           if (currentTrack.fileKey != lastRecordedFileKey) {
             lastRecordedFileKey = currentTrack.fileKey;
-            unawaited(
-              getIt<RecentlyPlayedRepository>().markPlayed(
-                currentTrack.fileKey,
-              ),
-            );
+            unawaited(_recentlyPlayedRepo.markPlayed(currentTrack.fileKey));
           }
         } else {
           mediaItem.add(null);

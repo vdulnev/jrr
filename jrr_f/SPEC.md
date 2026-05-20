@@ -9,9 +9,10 @@ spec.
 If anything here conflicts with the parent spec, the parent spec wins for
 behavior and this file wins for Flutter-specific implementation details.
 
-**Version:** 2.6.0
-**Status:** Phases 1–9 implemented (remote control, library, design
-system, multi-platform layouts, local playback, favorites, offline startup, adaptive chrome)
+**Version:** 2.7.0
+**Status:** Phases 1–11 implemented (remote control, library, design
+system, multi-platform layouts, local playback, favorites, offline
+startup, adaptive chrome, per-track downloads, Android Auto / AAOS)
 
 ---
 
@@ -44,12 +45,23 @@ system, multi-platform layouts, local playback, favorites, offline startup, adap
 | Simple prefs | **shared_preferences** | active zone GUID, last tab, local player state |
 | Secure storage | **flutter_secure_storage** | server passwords (OS keychain/keystore) |
 | Local audio playback | **just_audio** + **audio_session** | streams MCWS `File/GetFile` directly to the device |
+| Background / system audio | **audio_service** | exposes `BaseAudioHandler` for lock-screen, system notifications, Android Auto `MediaBrowserService` |
+| Reactive streams | **rxdart** | `BehaviorSubject` + `switchMap` to pipe the *active* player's streams through the composite handler |
+| Network reachability | **connectivity_plus** | reachability checks for offline-mode UX |
+| File downloads | **dio** (streaming responses) + **path_provider** | per-track downloads to the app documents directory |
+| File picker / share | **file_selector**, **share_plus** | export/share downloaded tracks |
+| Hashing | **crypto** | stable cache keys for artwork files exposed to AA |
 | Mocking (tests) | **mocktail** | no `mockito` codegen |
 | App icons | **flutter_launcher_icons** | per-platform launcher icons |
 
 ### Target platforms
 
 iOS, Android, macOS, Windows, Linux. Web is **not** a target.
+
+The Android build additionally targets **Android Auto** (head units
+running the AA app) and **Android Automotive OS** (in-vehicle Android)
+via the `android.hardware.type.automotive` + `com.android.automotive`
+manifest metadata. A single APK covers both surfaces.
 
 The app ships an adaptive layout: a bottom-tab shell on narrow viewports
 (phones / portrait tablets) and a sidebar + content shell on wide
@@ -134,31 +146,57 @@ lib/
         repositories/
           player_repository.dart
           player_repository_impl.dart
+          recently_played_repository.dart  # in-memory history feed for AA
       services/
-        local_player_service.dart  # just_audio wrapper
+        local_player_service_base.dart   # abstract: BaseAudioHandler +
+                                         # just_audio surface
+        local_player_service.dart        # Local/Offline implementation
+        android_auto_player_service.dart # AA implementation w/ MediaBrowser
+                                         # children + voice search handling
+        jrr_audio_handler.dart           # Composite handler; switchTo()
+                                         # pipes active player's streams
+        media_item_mapper.dart           # Track → MediaItem (artUri via
+                                         # content:// FileProvider on AA)
+        voice_intent_resolver.dart       # AA voice-search extras → tracks
       logging/
         talker_extensions.dart
         sequence_state_log.dart
       providers/
-        player_provider.dart       # remote AsyncNotifier<PlayerStatus?>
+        player_provider.dart       # unified Player facade (delegates to
+                                   # local or mcws controller)
+        mcws_player_provider.dart  # remote AsyncNotifier<PlayerStatus?>
         player_polling_provider.dart    # remote-zone poller
-        local_player_provider.dart      # AsyncNotifier driving just_audio
+        local_player_provider.dart      # AsyncNotifier driving the active
+                                        # LocalPlayerServiceBase
         local_audio_quality_provider.dart # SharedPreferences-backed enum
+        player_controller.dart     # abstract interface implemented by
+                                   # both local and mcws player notifiers
       widgets/
         now_playing_screen.dart
         mini_player_panel.dart     # in Column flow, not overlay
     zones/
       data/
         models/
-          zone.dart                # Freezed (adds isLocal flag)
+          zone.dart                # Freezed (isLocal / isOffline /
+                                   # isAndroidAuto flags + Zone.local /
+                                   # Zone.offline / Zone.androidAuto
+                                   # constants)
           zones.dart               # Freezed wrapper (List<Zone>)
         repositories/
           zone_repository.dart
-          zone_repository_impl.dart      # appends synthetic "Local" zone
+          zone_repository_impl.dart      # appends Local, Offline, and
+                                         # (when AA connected) Android Auto
+      services/
+        android_auto_session_service.dart # MethodChannel observer +
+                                          # ValueNotifier<bool>; synchronous
+                                          # audio-handler swap on connect
       providers/
         zone_provider.dart         # ZoneList AsyncNotifier
         zone_polling_provider.dart # 30s poll while authenticated
-        active_zone_provider.dart  # restored from SharedPreferences
+        active_zone_provider.dart  # restored from SharedPreferences;
+                                   # exposes isAndroidAutoActive,
+                                   # isOfflineLikeActive,
+                                   # isVirtualZoneActive helpers
       widgets/
         zone_list_screen.dart
         zone_tile.dart
@@ -167,13 +205,40 @@ lib/
         repositories/
           queue_repository.dart            # remote (Playback/Playlist)
           queue_repository_impl.dart
-          local_queue_repository.dart      # interface
-          local_queue_repository_impl.dart # Drift-backed
+          local_queue_repository.dart      # interface (zone-scoped CRUD)
+          local_queue_repository_impl.dart # Drift-backed, per-zone rows
       providers/
-        queue_provider.dart        # remote AsyncNotifier<Tracks>
+        queue_provider.dart        # unified AsyncNotifier<Tracks>;
+                                   # routes to local/AA/offline via
+                                   # localPlayerSequenceProvider or to
+                                   # MCWS via QueueRepository
       widgets/
         queue_screen.dart
         queue_item_tile.dart
+    offline/
+      data/
+        models/
+          downloaded_track.dart    # Freezed + json — local-file mirror
+                                   # of a Track
+          download_job.dart        # Freezed — enqueued / running job
+          download_state.dart      # enum
+        repositories/
+          downloads_repository.dart        # Drift-backed CRUD over
+                                           # downloaded_tracks + download_jobs
+      services/
+        download_service.dart      # serial download runner; Dio streaming
+                                   # write to app documents directory
+      providers/
+        downloaded_tracks_provider.dart    # AsyncNotifier<List<DownloadedTrack>>
+        download_jobs_provider.dart        # active job feed
+        download_status_provider.dart      # per-track / per-album rollup
+      widgets/
+        downloaded_albums_screen.dart
+        downloaded_artists_screen.dart
+        downloaded_album_detail_screen.dart
+        album_download_progress_indicator.dart
+        download_progress_indicator.dart
+        confirm_delete_dialog.dart
     library/
       data/
         models/
@@ -272,7 +337,7 @@ file — including router-stub screens (see `library_tab_routers.dart`).
 
 | Scope | Lifetime | Registered types |
 |---|---|---|
-| **base** (default) | app lifetime | `Talker`, `AppDatabase`, `FlutterSecureStorage`, `SharedPreferences`, `McwsXmlParser`, `ConnectionRepository`, `PlayerRepository`, `ZoneRepository`, `QueueRepository`, `LocalQueueRepository`, `LibraryRepository`, `FavoritesRepository`, `AudioPlayer`, `LocalPlayerService` |
+| **base** (default) | app lifetime | `Talker`, `AppDatabase`, `FlutterSecureStorage`, `SharedPreferences`, `McwsXmlParser`, `ConnectionRepository`, `PlayerRepository`, `RecentlyPlayedRepository`, `ZoneRepository`, `QueueRepository`, `LocalQueueRepository`, `LibraryRepository`, `FavoritesRepository`, `DownloadsRepository`, `DownloadService`, `LocalPlayerService`, `AndroidAutoPlayerService`, `JrrAudioHandler`, `AndroidAutoSessionService` |
 | **`'session'`** | login → logout | `McwsClient` |
 
 `ConnectionRepository.connect()` builds an `McwsClient` (with the auth
@@ -282,10 +347,12 @@ registers the client there.
 `ConnectionRepository.clearSession()` calls `await getIt.popScope()` —
 `McwsClient` and its `Dio` instance are discarded automatically.
 
-`LocalPlayerService` and its `AudioPlayer` are **base-scope** singletons:
-local playback survives logout and restores from a Drift-backed queue on
-next launch (see §4 Persistence). The session scope is only for
-network-bound services.
+All audio-handling services (`LocalPlayerService`,
+`AndroidAutoPlayerService`, `JrrAudioHandler`, `AndroidAutoSessionService`)
+are **base-scope** singletons: local-style playback (and the Android Auto
+notification surface) must survive logout, and on Android the
+`MediaBrowserService` may bind before the user has authenticated. The
+session scope is only for network-bound services.
 
 All repositories that hit MCWS resolve the client at call-time via
 `getIt<McwsClient>()`. They must only run while a session scope is
@@ -408,19 +475,26 @@ The app uses **nested auto_route** rather than the imperative
 
 ## 4. Persistence
 
-### Drift (`app_database.dart`, schema version 4)
+### Drift (`app_database.dart`, schema version 7)
 
 | Table | Columns | Purpose |
 |---|---|---|
-| `saved_servers` | `id` PK, `host`, `port` (default 52199), `username`, `password_key` (lookup key into `flutter_secure_storage`), `friendly_name?`, `last_used_at?`, `auth_token?` | Persisted server configurations. Most-recently-used row drives silent reconnect. |
+| `saved_servers` | `id` PK, `host`, `port` (default 52199), `username`, `password_key` (lookup key into `flutter_secure_storage`), `friendly_name?`, `last_used_at?`, `auth_token?`, `use_ssl` (default false), `ssl_port` (default 52200) | Persisted server configurations. Most-recently-used row drives silent reconnect. |
 | `favorites` | `id` PK, `type` (always `'browse_item'`), `identifier` (browse node id), `display_name`, `added_at` | User-pinned browse-tree nodes. Surfaced via the Favorites sub-tab inside Library. |
-| `local_queue_tracks` | `id` PK, `file_key`, `track_json` (full serialized `Track`), `position` | Backing store for the local just_audio queue so it survives app restarts. |
-| `local_queue_state` | `id` PK, `current_index` (default −1) | Last-played index in the local queue. |
+| `local_queue_tracks` | `id` PK, `zone_id`, `file_key`, `track_json` (full serialized `Track`), `position` | Backing store for each virtual zone's just_audio queue so it survives app restarts. Rows are keyed by `zone_id` (Local, Offline, Android Auto each get their own queue). |
+| `local_queue_state` | `zone_id` PK, `current_index` (default −1) | Last-played index per virtual zone. |
+| `downloaded_tracks` | `file_key` PK, full denormalized track metadata, `file_path` (absolute path under app documents) | One row per locally-downloaded track. Source of truth for the Offline library and AA's "Downloads" browse branch. |
+| `download_jobs` | `id` PK, `file_key`, `state` (queued / running / failed), `bytes_downloaded`, `bytes_total`, `enqueued_at`, `started_at?` | Persistent queue for the serial `DownloadService`. Surfaced as live progress in the UI. |
 
-**Migrations** (additive):
+**Migrations** (additive — never edited):
 - v1 → v2: create `favorites`.
 - v2 → v3: create `local_queue_tracks`.
 - v3 → v4: create `local_queue_state`.
+- v4 → v5: create `downloaded_tracks` and `download_jobs`.
+- v5 → v6: add `zone_id` to `local_queue_tracks`; recreate
+  `local_queue_state` with `zone_id` as the primary key (the column
+  change requires a table replacement rather than an `ALTER`).
+- v6 → v7: add `use_ssl` and `ssl_port` to `saved_servers`.
 
 Never edit a past migration — add a new one.
 
@@ -461,9 +535,9 @@ Used for ephemeral, non-sensitive UI flags only:
 |---|---|---|
 | `active_zone_guid` | String | Restored on next launch by `ActiveZone` notifier |
 | `local_audio_quality` | String | Selected `LocalAudioQuality` enum name |
-| `local_player_index` | int | Last index in the local just_audio queue |
-| `local_player_position_ms` | int | Last playhead position |
-| `local_player_volume` | double | Last local-player volume |
+| `local_player_<zoneId>_index` | int | Last index in the virtual zone's queue (Local / Offline / Android Auto each get their own key) |
+| `local_player_<zoneId>_position_ms` | int | Last playhead position per zone |
+| `local_player_volume` | double | Last local-player volume (shared across virtual zones) |
 
 Never credentials; never anything the parent spec lists as
 canonical state.
@@ -543,20 +617,36 @@ fragment albums under "Unknown Artist". When an `Album` is in hand, its
 `albumArtist` field already holds the auto value (assigned in
 `Album.fromTrack`).
 
-### Local zone
+### Virtual zones
 
-`ZoneRepositoryImpl.getZones()` appends a synthetic `Zone(id: 'local',
-name: 'Local', isLocal: true, …)` to the MCWS response. The Local zone
-is rendered alongside server zones in the Zone list and tagged with a
-`LOCAL` mono label plus an inline audio-quality `PopupMenuButton`
-(`LocalAudioQuality.lossless / lossyHigh / lossyNormal / lossyLow`).
+`ZoneRepositoryImpl.getZones()` appends up to three synthetic zones to
+the MCWS response:
 
-When the active zone is local:
+- `Zone.local` — always present once authenticated.
+- `Zone.offline` — always present (and the *only* zone in serverless
+  mode, §"Offline").
+- `Zone.androidAuto` — appended only while
+  `AndroidAutoSessionService.isConnected` is `true`.
+
+`Zone.local` and `Zone.androidAuto` are rendered alongside server zones
+in the Zone list. The Local tile carries an inline audio-quality
+`PopupMenuButton` (`LocalAudioQuality.lossless / lossyHigh / lossyNormal
+/ lossyLow`). The AA tile mirrors that quality picker.
+
+When the active zone is any virtual zone (`isLocal`, `isOffline`, or
+`isAndroidAuto`):
 - `PlayerPolling` stops (no remote `Playback/Info` calls).
 - `NowPlayingScreen` and `MiniPlayerPanel` consume the
   `localPlaybackState` provider instead.
-- Transport, seek, volume, mute, shuffle, repeat all route through
-  `LocalPlayer` (the AsyncNotifier wrapping `LocalPlayerService`).
+- Transport, seek, volume, mute, shuffle, repeat all route through the
+  unified `Player` facade (`player_provider.dart`), which delegates to
+  the `LocalPlayer` notifier. `LocalPlayer` wraps whichever
+  `LocalPlayerServiceBase` implementation is appropriate for the
+  active zone.
+
+Consumer code should prefer the helper providers
+`isVirtualZoneActive`, `isOfflineLikeActive`, and `isAndroidAutoActive`
+over re-deriving these booleans from `activeZoneProvider`.
 
 ### Offline
 
@@ -573,11 +663,13 @@ URL — the file streams come from the same server.
 
 ---
 
-## 6. Local Audio Playback
+## 6. Local & Android Auto Audio Playback
 
-The Flutter app can play tracks directly on the device by streaming
-from MCWS. This is exposed as a virtual **"Local"** zone in the zone
-list (see §5).
+The Flutter app can play tracks directly on the device — either through
+the in-app "Local" zone or through a connected **Android Auto** head
+unit. Both surfaces share one playback engine and one set of Riverpod
+state providers; they differ only in which `LocalPlayerServiceBase`
+implementation is mounted and where playback state is published.
 
 ### Stream URL
 
@@ -601,15 +693,28 @@ The selected quality is stored in `shared_preferences` under
 `local_audio_quality`. Changing quality reloads the queue at the
 current playhead position via `LocalPlayer._reloadWithNewQuality()`.
 
+When the active zone is **Offline** and the chosen track is already in
+`downloaded_tracks`, the player substitutes an `AudioSource.uri` over
+the local `file://` path instead of building a `File/GetFile` URL.
+Adding or removing a download triggers a queue reload so already-queued
+items swap to or from the local file source.
+
 ### Layered design
 
 | Layer | Type | Responsibility |
 |---|---|---|
-| **`LocalPlayerService`** | plain Dart class, base-scope singleton | Wraps `just_audio.AudioPlayer`. `init()` configures `AudioSession.music` and activates it. Builds `AudioSource.uri` per track with Track instance as `tag`. Exposes streams + imperative actions (`play`, `pause`, `seek`, `setShuffle`, `setRepeat`, `playByIndex`, `insertTracksAt`, `addToQueue`, `moveTrack`, `removeTrack`). |
-| **`LocalPlayer{Position,State,Sequence,Volume,Duration}` providers** | `@Riverpod(keepAlive: true)` | One provider per just_audio stream. Each subscribes in `build()` and cancels in `onDispose`. |
+| **`LocalPlayerServiceBase`** | abstract `BaseAudioHandler` | Shared interface for any local playback engine: just_audio state + streams, transport, queue mutators. Subclasses live in `lib/features/player/services/`. |
+| **`LocalPlayerService`** | base-scope singleton | Implementation for the Local and Offline zones. Wraps `just_audio.AudioPlayer`. `init()` configures `AudioSession.music` and activates it. Builds `AudioSource.uri` per track with the `Track` instance as `tag`. |
+| **`AndroidAutoPlayerService`** | base-scope singleton | Implementation for the Android Auto zone. Also wraps `just_audio`, but adds `MediaBrowser` browse/search children and exposes a foreground-eligible `playbackState` from construction so the OS's foreground-service deadline can be met (§"Android Auto"). |
+| **`JrrAudioHandler`** | composite `BaseAudioHandler` | Outer handler given to `AudioService.init`. Holds a `BehaviorSubject<BaseAudioHandler>` of the *active* player; pipes its `playbackState`, `mediaItem`, and `queue` to the OS via `rxdart.switchMap`. `switchTo(newPlayer)` swaps the active transport and pauses the previous one. All `MediaBrowser` overrides delegate to `AndroidAutoPlayerService`. |
+| **`LocalPlayer{Position,State,Sequence,Volume,Duration}` providers** | `@Riverpod(keepAlive: true)` | One provider per just_audio stream. Each subscribes in `build()` (against the **currently mounted** `LocalPlayerServiceBase`) and cancels in `onDispose`. |
+| **`localPlayerServiceProvider`** | `@Riverpod(keepAlive: true)` | Resolves the right `LocalPlayerServiceBase` for the active zone (`AndroidAutoPlayerService` when AA, otherwise `LocalPlayerService`) and tells `JrrAudioHandler.switchTo(...)` to follow. |
 | **`localPlaybackState` provider** | computed | Aggregates the five stream providers into one `LocalPlaybackState` snapshot for UI consumption. |
-| **`LocalPlayer` (AsyncNotifier)** | `@Riverpod(keepAlive: true)` | Bootstraps the queue (`_loadQueue` reads Drift, restores index/position/volume) and exposes the action surface (`playPause`, `next`, `playNow`, `playNext`, `addToQueue`, etc.). Listens to its own sequence/index/volume changes and persists them. Reacts to `localAudioQualityPrefProvider` to reload at new quality. |
-| **`LocalQueueRepository`** | Drift-backed | Reads/writes the `local_queue_tracks` and `local_queue_state` tables. |
+| **`LocalPlayerSequence` provider** | `$StreamNotifierProvider` | Exposes `Stream<SequenceStateData>` — the just_audio sequence-state stream lifted into Riverpod. The Queue notifier watches this for the local/offline/AA branch instead of going through `LocalPlayer.future` (which would re-fire on every position tick). |
+| **`LocalPlayer` (AsyncNotifier)** | `@Riverpod(keepAlive: true)` | Bootstraps the per-zone queue (`_loadQueue` reads Drift, restores index/position/volume) and exposes the action surface (`playPause`, `next`, `playNow`, `playNext`, `addToQueue`, etc.). Listens to its own sequence/index/volume changes and persists them per-zone. Reacts to `localAudioQualityPrefProvider` and `downloadedTracksProvider` to reload at new quality or to swap streaming↔local sources. Switching zones (Local → Offline → AA) triggers a synchronous re-load except for Android Auto, where the queue is driven exclusively by `playFromMediaId` / `playFromSearch` from the head unit (see "AA queue ownership" below). |
+| **`McwsPlayer` (AsyncNotifier)** | `@Riverpod(keepAlive: true)` | Mirror of `LocalPlayer` for remote MCWS zones. Returns `null` for any virtual zone. |
+| **`Player` (AsyncNotifier)** | `@Riverpod(keepAlive: true)` | Unified facade. Watches `activeZoneProvider`, then forwards every command (`playPause`, `next`, `seekTo`, `playNow`, etc.) to either `localPlayerProvider.notifier` or `mcwsPlayerProvider.notifier`. UI never branches on locality. |
+| **`LocalQueueRepository`** | Drift-backed | Reads/writes the `local_queue_tracks` and `local_queue_state` tables. Rows are keyed by `zone_id` so each virtual zone has an independent queue. |
 
 The order in `LocalPlayer.build()` matters:
 1. `_loadQueue()` runs **synchronously before** any `ref.listen`
@@ -619,12 +724,131 @@ The order in `LocalPlayer.build()` matters:
 2. After load, the index, position, volume, and sequence listeners are
    wired up, and only then does the player begin saving state.
 
-### Why the Local zone is base-scope
+### AA queue ownership
+
+For the Android Auto zone, **never** call `_loadQueue` on
+`LocalPlayer.build()`. The head unit drives its own queue through
+`playFromMediaId`, `playFromSearch`, and the browse-tree children
+handlers — loading a persisted queue here would race against the
+foreground-service deadline (`startForeground` must be called within
+~5 s of the `MediaBrowserService` bind that opens the AA session) and
+deadlock the main isolate with `setAudioSources`. The same provider
+behavior is therefore conditional on `_currentZoneId != 'android-auto'`.
+
+### Why the playback services are base-scope
 
 The local player must outlive a session: a user can sign out from a
-remote server while a track is still playing locally. The
-`AudioPlayer` and `LocalPlayerService` are therefore registered in the
-base get_it scope and never disposed.
+remote server while a track is still playing on the device. The Android
+Auto handler must additionally be ready *before* a user authenticates,
+because the OS may bind `MediaBrowserService` to enumerate the app's
+browse root before the user opens the app. Every audio-related service
+(`LocalPlayerService`, `AndroidAutoPlayerService`, `JrrAudioHandler`,
+`AndroidAutoSessionService`) therefore lives in the base `get_it` scope.
+
+---
+
+## 6.1 Android Auto
+
+The Android build participates in Android Auto and Automotive OS via the
+`audio_service` plugin. The implementation has three moving parts:
+
+### Session detection (`AndroidAutoSessionService`)
+
+A `MethodChannel` (`com.jrr.jrr_f/android_auto`) receives a native
+`onConnectionChanged(bool)` signal whenever a head unit binds or
+unbinds. On `true`, the service:
+
+1. Synchronously calls
+   `JrrAudioHandler.switchTo(AndroidAutoPlayerService)` — the AA player
+   seeds a foreground-eligible `playbackState` on construction so a
+   subsequent `startForeground` call from the OS will succeed.
+2. Flips `isConnected` (a `ValueNotifier<bool>`), which Riverpod's
+   `androidAutoConnectedProvider` mirrors so the zone list refreshes.
+
+On `false`, the service flips `isConnected` to `false`; the zone falls
+out of the picker on the next zone refresh.
+
+### Composite handler (`JrrAudioHandler`)
+
+Implements `BaseAudioHandler`. Owns a `BehaviorSubject<BaseAudioHandler>`
+seeded with `LocalPlayerService`. `playbackState`, `mediaItem`, and
+`queue` from the active player are piped to the outer handler via
+`switchMap`, so the lock-screen / notification / car UI always reflect
+the active zone's player.
+
+All `MediaBrowser` overrides (`getRoot`, `getChildren`, `search`,
+`playFromMediaId`, `playFromSearch`) delegate to the
+`AndroidAutoPlayerService` regardless of the active transport — the
+head unit always talks to the AA player even if the user happens to be
+playing through the Local zone simultaneously in the UI.
+
+### AA player (`AndroidAutoPlayerService`)
+
+Subclasses `LocalPlayerServiceBase`. Its browse tree is downloads-first
+and **does not reach into the live MCWS library** (v1 — keeps the AA
+surface usable offline):
+
+```
+Downloads
+  ├── Recent
+  ├── Artists ──► <artist> ──► <album> ──► track
+  └── Albums ──► <album> ──► track
+```
+
+`MediaItem.id` for every leaf encodes the parent path via a `_join`
+helper, so on `playFromMediaId(<trackId>)` the player can reconstruct
+the *parent queue* (the album, the artist, etc.) and start playback at
+the chosen track instead of playing the single item.
+
+### Voice search (`VoiceIntentResolver`)
+
+A pure Dart unit (no Flutter binding) that parses
+`playFromSearch(query, extras)`:
+
+- `android.intent.extra.focus = vnd.android.cursor.item/{artist|album|audio|genre}` selects the search dimension.
+- `android.intent.extra.{artist,album,title,genre}` carry the structured fields.
+- A leading `shuffle ` token strips and sets shuffle.
+- When `extras` is empty, falls back to a free-text scan against
+  downloaded tracks.
+
+Returns a `VoiceIntent(tracks, shuffle)` for the AA player to load.
+
+### Artwork (`MediaItemMapper`)
+
+Android Auto loads `artUri` in the **system process**, not the app
+process, so http(s) URLs that require auth tokens fail. The mapper
+prefers a `content://` URI exposed by an Android `FileProvider` over the
+cached artwork file on disk. The cache key is a stable hash (via
+`crypto`) of the source MCWS URL. For non-downloaded tracks the mapper
+falls back to the MCWS image URL (cleartext or HTTPS as configured),
+relying on the head unit's own loader.
+
+### AAOS compatibility
+
+The Android manifest declares both `android.hardware.type.automotive`
+and `com.android.automotive` metadata so the same APK serves phone-AA
+and native Automotive OS head units.
+
+---
+
+## 6.2 Offline Downloads
+
+Per-track downloads live in `lib/features/offline/`.
+
+| Component | Responsibility |
+|---|---|
+| `DownloadsRepository` | Drift CRUD over `downloaded_tracks` and `download_jobs`. |
+| `DownloadService` | Serial download runner. Streams `File/GetFile?Conversion=…&Quality=…` via Dio to the app documents directory; updates `bytes_downloaded` / `bytes_total` on the row; honors a `CancelToken` for in-flight cancels. |
+| `downloadedTracksProvider` | `AsyncNotifier<List<DownloadedTrack>>` watched by the Offline library, the AA browse tree, and `LocalPlayer` (to swap streaming sources for local files). |
+| `downloadJobsProvider` | Live feed of running and queued jobs for the in-app progress UI. |
+| `downloadStatusProvider` | Per-track / per-album rollup for `AlbumDownloadProgressIndicator`. |
+
+A `DownloadedTrack` is a denormalized mirror of `Track` plus the local
+`file_path`. When the Offline zone is active, the library tab shows
+only downloaded albums and artists; selecting a track plays the local
+file directly. When the Local zone is active, the player still uses the
+local file when one exists — downloads transparently accelerate Local
+playback as well.
 
 ---
 
@@ -782,7 +1006,55 @@ across all playable items (Play / Play next / Add to playing now).
 - **Dynamic Logout**: Logout button becomes "Setup Server / Login" in
   offline mode.
 
-### Phase 10 — Future polish (planned)
+### Phase 10 — Per-track Downloads (done)
+- **Downloads schema**: `downloaded_tracks` + `download_jobs` Drift
+  tables (schema v5).
+- **`DownloadService`**: serial Dio-streamed downloads to the app
+  documents directory; cancellable; live-updates `bytes_downloaded`.
+- **Providers**: `downloadedTracksProvider`, `downloadJobsProvider`,
+  `downloadStatusProvider` (per-track + per-album rollup).
+- **Offline library**: Downloaded Albums / Downloaded Artists screens;
+  the Offline zone restricts the library to these.
+- **Source-swapping**: `LocalPlayer` watches `downloadedTracksProvider`
+  and reloads the queue when downloads change, so playing items swap
+  between streaming and local-file sources transparently. On the
+  Offline zone, deleting a downloaded track in the queue drops it
+  (no streaming fallback).
+
+### Phase 11 — Android Auto / AAOS (done)
+- **Virtual zone**: `Zone.androidAuto` (`isAndroidAuto: true`) appended
+  to the zone list while a head unit is bound.
+- **Service abstraction**: extracted `LocalPlayerServiceBase`;
+  introduced `AndroidAutoPlayerService` alongside `LocalPlayerService`.
+- **Composite handler**: `JrrAudioHandler` pipes the active
+  transport's `playbackState` / `mediaItem` / `queue` to the OS via
+  `rxdart.switchMap`; `MediaBrowser` overrides delegate to the AA
+  player unconditionally.
+- **Session detection**: `AndroidAutoSessionService` consumes a native
+  `MethodChannel` (`com.jrr.jrr_f/android_auto`); synchronous
+  `switchTo(AndroidAutoPlayerService)` on connect satisfies the
+  foreground-service deadline.
+- **Browse tree**: Downloads-first hierarchy (Downloads / Recent /
+  Artists / Albums); `MediaItem.id` encodes parent path so a leaf tap
+  reconstructs the parent queue.
+- **Voice search**: pure-Dart `VoiceIntentResolver` handles
+  `playFromSearch` extras (focus / artist / album / title / genre,
+  leading `shuffle ` token) over downloaded tracks.
+- **Artwork**: `MediaItemMapper` exposes cached art as `content://`
+  via a Flutter-side `FileProvider` because AA loads `artUri` in the
+  system process.
+- **Recently played**: `RecentlyPlayedRepository` feeds the "Recent"
+  AA branch.
+- **Unified player surface**: split into `mcwsPlayerProvider` (remote)
+  + `localPlayerProvider` (virtual zones); `playerProvider` is now a
+  thin facade implementing the shared `PlayerController` interface.
+- **Per-zone queue persistence**: `local_queue_tracks.zone_id` (schema
+  v6); per-zone `local_player_<zoneId>_index` /
+  `local_player_<zoneId>_position_ms` keys in `shared_preferences`.
+- **AAOS manifest**: `android.hardware.type.automotive` +
+  `com.android.automotive` so one APK serves both surfaces.
+
+### Phase 12 — Future polish (planned)
 - Adaptive layouts beyond the binary breakpoint (compact phone vs
   large tablet vs desktop).
 - App-lifecycle pause/resume of polling timers
@@ -881,7 +1153,10 @@ code should follow them by default; review should call out deviations.
 ### Local playback
 15. **Local-zone services live in the base scope, not the session
     scope.** Logging out should not stop music that is already playing
-    on the device.
+    on the device. This extends to *every* audio-handling service —
+    `LocalPlayerService`, `AndroidAutoPlayerService`, `JrrAudioHandler`,
+    `AndroidAutoSessionService` — because the OS may bind
+    `MediaBrowserService` before the user authenticates.
 16. **Tag every `AudioSource` with the source `Track`.** The mini
     player and now-playing screen consume `tag` rather than carrying a
     parallel index.
@@ -892,43 +1167,91 @@ code should follow them by default; review should call out deviations.
     `remove`, and `move` in `just_audio` are asynchronous. Failing to
     await them before the next state update can cause index out-of-bounds
     errors (RangeError).
+19. **Per-zone queues, per-zone playhead.** Local, Offline, and
+    Android Auto each have an independent `local_queue_tracks.zone_id`
+    row set and their own `local_player_<zoneId>_*` keys in
+    `shared_preferences`. Don't reuse a single global queue across
+    virtual zones — switching back to a previous zone must restore
+    what was last playing there.
+20. **One unified `Player` facade.** All transport calls from the UI
+    go to `playerProvider`. The facade dispatches to either
+    `localPlayerProvider` or `mcwsPlayerProvider` based on
+    `activeZoneProvider`. UI code never branches on locality.
+21. **Composite audio handler for system integrations.** A single
+    `JrrAudioHandler` is what `audio_service` knows about; the active
+    inner player is swapped via `switchTo(...)`. `playbackState`,
+    `mediaItem`, and `queue` flow through `BehaviorSubject.switchMap`,
+    so the lock-screen and AA UI always reflect the active zone.
+22. **Synchronous handler swap on Android Auto connect.** The OS
+    opens a foreground-service deadline (~5 s) when it binds
+    `MediaBrowserService`. `AndroidAutoSessionService.markActive` must
+    call `switchTo(AndroidAutoPlayerService)` **synchronously** before
+    the Riverpod zone refresh — the AA player seeds a
+    foreground-eligible `playbackState` so `startForeground` from the
+    OS will succeed. Going through Riverpod first is too late.
+23. **AA queue is driven by the head unit, not by persisted state.**
+    Skip `_loadQueue` when the active zone is `android-auto` — the
+    car's `playFromMediaId` / `playFromSearch` is the source of truth,
+    and a parallel `setAudioSources` from disk races the FGS deadline.
+24. **`content://` artwork for Android Auto.** AA loads `artUri` in the
+    *system* process, not the app's. Expose cached artwork via a
+    `FileProvider` and a stable hash-based cache key (via `crypto`);
+    do not hand AA an `http://…?Token=…` URL.
+25. **Voice-search resolver stays a pure unit.** `VoiceIntentResolver`
+    takes the downloaded-tracks catalog and the extras map; no Flutter
+    binding, no platform channels. Tests run as plain `flutter_test`.
+26. **Use the zone helper providers.** Consumer code should prefer
+    `isVirtualZoneActive`, `isOfflineLikeActive`, and
+    `isAndroidAutoActive` over re-deriving these booleans from
+    `activeZoneProvider`. New zone types only need to update the
+    helpers, not every call site.
+27. **Stream-shaped providers for downstream `select`.** Player state
+    that updates frequently (`LocalPlayerSequence`) exposes a
+    `Stream<T>`; downstream notifiers `ref.watch(provider.select(...))`
+    on the projection they care about (e.g. `.sequence` only) rather
+    than awaiting `provider.future` — that would re-fire on every
+    position tick.
 
 ### UI
-19. **Mini-player participates in layout flow.** Never an overlay —
+28. **Mini-player participates in layout flow.** Never an overlay —
     overlays cover modals and popup menus.
-20. **`PopupMenuButton` for every playable surface.** Same items, same
+29. **`PopupMenuButton` for every playable surface.** Same items, same
     icon, same density. The user shouldn't have to learn three
     different action surfaces.
-21. **One public widget per file.** Including stub router widgets.
-22. **Centralize text styles.** All non-trivial `TextStyle`s live in
+30. **One public widget per file.** Including stub router widgets.
+31. **Centralize text styles.** All non-trivial `TextStyle`s live in
     `AppTextStyles`.
+32. **Sliver-based primary scrolling surfaces.** Library, Artists,
+    Favorites, Browse, Queue, and Downloaded Artists all use
+    `CustomScrollView` + slivers so they can integrate with
+    `ScrollChromeListener` (header / mini-player auto-hide).
 
 ### Persistence
-23. **`flutter_secure_storage` for credentials, Drift for everything
+33. **`flutter_secure_storage` for credentials, Drift for everything
     else.** Never put a password in `shared_preferences` or in the
     Drift schema directly.
-24. **Schema migrations are append-only.** Never edit a previous
+34. **Schema migrations are append-only.** Never edit a previous
     migration; add a new one and bump `schemaVersion`.
-25. **Wipe the persisted auth token on `clearSession()`.** Token reuse
+35. **Wipe the persisted auth token on `clearSession()`.** Token reuse
     after logout is a footgun; force a fresh `Authenticate` next time.
-26. **Decouple Session from ActiveZone via Preferences.** Instead of
+36. **Decouple Session from ActiveZone via Preferences.** Instead of
     reading the `activeZoneProvider` notifier during session transitions,
     write the desired GUID to `SharedPreferences`. This avoids circular
     initialization loops between the session and zone providers.
 
 ### Logging
-27. **One `Talker` instance.** Inject via get_it; route Dio,
+37. **One `Talker` instance.** Inject via get_it; route Dio,
     Riverpod, and route-observer logs through it. The
     `LoggingInterceptor` redacts the token query param.
-28. **Catch top-level errors at `main()`.** `FlutterError.onError` for
+38. **Catch top-level errors at `main()`.** `FlutterError.onError` for
     framework errors, `PlatformDispatcher.instance.onError` for async
     errors that escape the framework.
 
 ### Case-Insensitivity
-29. **String equality for models is case-insensitive where appropriate.** Many MCWS tags (Artist, Album, Genre) are inconsistent in their casing. The `Track`, `Album`, and `DownloadedTrack` models override `operator ==` and `hashCode` to use case-insensitive comparison for these fields.
-30. **Use `equalsIgnoreCase` extension.** For consistency, always use the `equalsIgnoreCase` extension (from `lib/shared/extensions/string_extensions.dart`) instead of `toLowerCase() == toLowerCase()`.
-31. **Normalize grouping keys to lowercase.** The `albumGroupId` getter on `Track` and the `id` on `AlbumGroup` must be fully lowercased: `'${name.toLowerCase()}|${parentFolderPath.toLowerCase()}'`. This ensures consistent grouping across different track entries and filesystem paths.
-32. **Filter offline data case-insensitively.** When filtering `downloaded_tracks` in providers (e.g. by artist name), use `equalsIgnoreCase`.
+39. **String equality for models is case-insensitive where appropriate.** Many MCWS tags (Artist, Album, Genre) are inconsistent in their casing. The `Track`, `Album`, and `DownloadedTrack` models override `operator ==` and `hashCode` to use case-insensitive comparison for these fields.
+40. **Use `equalsIgnoreCase` extension.** For consistency, always use the `equalsIgnoreCase` extension (from `lib/shared/extensions/string_extensions.dart`) instead of `toLowerCase() == toLowerCase()`.
+41. **Normalize grouping keys to lowercase.** The `albumGroupId` getter on `Track` and the `id` on `AlbumGroup` must be fully lowercased: `'${name.toLowerCase()}|${parentFolderPath.toLowerCase()}'`. This ensures consistent grouping across different track entries and filesystem paths.
+42. **Filter offline data case-insensitively.** When filtering `downloaded_tracks` in providers (e.g. by artist name), use `equalsIgnoreCase`.
 
 ---
 
@@ -946,4 +1269,6 @@ code should follow them by default; review should call out deviations.
 | 2.2.0 | 2026-05-05 | Phase 8: adaptive narrow/wide layouts (`AdaptiveLayoutBuilder` + `TwoPanelShell` + `Sidebar`), Settings tab, JRiver Access Key lookup, silent reconnect with persisted `auth_token`, **local playback** (just_audio + audio_session, `LocalPlayerService`, persisted local queue via Drift, `LocalAudioQuality` selector), Favorites tab + Drift-backed `favorites` table, nested `AutoTabsRouter` per Library sub-tab, top-level error handlers in `main`, `Tracks`/`Zones` Freezed wrappers, AlbumGroup multi-disc helper, `Track.fileType`, `Track.albumArtistAuto`. Schema bumped to v4 (favorites, local_queue_tracks, local_queue_state). Added Best Practices section. Imperative `context.router.push` allowed inside library sub-routers. |
 | 2.3.0 | 2026-05-06 | Case-insensitive string comparison for Track/Album fields; `StringExtensions.equalsIgnoreCase`; lowercase normalization for `albumGroupId` and `AlbumGroup.id`. |
 | 2.5.1 | 2026-05-10 | Phase 9: Offline Startup, synthetic offline sessions, album download progress tracking, synchronized player reloads, and decoupling of session/zone providers. Added Best Practices for async synchronization and provider decoupling. |
+| 2.6.0 | 2026-05-13 | Adaptive chrome (`ScrollChromeListener` + `libraryChromeVisibleProvider`); sliver migration across Artists/Random/Favorites/Browse/Queue/Downloaded Artists; chrome-visibility cleanup on disposal. |
+| 2.7.0 | 2026-05-16 | Phase 10 (per-track downloads: `downloaded_tracks` / `download_jobs` schema v5, `DownloadService`, source-swapping in `LocalPlayer`) + Phase 11 (Android Auto / AAOS: `Zone.androidAuto`, `LocalPlayerServiceBase` abstraction, `AndroidAutoPlayerService`, composite `JrrAudioHandler`, `AndroidAutoSessionService`, downloads-first browse tree, `VoiceIntentResolver`, `MediaItemMapper` with `content://` artwork, per-zone queue persistence schema v6, `use_ssl`/`ssl_port` on `saved_servers` schema v7). Unified `playerProvider` facade over `localPlayerProvider` + `mcwsPlayerProvider` via `PlayerController`. New helper providers `isAndroidAutoActive`, `isOfflineLikeActive`, `isVirtualZoneActive`. `LocalPlayerSequence` now exposes `Stream<SequenceStateData>`; `Queue` notifier reacts via `.select((s) => s?.sequence)` instead of awaiting `LocalPlayer.future` on every position tick. Added `audio_service`, `rxdart`, `connectivity_plus`, `share_plus`, `file_selector`, `crypto`, `path_provider` to the tech stack. |
 

@@ -2,9 +2,8 @@ import 'dart:async' hide Zone;
 import 'package:jrr_f/features/library/data/models/tracks.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/player_status.dart';
 import 'local_player_provider.dart';
@@ -36,7 +35,7 @@ class Player extends _$Player {
     ref.listen(activeZoneProvider, (oldZone, newZone) {
       // Only fire a stop when switching between two real zones. A null newZone
       // means the session is being torn down (logout) — the McwsClient has
-      // already been removed from getIt, so a remote stop would crash.
+      // already been cleared, so a remote stop would crash.
       if (oldZone != null && newZone != null) {
         stop(zoneToRun: oldZone);
       }
@@ -45,10 +44,12 @@ class Player extends _$Player {
     final zone = ref.watch(activeZoneProvider);
     if (zone == null) return null;
 
-    getIt<Talker>().debug(
-      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
-      '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
-    );
+    ref
+        .read(talkerProvider)
+        .debug(
+          '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
+          '[PlayerProvider] build: zone=${zone.name} (id=${zone.id}, isLocal=${zone.isLocal}, isOffline=${zone.isOffline}, isAndroidAuto=${zone.isAndroidAuto})',
+        );
 
     // Pipe state through the active transport. Both branches return
     // AsyncValue<PlayerStatus?>; awaiting `.future` re-fires this build
@@ -88,7 +89,7 @@ class Player extends _$Player {
 class PlayingNowPosition extends _$PlayingNowPosition {
   @override
   int build() {
-    final talker = getIt<Talker>();
+    final talker = ref.read(talkerProvider);
     final playerStatus = ref.watch(playerProvider);
     return playerStatus.when(
       skipLoadingOnReload: true,

@@ -1,17 +1,14 @@
 import 'dart:async';
 
 import 'package:jrr_f/features/library/data/models/tracks.dart';
-import 'package:jrr_f/features/library/data/repositories/library_repository.dart';
 import 'package:jrr_f/features/zones/data/models/zone.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
+import '../../../core/di/providers.dart';
 import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
-import '../data/repositories/player_repository.dart';
 import 'player_controller.dart';
 
 part 'mcws_player_provider.g.dart';
@@ -30,11 +27,13 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
       return null;
     }
 
-    getIt<Talker>().debug(
-      '[McwsPlayer] build: zone=${zone.name} (id=${zone.id})',
-    );
+    ref
+        .read(talkerProvider)
+        .debug('[McwsPlayer] build: zone=${zone.name} (id=${zone.id})');
 
-    final result = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
+    final result = await ref
+        .read(playerRepositoryProvider)
+        .getPlaybackInfo(zone.id);
     return result.getOrElse((e) => throw e);
   }
 
@@ -47,7 +46,9 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
     }
 
     final result = await AsyncValue.guard(() async {
-      final r = await getIt<PlayerRepository>().getPlaybackInfo(zone.id);
+      final r = await ref
+          .read(playerRepositoryProvider)
+          .getPlaybackInfo(zone.id);
       return r.getOrElse((e) => throw e);
     });
     state = result;
@@ -59,31 +60,37 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
 
   @override
   Future<void> playPause() =>
-      _run((id) => getIt<PlayerRepository>().playPause(id));
+      _run((id) => ref.read(playerRepositoryProvider).playPause(id));
 
   @override
-  Future<void> stop({Zone? zoneToRun}) =>
-      _run((id) => getIt<PlayerRepository>().stop(id), zoneToRun: zoneToRun);
+  Future<void> stop({Zone? zoneToRun}) => _run(
+    (id) => ref.read(playerRepositoryProvider).stop(id),
+    zoneToRun: zoneToRun,
+  );
 
   @override
-  Future<void> next() => _run((id) => getIt<PlayerRepository>().next(id));
+  Future<void> next() =>
+      _run((id) => ref.read(playerRepositoryProvider).next(id));
 
   @override
   Future<void> previous() =>
-      _run((id) => getIt<PlayerRepository>().previous(id));
+      _run((id) => ref.read(playerRepositoryProvider).previous(id));
 
   @override
-  Future<void> seekTo(int positionMs) =>
-      _run((id) => getIt<PlayerRepository>().setPosition(id, positionMs));
+  Future<void> seekTo(int positionMs) => _run(
+    (id) => ref.read(playerRepositoryProvider).setPosition(id, positionMs),
+  );
 
   @override
   Future<void> setVolume(double level) =>
-      _run((id) => getIt<PlayerRepository>().setVolume(id, level));
+      _run((id) => ref.read(playerRepositoryProvider).setVolume(id, level));
 
   @override
   Future<void> toggleMute() async {
     final isMuted = state.asData?.value?.isMuted ?? false;
-    await _run((id) => getIt<PlayerRepository>().setMute(id, mute: !isMuted));
+    await _run(
+      (id) => ref.read(playerRepositoryProvider).setMute(id, mute: !isMuted),
+    );
   }
 
   @override
@@ -92,12 +99,14 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
     final nextMode = current == ShuffleMode.off
         ? ShuffleMode.on
         : ShuffleMode.off;
-    await _run((id) => getIt<PlayerRepository>().setShuffle(id, nextMode));
+    await _run(
+      (id) => ref.read(playerRepositoryProvider).setShuffle(id, nextMode),
+    );
   }
 
   @override
   Future<void> playByIndex(int index) =>
-      _run((id) => getIt<PlayerRepository>().playByIndex(id, index));
+      _run((id) => ref.read(playerRepositoryProvider).playByIndex(id, index));
 
   @override
   Future<void> cycleRepeat() async {
@@ -107,42 +116,41 @@ class McwsPlayer extends _$McwsPlayer implements PlayerController {
       RepeatMode.playlist => RepeatMode.track,
       RepeatMode.track => RepeatMode.off,
     };
-    await _run((id) => getIt<PlayerRepository>().setRepeat(id, nextMode));
+    await _run(
+      (id) => ref.read(playerRepositoryProvider).setRepeat(id, nextMode),
+    );
   }
 
   /// Replaces the Playing Now queue and starts playback immediately.
   @override
   Future<void> playNow(Tracks tracks) {
-    getIt<Talker>().debug('[McwsPlayer] playNow: tracks=$tracks');
+    ref.read(talkerProvider).debug('[McwsPlayer] playNow: tracks=$tracks');
     return _run(
-      (id) => getIt<LibraryRepository>().playNow(
-        id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      ),
+      (id) => ref
+          .read(libraryRepositoryProvider)
+          .playNow(id, tracks.tracks.map((t) => t.fileKey).toList()),
     );
   }
 
   /// Inserts [tracks] immediately after the current track.
   @override
   Future<void> playNext(Tracks tracks) {
-    getIt<Talker>().debug('[McwsPlayer] playNext: tracks=$tracks');
+    ref.read(talkerProvider).debug('[McwsPlayer] playNext: tracks=$tracks');
     return _run(
-      (id) => getIt<LibraryRepository>().playNext(
-        id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      ),
+      (id) => ref
+          .read(libraryRepositoryProvider)
+          .playNext(id, tracks.tracks.map((t) => t.fileKey).toList()),
     );
   }
 
   /// Appends [tracks] to the end of the Playing Now queue.
   @override
   Future<void> addToQueue(Tracks tracks) {
-    getIt<Talker>().debug('[McwsPlayer] addToQueue: tracks=$tracks');
+    ref.read(talkerProvider).debug('[McwsPlayer] addToQueue: tracks=$tracks');
     return _run(
-      (id) => getIt<LibraryRepository>().addToQueue(
-        id,
-        tracks.tracks.map((t) => t.fileKey).toList(),
-      ),
+      (id) => ref
+          .read(libraryRepositoryProvider)
+          .addToQueue(id, tracks.tracks.map((t) => t.fileKey).toList()),
     );
   }
 

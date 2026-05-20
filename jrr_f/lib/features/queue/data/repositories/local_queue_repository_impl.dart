@@ -4,7 +4,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:talker/talker.dart';
 
 import '../../../../core/db/app_database.dart';
-import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../library/data/models/track.dart';
 import '../../../library/data/models/tracks.dart';
@@ -14,7 +13,9 @@ class LocalQueueRepositoryImpl implements LocalQueueRepository {
   final AppDatabase _db;
   final Talker _talker;
 
-  LocalQueueRepositoryImpl(this._db) : _talker = getIt<Talker>();
+  LocalQueueRepositoryImpl({required AppDatabase db, required Talker talker})
+    : _db = db,
+      _talker = talker;
 
   @override
   Future<Either<AppException, Tracks>> getTracks(String zoneId) async {

@@ -2,12 +2,13 @@ import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/db/app_database.dart';
 import 'package:jrr_f/core/error/app_exception.dart';
-import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/features/library/data/models/browse_item.dart';
 import 'favorites_repository.dart';
 
 class FavoritesRepositoryImpl implements FavoritesRepository {
-  final AppDatabase _db = getIt<AppDatabase>();
+  final AppDatabase _db;
+
+  FavoritesRepositoryImpl({required AppDatabase db}) : _db = db;
 
   static const String _browseItemType = 'browse_item';
 

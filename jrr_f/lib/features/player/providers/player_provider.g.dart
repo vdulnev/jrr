@@ -42,7 +42,7 @@ final class PlayerProvider
   Player create() => Player();
 }
 
-String _$playerHash() => r'39f5b1b2ca73f54fd7a9e4f4f0977279f93e1da4';
+String _$playerHash() => r'cdeff665db0a529060236f30d478e28a75463a62';
 
 /// Unified player provider. Resolves the active [PlayerController]
 /// implementation from [activeZoneProvider] and forwards every command to it,
@@ -99,7 +99,7 @@ final class PlayingNowPositionProvider
 }
 
 String _$playingNowPositionHash() =>
-    r'4115001223702ff0f68357e2e8050d4921898f85';
+    r'0beffb3f07731fb8f4d9a3bbe4eaf045b7fd2775';
 
 abstract class _$PlayingNowPosition extends $Notifier<int> {
   int build();

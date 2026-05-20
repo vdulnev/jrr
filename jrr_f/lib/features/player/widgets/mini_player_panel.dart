@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:talker/talker.dart';
+
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/artwork_widget.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
-import '../data/models/playback_state.dart';
-import '../providers/player_provider.dart';
-import '../../../shared/widgets/artwork_widget.dart';
+import '../providers/mini_player_view_model.dart';
 
 class MiniPlayerPanel extends ConsumerWidget {
   final VoidCallback? onItemTap;
@@ -16,31 +14,49 @@ class MiniPlayerPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasTracks = ref.watch(
-      playerProvider.select(
-        (status) => (status.value?.playingNowTracks ?? 0) > 0,
+    // Skip the high-churn `progress` field here so the panel chrome doesn't
+    // rebuild on every position tick. _ProgressBar subscribes to it
+    // directly through the same VM provider.
+    final state = ref.watch(
+      miniPlayerViewModelProvider.select(
+        (s) => (
+          fileKey: s.fileKey,
+          name: s.name,
+          artist: s.artist,
+          volume: s.volume,
+          isMuted: s.isMuted,
+          isPlaying: s.isPlaying,
+          hasTracks: s.hasTracks,
+        ),
       ),
     );
+    final vm = ref.read(miniPlayerViewModelProvider.notifier);
 
     return _Data(
+      state: state,
       onItemTap: onItemTap,
-      onPreviousTap: hasTracks
-          ? () => ref.read(playerProvider.notifier).previous()
-          : null,
-      onPlayPauseTap: hasTracks
-          ? () => ref.read(playerProvider.notifier).playPause()
-          : null,
-      onNextTap: hasTracks
-          ? () => ref.read(playerProvider.notifier).next()
-          : null,
-      onSetVolumeTap: (v) => ref.read(playerProvider.notifier).setVolume(v),
-      onMuteToggleTap: () => ref.read(playerProvider.notifier).toggleMute(),
+      onPreviousTap: state.hasTracks ? vm.previous : null,
+      onPlayPauseTap: state.hasTracks ? vm.playPause : null,
+      onNextTap: state.hasTracks ? vm.next : null,
+      onSetVolumeTap: vm.setVolume,
+      onMuteToggleTap: vm.toggleMute,
     );
   }
 }
 
+typedef _MiniPlayerSlice = ({
+  int? fileKey,
+  String name,
+  String artist,
+  double volume,
+  bool isMuted,
+  bool isPlaying,
+  bool hasTracks,
+});
+
 class _Data extends StatelessWidget {
   const _Data({
+    required this.state,
     required this.onItemTap,
     required this.onPreviousTap,
     required this.onPlayPauseTap,
@@ -49,6 +65,7 @@ class _Data extends StatelessWidget {
     required this.onMuteToggleTap,
   });
 
+  final _MiniPlayerSlice state;
   final VoidCallback? onItemTap;
   final VoidCallback? onPreviousTap;
   final VoidCallback? onPlayPauseTap;
@@ -77,7 +94,8 @@ class _Data extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Progress bar
+            // Progress bar — its own ConsumerWidget so the position tick
+            // doesn't rebuild the rest of the panel.
             SizedBox(
               height: 2,
               child: Stack(
@@ -96,13 +114,17 @@ class _Data extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(7),
-                        child: const _Cover(),
+                        child: _Cover(fileKey: state.fileKey),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [_Name(), SizedBox(height: 1), _Artist()],
+                          children: [
+                            _Name(name: state.name),
+                            const SizedBox(height: 1),
+                            _Artist(artist: state.artist),
+                          ],
                         ),
                       ),
                       Row(
@@ -119,7 +141,7 @@ class _Data extends StatelessWidget {
                           TransportButton(
                             size: 36,
                             onPressed: onPlayPauseTap,
-                            child: const _PlayIcon(),
+                            child: _PlayIcon(isPlaying: state.isPlaying),
                           ),
                           TransportButton(
                             size: 36,
@@ -135,6 +157,8 @@ class _Data extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   _Volume(
+                    volume: state.volume,
+                    isMuted: state.isMuted,
                     onSetVolumeTap: onSetVolumeTap,
                     onMuteToggleTap: onMuteToggleTap,
                   ),
@@ -148,22 +172,21 @@ class _Data extends StatelessWidget {
   }
 }
 
-class _Volume extends ConsumerWidget {
-  const _Volume({required this.onSetVolumeTap, required this.onMuteToggleTap});
+class _Volume extends StatelessWidget {
+  const _Volume({
+    required this.volume,
+    required this.isMuted,
+    required this.onSetVolumeTap,
+    required this.onMuteToggleTap,
+  });
 
+  final double volume;
+  final bool isMuted;
   final ValueChanged<double> onSetVolumeTap;
   final VoidCallback onMuteToggleTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
-    final volume = ref.watch(
-      playerProvider.select((status) => status.value?.volume ?? 1.0),
-    );
-    final isMuted = ref.watch(
-      playerProvider.select((status) => status.value?.isMuted ?? false),
-    );
-    talker.debug('[MiniPlayerPanel] Volume: $volume, isMuted: $isMuted');
+  Widget build(BuildContext context) {
     return VolumeSlider(
       value: volume,
       isMuted: isMuted,
@@ -173,16 +196,13 @@ class _Volume extends ConsumerWidget {
   }
 }
 
-class _PlayIcon extends ConsumerWidget {
-  const _PlayIcon();
+class _PlayIcon extends StatelessWidget {
+  const _PlayIcon({required this.isPlaying});
+
+  final bool isPlaying;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isPlaying = ref.watch(
-      playerProvider.select(
-        (status) => status.value?.state == PlaybackState.playing,
-      ),
-    );
+  Widget build(BuildContext context) {
     return Icon(
       isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
       size: 20,
@@ -190,17 +210,13 @@ class _PlayIcon extends ConsumerWidget {
   }
 }
 
-class _Artist extends ConsumerWidget {
-  const _Artist();
+class _Artist extends StatelessWidget {
+  const _Artist({required this.artist});
+
+  final String artist;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final artist = ref.watch(
-      playerProvider.select((status) {
-        final val = status.value?.artist ?? '';
-        return val.isNotEmpty ? val : 'Unknown Artist';
-      }),
-    );
+  Widget build(BuildContext context) {
     return Text(
       artist,
       style: AppTextStyles.itemSubtitle,
@@ -210,17 +226,13 @@ class _Artist extends ConsumerWidget {
   }
 }
 
-class _Name extends ConsumerWidget {
-  const _Name();
+class _Name extends StatelessWidget {
+  const _Name({required this.name});
+
+  final String name;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(
-      playerProvider.select((status) {
-        final val = status.value?.name ?? '';
-        return val.isNotEmpty ? val : 'Unknown Track';
-      }),
-    );
+  Widget build(BuildContext context) {
     return Text(
       name,
       style: AppTextStyles.labelLarge,
@@ -230,16 +242,13 @@ class _Name extends ConsumerWidget {
   }
 }
 
-class _Cover extends ConsumerWidget {
-  const _Cover();
+class _Cover extends StatelessWidget {
+  const _Cover({required this.fileKey});
+
+  final int? fileKey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
-    final fileKey = ref.watch(
-      playerProvider.select((status) => status.value?.fileKey),
-    );
-    talker.debug('[MiniPlayerPanel] Final fileKey: $fileKey');
+  Widget build(BuildContext context) {
     return ArtworkWidget(fileKey: fileKey, size: 40);
   }
 }
@@ -249,27 +258,8 @@ class _ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
     final progress = ref.watch(
-      playerProvider.select((status) {
-        final double progress;
-        if (status.hasValue) {
-          final durationMs = status.value?.durationMs ?? 0;
-          final positionMs = status.value?.positionMs ?? 0;
-          progress = (durationMs) > 0
-              ? (positionMs / durationMs).clamp(0.0, 1.0)
-              : 0.0;
-          talker.debug(
-            '[MiniPlayerPanel] Calculated progress: $progress (position: $positionMs ms, duration: $durationMs ms)',
-          );
-        } else {
-          progress = 0.0;
-          talker.debug(
-            '[MiniPlayerPanel] Player status has no value, setting progress to 0',
-          );
-        }
-        return progress;
-      }),
+      miniPlayerViewModelProvider.select((s) => s.progress),
     );
     return FractionallySizedBox(
       widthFactor: progress,

@@ -2,20 +2,13 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
-import '../../offline/data/models/download_state.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
-import '../../offline/providers/download_jobs_provider.dart';
-import '../../offline/providers/downloaded_tracks_provider.dart';
 import '../../offline/widgets/album_download_progress_indicator.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
-import '../../player/providers/player_provider.dart';
-import '../../zones/providers/active_zone_provider.dart';
 import '../data/models/album.dart';
-import '../providers/library_providers.dart';
+import '../providers/album_row_tile_view_model.dart';
 
 class AlbumRowTile extends ConsumerWidget {
   final Album album;
@@ -41,39 +34,16 @@ class AlbumRowTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOffline = ref.watch(isOfflineActiveProvider);
-    final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
-    final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
+    final state = ref.watch(albumRowTileViewModelProvider(album));
+    final vm = ref.read(albumRowTileViewModelProvider(album).notifier);
 
-    final downloadedInAlbum = downloadedTracks.where(
-      (t) => t.albumGroupId == album.albumGroupId,
-    );
-    final jobsInAlbum = downloadJobs.where(
-      (j) => j.track.albumGroupId == album.albumGroupId,
-    );
-
-    final activeJobs = jobsInAlbum.where(
-      (j) =>
-          j.state == DownloadState.queued || j.state == DownloadState.running,
-    );
-    final failedJobs = jobsInAlbum.where(
-      (j) => j.state == DownloadState.failed,
-    );
-
-    final showDownload = !isOffline && activeJobs.isEmpty;
-    final showCancel = !isOffline && activeJobs.isNotEmpty;
-    final showDelete = downloadedInAlbum.isNotEmpty;
-    final showRetry = !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
-
-    if (isOffline && downloadedInAlbum.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (state.hidden) return const SizedBox.shrink();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap:
           onTap ??
-          () => isOffline
+          () => state.isOffline
               ? context.router.push(
                   DownloadedAlbumDetailRoute(albumGroupId: album.albumGroupId),
                 )
@@ -126,7 +96,7 @@ class AlbumRowTile extends ConsumerWidget {
                 ],
               ),
             ),
-            if (hasSubItems && !isOffline)
+            if (hasSubItems && !state.isOffline)
               IconButton(
                 icon: Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
@@ -143,7 +113,7 @@ class AlbumRowTile extends ConsumerWidget {
                 albumGroupId: album.albumGroupId,
               ),
             ),
-            if (!isOffline || downloadedInAlbum.isNotEmpty)
+            if (!state.isOffline || state.showDelete)
               PopupMenuButton<String>(
                 icon: const Icon(
                   Icons.more_vert,
@@ -151,7 +121,7 @@ class AlbumRowTile extends ConsumerWidget {
                   color: AppColors.text3,
                 ),
                 padding: EdgeInsets.zero,
-                onSelected: (action) => _handleAction(context, ref, action),
+                onSelected: (action) => _handleAction(context, vm, action),
                 itemBuilder: (_) => [
                   const PopupMenuItem(
                     value: 'play',
@@ -180,7 +150,7 @@ class AlbumRowTile extends ConsumerWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                  if (album.folderPath.isNotEmpty && !isOffline)
+                  if (album.folderPath.isNotEmpty && !state.isOffline)
                     const PopupMenuItem(
                       value: 'folder',
                       child: ListTile(
@@ -191,7 +161,7 @@ class AlbumRowTile extends ConsumerWidget {
                       ),
                     ),
                   const PopupMenuDivider(),
-                  if (showDownload)
+                  if (state.showDownload)
                     const PopupMenuItem(
                       value: 'download',
                       child: ListTile(
@@ -201,7 +171,7 @@ class AlbumRowTile extends ConsumerWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
-                  if (showRetry)
+                  if (state.showRetry)
                     const PopupMenuItem(
                       value: 'download',
                       child: ListTile(
@@ -211,7 +181,7 @@ class AlbumRowTile extends ConsumerWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
-                  if (showCancel)
+                  if (state.showCancel)
                     const PopupMenuItem(
                       value: 'cancelDownload',
                       child: ListTile(
@@ -221,7 +191,7 @@ class AlbumRowTile extends ConsumerWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
-                  if (showDelete)
+                  if (state.showDelete)
                     const PopupMenuItem(
                       value: 'deleteDownload',
                       child: ListTile(
@@ -247,61 +217,32 @@ class AlbumRowTile extends ConsumerWidget {
 
   Future<void> _handleAction(
     BuildContext context,
-    WidgetRef ref,
+    AlbumRowTileViewModel vm,
     String action,
   ) async {
-    if (action == 'folder') {
-      context.router.push(FolderTracksRoute(folderPath: album.folderPath));
-      return;
-    }
-
-    final downloadsRepo = getIt<DownloadsRepository>();
-
-    final isOffline = ref.read(isOfflineActiveProvider);
-
-    if (action == 'cancelDownload' || action == 'deleteDownload') {
-      final tracks = isOffline
-          ? await ref.read(
-              downloadedAlbumTracksProvider(album.albumGroupId).future,
-            )
-          : await ref.read(albumTracksProvider(album).future);
-      final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
-      if (action == 'cancelDownload') {
-        await downloadsRepo.cancelAll(trackKeys);
-      } else {
-        if (!context.mounted) return;
+    switch (action) {
+      case 'folder':
+        context.router.push(FolderTracksRoute(folderPath: album.folderPath));
+      case 'play':
+        await vm.playAlbum(album);
+      case 'playNext':
+        await vm.playAlbumNext(album);
+      case 'add':
+        await vm.addAlbumToQueue(album);
+      case 'download':
+        await vm.downloadAlbum(album);
+      case 'cancelDownload':
+        await vm.cancelAlbumDownload(album);
+      case 'deleteDownload':
+        final count = await vm.downloadedTrackCount(album);
+        if (count == 0 || !context.mounted) return;
         final confirmed = await showConfirmDeleteDialog(
           context: context,
           title: 'Delete downloads?',
-          message:
-              'Delete ${trackKeys.length} downloaded tracks from "${album.name}"?',
+          message: 'Delete $count downloaded tracks from "${album.name}"?',
         );
         if (!confirmed) return;
-        await downloadsRepo.deleteAll(trackKeys);
-      }
-      return;
+        await vm.deleteAlbumDownload(album);
     }
-
-    final tracks = isOffline
-        ? await ref.read(
-            downloadedAlbumTracksProvider(album.albumGroupId).future,
-          )
-        : await ref.read(albumTracksProvider(album).future);
-
-    switch (action) {
-      case 'play':
-        ref.read(playerProvider.notifier).playNow(tracks);
-        break;
-      case 'playNext':
-        ref.read(playerProvider.notifier).playNext(tracks);
-        break;
-      case 'add':
-        ref.read(playerProvider.notifier).addToQueue(tracks);
-        break;
-      case 'download':
-        downloadsRepo.enqueueAll(tracks.tracks);
-        break;
-    }
-    ref.read(playerProvider.notifier).refresh();
   }
 }

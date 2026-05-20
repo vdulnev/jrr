@@ -48,7 +48,7 @@ final class LocalAudioQualityPrefProvider
 }
 
 String _$localAudioQualityPrefHash() =>
-    r'dbc079ef8dd85c810d9932af04a269d36c794556';
+    r'97e19e5591f909ed811dfc7721dd916ea9e98f93';
 
 /// Selected MCWS conversion preset for the local zone.
 /// Persisted to SharedPreferences so it survives restarts.

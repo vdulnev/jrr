@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:talker/talker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -9,25 +7,16 @@ import '../../../shared/widgets/loading_view.dart';
 import '../../player/data/models/local_audio_quality.dart';
 import '../../player/data/models/playback_state.dart';
 import '../../player/providers/local_audio_quality_provider.dart';
-import '../../player/providers/player_provider.dart';
 import '../data/models/zone.dart';
-import '../providers/active_zone_provider.dart';
-import '../providers/zone_provider.dart';
+import '../providers/zone_list_view_model.dart';
 
 class ZoneListScreen extends ConsumerWidget {
   const ZoneListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
-
-    final zonesState = ref.watch(zoneListProvider);
-    final activeZone = ref.watch(activeZoneProvider);
-
-    talker.debug('[ZoneListScreen]: zonesState: $zonesState');
-    talker.debug(
-      '[ZoneListScreen]: Building with activeZone: ${activeZone?.name ?? 'None'}',
-    );
+    final state = ref.watch(zoneListViewModelProvider);
+    final vm = ref.read(zoneListViewModelProvider.notifier);
 
     return Scaffold(
       body: SafeArea(
@@ -52,7 +41,7 @@ class ZoneListScreen extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () => ref.invalidate(zoneListProvider),
+                    onPressed: vm.refresh,
                     icon: const Icon(Icons.refresh_rounded),
                     color: AppColors.text2,
                     tooltip: 'Refresh zones',
@@ -62,27 +51,26 @@ class ZoneListScreen extends ConsumerWidget {
             ),
             // Zone list
             Expanded(
-              child: zonesState.when(
-                loading: () => const LoadingView(),
-                error: (e, _) => ErrorView(
-                  error: e,
-                  onRetry: () => ref.invalidate(zoneListProvider),
-                ),
-                data: (zones) => ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: zones.zones.length,
-                  itemBuilder: (_, i) {
-                    final zone = zones.zones[i];
-                    final isActive = activeZone?.id == zone.id;
-                    return _ZoneTile(
-                      zone: zone,
-                      isActive: isActive,
-                      onTap: () =>
-                          ref.read(activeZoneProvider.notifier).setZone(zone),
-                    );
-                  },
-                ),
-              ),
+              child: state.hasError
+                  ? ErrorView(error: state.error!, onRetry: vm.refresh)
+                  : state.isLoading
+                  ? const LoadingView()
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      itemCount: state.zones!.zones.length,
+                      itemBuilder: (_, i) {
+                        final zone = state.zones!.zones[i];
+                        final isActive = state.activeZone?.id == zone.id;
+                        return _ZoneTile(
+                          zone: zone,
+                          isActive: isActive,
+                          activePlaybackState: isActive
+                              ? state.activePlaybackState
+                              : null,
+                          onTap: () => vm.setZone(zone),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -91,20 +79,24 @@ class ZoneListScreen extends ConsumerWidget {
   }
 }
 
-class _ZoneTile extends ConsumerWidget {
+class _ZoneTile extends StatelessWidget {
   final Zone zone;
   final bool isActive;
+  final PlaybackState? activePlaybackState;
   final VoidCallback onTap;
 
   const _ZoneTile({
     required this.zone,
     required this.isActive,
+    required this.activePlaybackState,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final talker = getIt<Talker>();
+  Widget build(BuildContext context) {
+    final state = activePlaybackState;
+    final showPlayingIcon = isActive && state == PlaybackState.playing;
+    final showPausedIcon = isActive && state == PlaybackState.paused;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -160,34 +152,14 @@ class _ZoneTile extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isActive) ...[
+                      if (showPlayingIcon || showPausedIcon) ...[
                         const SizedBox(width: 8),
-                        Consumer(
-                          builder: (_, ref, _) {
-                            final state = ref.watch(
-                              playerProvider.select(
-                                (status) => status.value?.state,
-                              ),
-                            );
-                            final isPlaying = state == PlaybackState.playing;
-                            final isPaused = state == PlaybackState.paused;
-                            if (!isPlaying && !isPaused) {
-                              talker.debug(
-                                '[ZoneListScreen]: $state. Zone is active but not playing/paused, hiding indicator',
-                              );
-                              return const SizedBox.shrink();
-                            }
-                            talker.debug(
-                              '[ZoneListScreen]: $state. Zone is active and playing/paused, showing indicator',
-                            );
-                            return Icon(
-                              isPlaying
-                                  ? Icons.play_arrow_rounded
-                                  : Icons.pause_rounded,
-                              size: 14,
-                              color: AppColors.accent,
-                            );
-                          },
+                        Icon(
+                          showPlayingIcon
+                              ? Icons.play_arrow_rounded
+                              : Icons.pause_rounded,
+                          size: 14,
+                          color: AppColors.accent,
                         ),
                       ],
                     ],
@@ -237,6 +209,9 @@ class _ZoneTile extends ConsumerWidget {
   }
 }
 
+/// `localAudioQualityPrefProvider` already exposes the selected quality
+/// plus a `set` command, so it functions as this widget's view model.
+/// No wrapper provider needed.
 class _QualityPopup extends ConsumerWidget {
   const _QualityPopup();
 

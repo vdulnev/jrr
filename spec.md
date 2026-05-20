@@ -3,7 +3,7 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.7.0
+**Version:** 0.8.0
 **Status:** Draft — implemented in `jrr_f/` (Flutter)
 
 ---
@@ -35,6 +35,8 @@ It communicates with MCWS v1 over HTTP on a local network.
 | Local playback (client zone)| v5 (done)|
 | Favorites (browse nodes)    | v5 (done)|
 | Offline Mode (server-less)  | v6 (done)|
+| Offline downloads (per-track)| v7 (done)|
+| Android Auto (virtual zone) | v7 (done)|
 | Playlist management         | Later    |
 | File metadata editing       | Later    |
 | DSP & audio configuration   | Later    |
@@ -187,18 +189,29 @@ Represents the connected MCWS server.
 
 Represents a playback zone.
 
-| Field    | Type   | Source                   |
-|----------|--------|--------------------------|
-| id       | string | Playback/Zones → ZoneID  |
-| name     | string | Playback/Zones → ZoneName|
-| guid     | string | Playback/Zones → ZoneGUID|
-| isDLNA   | bool   | Playback/Zones → ZoneDLNA|
-| isLocal  | bool   | client-synthesized (see §4.13) |
+| Field         | Type   | Source                              |
+|---------------|--------|-------------------------------------|
+| id            | string | Playback/Zones → ZoneID             |
+| name          | string | Playback/Zones → ZoneName           |
+| guid          | string | Playback/Zones → ZoneGUID           |
+| isDLNA        | bool   | Playback/Zones → ZoneDLNA           |
+| isLocal       | bool   | client-synthesized (see §4.8)       |
+| isOffline     | bool   | client-synthesized (see §2.5)       |
+| isAndroidAuto | bool   | client-synthesized (see §4.8, §8.2) |
 
-A client may synthesize an additional **local zone** that represents
-the client device itself as a player. The local zone does not appear
-in `Playback/Zones`; it is appended client-side and is the marker for
-local-playback mode (see §4.13).
+A client may synthesize up to three **virtual zones** in addition to the
+server-reported list:
+
+- **Local** — the client device acting as its own player (§4.8, §8.1).
+- **Offline** — a serverless mode that surfaces only downloaded
+  content (§2.5).
+- **Android Auto** — appears only while an Android Auto / Automotive OS
+  head unit is bound. Streams from MCWS but renders through the
+  vehicle's `MediaBrowserService` (§8.2).
+
+Virtual zones do not appear in `Playback/Zones`; they are appended
+client-side. The active zone's `is*` flags tell the rest of the app
+whether to route transport commands locally or to the MCWS server.
 
 ### 3.3 PlaybackState (enum)
 
@@ -444,17 +457,29 @@ Returns `NumberZones` and indexed fields: `ZoneName#`, `ZoneID#`,
 | Zone      | string |
 | ZoneType  | string |
 
-**Local zone (client-synthesized).** A client may append a virtual
-"Local" zone to the list returned from `Playback/Zones`. This zone is
-not a server-known zone — it represents the client device acting as
-its own player. When the local zone is active:
+**Virtual zones (client-synthesized).** A client may append up to three
+virtual zones to the list returned from `Playback/Zones`. None of them
+are server-known; each represents a client-side renderer:
+
+| Virtual zone   | Appended when                                    |
+|----------------|--------------------------------------------------|
+| `Local`        | always (when authenticated)                      |
+| `Offline`      | always (visible even in serverless mode, §2.5)   |
+| `Android Auto` | a head unit is currently bound to the client     |
+
+When any virtual zone is active:
 
 - Transport, volume, mute, shuffle, repeat, seek, and queue operations
   are handled entirely by the client's local player.
 - The client streams individual files via `File/GetFile` (§4.14)
   rather than issuing `Playback/Play*` commands.
 - `Playback/Info` polling is **suspended** (the server has no playback
-  to report on for this zone).
+  to report on for these zones).
+
+The Android Auto zone additionally publishes media browser/transport
+state to the head unit through the platform's media-session API (see
+§8.2). The Offline zone hides server-required UI (library browse,
+search, the synthetic Local zone) and surfaces only downloaded content.
 
 ### 4.9 Playing Now Queue
 
@@ -716,7 +741,7 @@ for state changes.
 | Playback state = paused    | Playback/Info   | 5 seconds|
 | Playback state = stopped   | Playback/Info   | 5 seconds|
 | Zone list                  | Playback/Zones  | 30 seconds|
-| Active zone = local        | —               | suspended|
+| Active zone = virtual (Local / Offline / Android Auto) | — | suspended|
 
 ### 5.2 Change Detection
 
@@ -908,31 +933,80 @@ The API client must:
 
 ---
 
-## 8. Local Playback Semantics
+## 8. Client-Side Playback Semantics
 
-When the active zone is the client-synthesized local zone (§4.8):
+The three virtual zones (Local, Offline, Android Auto) all render audio
+on the client. They share one local-playback engine and differ only in
+where their queue comes from and where playback state is published.
+
+### 8.1 Shared rules (all virtual zones)
 
 - **Transport** is fully client-side. `Playback/Play*` endpoints are
   not used. The client manages its own queue and playhead.
 - **Stream source** is `File/GetFile` (§4.14) per track. URLs include
   `Conversion=<wav|opus>`, `Quality=<high|normal|low>`, and the auth
-  `Token`.
+  `Token`. The Offline zone substitutes local file paths for already-
+  downloaded tracks instead of constructing a stream URL.
 - **Quality switching** rebuilds the stream URLs and reloads the
   current track at the saved playhead position.
-- **Persistence** of the local queue and playhead is the client's
-  responsibility (a server-side DLNA renderer would not survive a
-  client restart). Queue state should be persisted in structured
-  storage; scalar state (index, position, volume) may live in
-  preferences.
-- **Now-playing metadata** for the currently-streaming local track is
-  not available via `Playback/Info`. The client reads the track
-  metadata from its local queue entry (which it already has from the
-  library or `File/GetInfo` lookup) and renders it directly.
-- **Polling** of `Playback/Info` is suspended while local is active
-  (§5.1).
+- **Persistence** of each zone's queue and playhead is the client's
+  responsibility. Queue state should be persisted in structured
+  storage **keyed by zone** (Local, Offline, and Android Auto each
+  have an independent queue); scalar state (index, position, volume)
+  may live in preferences.
+- **Now-playing metadata** is not available via `Playback/Info`. The
+  client reads the track metadata from its local queue entry (which
+  it already has from the library, `File/GetInfo`, or its downloads
+  database) and renders it directly.
+- **Polling** of `Playback/Info` is suspended while any virtual zone
+  is active (§5.1).
 
-The local zone is conceptually similar to a DLNA renderer that
-happens to run inside the same process as the remote-control UI.
+Conceptually, each virtual zone is a DLNA-style renderer that happens
+to run inside the same process as the remote-control UI.
+
+### 8.2 Android Auto zone
+
+The Android Auto zone exists only on platforms that expose a
+`MediaBrowserService` (or equivalent). It layers on top of the shared
+client-side player.
+
+- **Detection.** A platform-side observer reports head-unit connect
+  and disconnect events to the client. The Android Auto zone is
+  appended to the zone list while the session is bound and removed
+  shortly after disconnect.
+- **Audio handler swap.** When the head unit binds, the client must
+  swap to a media-session-eligible playback handler **synchronously**
+  (before the OS's foreground-service deadline). The handler exposes
+  the system notification, lock-screen transport, and the browse tree.
+- **Browse tree.** The client publishes a downloads-first hierarchy
+  to the head unit (e.g. *Downloads → Recently Played → Artists →
+  Albums*). Browse leaves correspond to playable items; selecting one
+  loads the parent context as the queue and starts playback at the
+  chosen track.
+- **Voice search.** The platform passes structured search extras
+  (focus, artist, album, title, genre). The client resolves them
+  against its downloads (v1 is downloads-only — no live library
+  reach-through) and falls back to a free-text scan when no focus is
+  set. A leading `shuffle ` token enables shuffle.
+- **Artwork.** Album art must be exposed to the head unit as content
+  that the system process can read (e.g. a content provider with a
+  URI scheme), not as `http(s)://` URLs.
+- **AAOS compatibility.** The same client should declare the
+  metadata required to run on Android Automotive OS head units as
+  well as phone-AA.
+
+### 8.3 Offline zone
+
+The Offline zone is for serverless operation (§2.5). It is always
+visible — even when no server is reachable — and surfaces only
+downloaded content.
+
+- The library tab shows downloaded albums and artists only.
+- Removing a downloaded track while it is in the Offline queue
+  must drop it from the queue (there is no streaming fallback).
+- Removing the same track on the Local zone must instead swap the
+  queue entry from a local file source to a streaming `File/GetFile`
+  source so the track stays playable.
 
 ---
 
@@ -1000,6 +1074,32 @@ Flutter implementation (`jrr_f/`). They apply to any client.
 16. **One mini popup-menu pattern across the app.** Same items
     (Play / Play next / Add to playing now), same icon, same density.
 
+17. **Treat core metadata as case-insensitive.** MCWS tags are often
+    inconsistently cased. Comparison and grouping (especially for
+    albums) must use case-insensitive logic to avoid fragmented
+    results.
+
+18. **One unified player surface, many transports.** Expose a single
+    "player" facade to the UI that dispatches to a concrete transport
+    chosen by the active zone (MCWS-remote vs. local-engine). UI code
+    never branches on zone locality.
+
+19. **Composite audio handler for system-level integration.** When a
+    platform exposes a media-browser surface (Android Auto, CarPlay,
+    Wear, etc.) keep one outer handler that pipes the **active**
+    transport's playback state, queue, and now-playing to the OS,
+    and swap the inner transport on connect/disconnect. Swapping
+    must be synchronous on connect (foreground-service deadlines).
+
+20. **Voice-search resolver is a pure unit.** Keep the parsing of
+    platform extras (focus, artist, album, title, genre, shuffle
+    prefix) in a Dart-only resolver that takes the user's track
+    catalog as input. Testable without any platform binding.
+
+21. **Per-zone queue persistence.** Local, Offline, and Android Auto
+    each have an independent queue and playhead. Persist them
+    keyed by zone id, not as a single global queue.
+
 ---
 
 ## 10. Versioning
@@ -1011,6 +1111,9 @@ This spec follows semantic versioning.
 - **v3.0** — file metadata, DSP, audio configuration
 - **v4.0** — UI design system, multi-platform parity
 - **v5.0** — local-zone playback, favorites, access-key lookup
+- **v6.0** — offline mode (serverless startup)
+- **v7.0** — per-track downloads, Android Auto / AAOS virtual zone,
+  composite audio handler, voice search
 
 ---
 
@@ -1054,4 +1157,3 @@ This spec follows semantic versioning.
 | Endpoint                                   | Purpose                                      |
 |--------------------------------------------|----------------------------------------------|
 | `webplay.jriver.com/libraryserver/lookup`  | Resolve JRiver Access Key → server host/port |
-17. Treat core metadata as case-insensitive. MCWS tags are often inconsistently cased. Comparison and grouping (especially for albums) must use case-insensitive logic to avoid fragmented results.

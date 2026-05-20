@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jrr_f/core/di/injection.dart';
-import 'package:jrr_f/features/favorites/data/repositories/favorites_repository.dart';
+import 'package:jrr_f/core/di/providers.dart';
 import 'package:jrr_f/features/library/data/models/browse_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,7 +10,7 @@ part 'favorites_provider.g.dart';
 class Favorites extends _$Favorites {
   @override
   Future<List<BrowseItem>> build() async {
-    final result = await getIt<FavoritesRepository>().getAll();
+    final result = await ref.read(favoritesRepositoryProvider).getAll();
     return result.fold(
       (error) => throw error,
       (favorites) => favorites
@@ -40,9 +39,9 @@ class Favorites extends _$Favorites {
       case AsyncData(:final value):
         final isFav = value.any((fav) => fav.id == item.id);
         if (isFav) {
-          await getIt<FavoritesRepository>().removeFavorite(item);
+          await ref.read(favoritesRepositoryProvider).removeFavorite(item);
         } else {
-          await getIt<FavoritesRepository>().addFavorite(item);
+          await ref.read(favoritesRepositoryProvider).addFavorite(item);
         }
         // Re-run `build` to refresh the list after modification.
         // `ref.invalidate(favoritesProvider)` from inside the notifier
@@ -62,7 +61,7 @@ class Favorites extends _$Favorites {
     WidgetRef ref,
     BrowseItem item,
   ) async {
-    await getIt<FavoritesRepository>().removeFavorite(item);
+    await ref.read(favoritesRepositoryProvider).removeFavorite(item);
     ref.invalidate(favoritesProvider);
   }
 }

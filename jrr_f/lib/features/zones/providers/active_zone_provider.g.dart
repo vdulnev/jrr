@@ -40,7 +40,7 @@ final class ActiveZoneProvider extends $NotifierProvider<ActiveZone, Zone?> {
   }
 }
 
-String _$activeZoneHash() => r'80de91ebb7f1fcb36277511609d47c096e6bafb7';
+String _$activeZoneHash() => r'552d6c5aba11344b65e3b2624811bb8c1f380035';
 
 abstract class _$ActiveZone extends $Notifier<Zone?> {
   Zone? build();
@@ -289,7 +289,7 @@ final class AndroidAutoConnectedProvider
 }
 
 String _$androidAutoConnectedHash() =>
-    r'5b982a634f6fac8aa35705a75385acb7126f8a07';
+    r'50945ac2de7b0f6f354ff1743e62cfc878729bed';
 
 /// Reactive mirror of [AndroidAutoSessionService.isConnected]. The zone
 /// repository surfaces the AA zone only while this is `true`; the zone

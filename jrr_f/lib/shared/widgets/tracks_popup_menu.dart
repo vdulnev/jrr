@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/injection.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/tracks.dart';
-import '../../features/offline/data/repositories/downloads_repository.dart';
-import '../../features/player/providers/player_provider.dart';
-import '../../features/zones/providers/active_zone_provider.dart';
-
-import '../../features/offline/data/models/download_state.dart';
-import '../../features/offline/providers/download_jobs_provider.dart';
-import '../../features/offline/providers/downloaded_tracks_provider.dart';
+import 'tracks_popup_menu_view_model.dart';
 
 class TracksPopupMenu extends ConsumerWidget {
   final Tracks tracks;
@@ -20,45 +13,15 @@ class TracksPopupMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOffline = ref.watch(isOfflineActiveProvider);
-    final downloadedTracks = ref.watch(downloadedTracksProvider).value ?? [];
-    final downloadJobs = ref.watch(downloadJobsProvider).value ?? [];
+    final state = ref.watch(tracksPopupMenuViewModelProvider(tracks));
+    final vm = ref.read(tracksPopupMenuViewModelProvider(tracks).notifier);
 
-    final trackKeys = tracks.tracks.map((t) => t.fileKey).toSet();
-
-    final downloadedKeys = downloadedTracks
-        .where((t) => trackKeys.contains(t.fileKey))
-        .map((t) => t.fileKey)
-        .toSet();
-
-    if (isOffline && downloadedKeys.isEmpty) {
-      return const SizedBox(width: 18);
-    }
-
-    final jobsForTracks = downloadJobs.where(
-      (j) => trackKeys.contains(j.fileKey),
-    );
-
-    final activeJobs = jobsForTracks.where(
-      (j) =>
-          j.state == DownloadState.queued || j.state == DownloadState.running,
-    );
-    final failedJobs = jobsForTracks.where(
-      (j) => j.state == DownloadState.failed,
-    );
-
-    final showDownload =
-        !isOffline &&
-        downloadedKeys.length < tracks.length &&
-        activeJobs.isEmpty;
-    final showCancel = !isOffline && activeJobs.isNotEmpty;
-    final showDelete = downloadedKeys.isNotEmpty;
-    final showRetry = !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
+    if (state.hidden) return const SizedBox(width: 18);
 
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),
       padding: EdgeInsets.zero,
-      onSelected: (action) => _handleAction(context, ref, action),
+      onSelected: (action) => _handleAction(context, vm, action),
       itemBuilder: (_) => [
         const PopupMenuItem(
           value: 'play',
@@ -88,7 +51,7 @@ class TracksPopupMenu extends ConsumerWidget {
           ),
         ),
         const PopupMenuDivider(),
-        if (showDownload)
+        if (state.showDownload)
           const PopupMenuItem(
             value: 'download',
             child: ListTile(
@@ -98,7 +61,7 @@ class TracksPopupMenu extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
             ),
           ),
-        if (showRetry)
+        if (state.showRetry)
           const PopupMenuItem(
             value: 'download',
             child: ListTile(
@@ -108,7 +71,7 @@ class TracksPopupMenu extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
             ),
           ),
-        if (showCancel)
+        if (state.showCancel)
           const PopupMenuItem(
             value: 'cancelDownload',
             child: ListTile(
@@ -118,7 +81,7 @@ class TracksPopupMenu extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
             ),
           ),
-        if (showDelete)
+        if (state.showDelete)
           const PopupMenuItem(
             value: 'deleteDownload',
             child: ListTile(
@@ -135,15 +98,18 @@ class TracksPopupMenu extends ConsumerWidget {
     );
   }
 
-  void _handleAction(BuildContext context, WidgetRef ref, String action) {
-    final downloadsRepo = getIt<DownloadsRepository>();
+  Future<void> _handleAction(
+    BuildContext context,
+    TracksPopupMenuViewModel vm,
+    String action,
+  ) async {
     switch (action) {
       case 'play':
-        ref.read(playerProvider.notifier).playNow(tracks);
+        await vm.playNow(tracks);
       case 'playNext':
-        ref.read(playerProvider.notifier).playNext(tracks);
+        await vm.playNext(tracks);
       case 'add':
-        ref.read(playerProvider.notifier).addToQueue(tracks);
+        await vm.addToQueue(tracks);
         if (label != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -153,7 +119,7 @@ class TracksPopupMenu extends ConsumerWidget {
           );
         }
       case 'download':
-        downloadsRepo.enqueueAll(tracks.tracks);
+        await vm.downloadTracks(tracks);
         if (label != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -163,12 +129,9 @@ class TracksPopupMenu extends ConsumerWidget {
           );
         }
       case 'cancelDownload':
-        final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
-        downloadsRepo.cancelAll(trackKeys);
+        await vm.cancelDownloads(tracks);
       case 'deleteDownload':
-        final trackKeys = tracks.tracks.map((t) => t.fileKey).toList();
-        downloadsRepo.deleteAll(trackKeys);
+        await vm.deleteDownloads(tracks);
     }
-    ref.read(playerProvider.notifier).refresh();
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/db/app_database.dart';
-import 'package:jrr_f/core/di/injection.dart';
 import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
 import 'package:jrr_f/core/network/mcws_xml_parser.dart';
@@ -66,14 +65,11 @@ void main() {
 
   tearDown(() async {
     await db.close();
-    // Clean up any remaining session scope
     try {
       await repo.clearSession();
     } catch (_) {
       // Ignore cleanup errors
     }
-    // Reset getIt to clean state for next test
-    getIt.reset();
   });
 
   group('connect()', () {
@@ -163,12 +159,12 @@ void main() {
 
       expect(result.isRight(), true);
       expect(repo.currentToken, isNotNull);
-      expect(getIt.isRegistered<McwsClient>(), isTrue);
+      expect(repo.clientListenable.value, isNotNull);
 
       await repo.clearSession();
 
       expect(repo.currentToken, isNull);
-      expect(getIt.isRegistered<McwsClient>(), isFalse);
+      expect(repo.clientListenable.value, isNull);
     });
   });
 }

@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../core/di/injection.dart';
-import '../data/repositories/connection_repository.dart';
+import '../../../core/di/providers.dart';
 
 part 'last_server_provider.g.dart';
 
@@ -19,7 +18,7 @@ Future<
   })?
 >
 lastServer(Ref ref) async {
-  final repo = getIt<ConnectionRepository>();
+  final repo = ref.read(connectionRepositoryProvider);
   final servers = await repo.getSavedServers();
   if (servers.isEmpty) return null;
   final last = servers.first; // ordered by lastUsedAt desc

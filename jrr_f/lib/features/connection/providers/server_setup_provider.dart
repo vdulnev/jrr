@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../core/di/injection.dart';
-import '../data/repositories/connection_repository.dart';
+import '../../../core/di/providers.dart';
 import 'session_provider.dart';
 
 part 'server_setup_provider.g.dart';
@@ -22,9 +21,9 @@ class ServerSetupForm extends _$ServerSetupForm {
   }) async {
     state = const AsyncValue.loading();
 
-    final lookup = await getIt<ConnectionRepository>().lookupAccessKey(
-      accessKey,
-    );
+    final lookup = await ref
+        .read(connectionRepositoryProvider)
+        .lookupAccessKey(accessKey);
     final resolved = lookup.match((_) => null, (r) => r);
     if (resolved == null) {
       state = AsyncValue.error(
