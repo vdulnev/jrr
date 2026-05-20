@@ -41,7 +41,7 @@ final class ZoneListViewModelProvider
   }
 }
 
-String _$zoneListViewModelHash() => r'12bb77eb6967ebc1aeb03c1c6e499208d13ea9cb';
+String _$zoneListViewModelHash() => r'6306fc08d3c73fb31b8cfcdc1278b30de90c91c3';
 
 abstract class _$ZoneListViewModel extends $Notifier<ZoneListViewState> {
   ZoneListViewState build();

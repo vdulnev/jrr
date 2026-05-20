@@ -8,19 +8,17 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/logging/file_log_observer.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../offline/data/models/download_state.dart';
-import '../../offline/providers/download_jobs_provider.dart';
-import '../../offline/providers/downloaded_tracks_provider.dart';
-import '../../../core/di/providers.dart';
-import '../providers/session_provider.dart';
-import '../providers/session_state.dart';
+import '../../library/data/models/track.dart';
+import '../../offline/data/models/download_job.dart';
+import '../providers/server_manager_view_model.dart';
 
 class ServerManagerScreen extends ConsumerWidget {
   const ServerManagerScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionProvider);
+    final state = ref.watch(serverManagerViewModelProvider);
+    final vm = ref.read(serverManagerViewModelProvider.notifier);
 
     return Scaffold(
       body: SafeArea(
@@ -39,65 +37,100 @@ class ServerManagerScreen extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: session.maybeWhen(
-                authenticated: (serverInfo) => ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  children: [
-                    _InfoSection(
-                      title: 'CONNECTED SERVER',
-                      items: [
-                        _InfoRow(label: 'Name', value: serverInfo.name),
-                        _InfoRow(label: 'Version', value: serverInfo.version),
-                        _InfoRow(label: 'Platform', value: serverInfo.platform),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    const _StorageSection(),
-                    const SizedBox(height: 32),
-                    const _FailedDownloadsSection(),
-                    const SizedBox(height: 32),
-                    const _DiagnosticsSection(),
-                    const SizedBox(height: 32),
-                    Builder(
-                      builder: (context) {
-                        final isSyntheticOffline = session.maybeWhen(
-                          authenticated: (info) => info.id == 'offline',
-                          orElse: () => false,
-                        );
-
-                        return FilledButton.icon(
-                          onPressed: () =>
-                              ref.read(sessionProvider.notifier).logout(),
+              child: state.isAuthenticated
+                  ? ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      children: [
+                        _InfoSection(
+                          title: 'CONNECTED SERVER',
+                          items: [
+                            _InfoRow(
+                              label: 'Name',
+                              value: state.serverInfo!.name,
+                            ),
+                            _InfoRow(
+                              label: 'Version',
+                              value: state.serverInfo!.version,
+                            ),
+                            _InfoRow(
+                              label: 'Platform',
+                              value: state.serverInfo!.platform,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        _StorageSection(
+                          tracksCount: state.downloadedTracksCount,
+                          totalBytes: state.downloadedTotalBytes,
+                          onClearAll: () => _confirmClear(context, vm),
+                        ),
+                        const SizedBox(height: 32),
+                        _FailedDownloadsSection(
+                          failed: state.failedJobs,
+                          onRetry: vm.retryDownload,
+                          onRemove: vm.removeFailedJob,
+                        ),
+                        const SizedBox(height: 32),
+                        const _DiagnosticsSection(),
+                        const SizedBox(height: 32),
+                        FilledButton.icon(
+                          onPressed: vm.logout,
                           icon: Icon(
-                            isSyntheticOffline
+                            state.isSyntheticOffline
                                 ? Icons.login_rounded
                                 : Icons.logout_rounded,
                             size: 18,
                           ),
                           label: Text(
-                            isSyntheticOffline
+                            state.isSyntheticOffline
                                 ? 'Setup Server / Login'
                                 : 'Logout',
                           ),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.bg3,
-                            foregroundColor: isSyntheticOffline
+                            foregroundColor: state.isSyntheticOffline
                                 ? AppColors.accent
                                 : Colors.redAccent,
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                orElse: () => const Center(child: Text('Not authenticated')),
-              ),
+                        ),
+                      ],
+                    )
+                  : const Center(child: Text('Not authenticated')),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmClear(BuildContext context, ServerManagerViewModel vm) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.bg3,
+        title: const Text('Clear all downloads?'),
+        content: const Text(
+          'This will delete all downloaded tracks and artwork from your device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              vm.clearAllDownloads();
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Clear All',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -156,62 +189,55 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _StorageSection extends ConsumerWidget {
-  const _StorageSection();
+class _StorageSection extends StatelessWidget {
+  const _StorageSection({
+    required this.tracksCount,
+    required this.totalBytes,
+    required this.onClearAll,
+  });
+
+  final int tracksCount;
+  final int totalBytes;
+  final VoidCallback onClearAll;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tracksState = ref.watch(downloadedTracksProvider);
+  Widget build(BuildContext context) {
+    final sizeStr = _formatBytes(totalBytes);
 
-    return tracksState.when(
-      data: (tracks) {
-        final count = tracks.length;
-        final totalBytes = tracks.fold<int>(
-          0,
-          (sum, t) => sum + t.fileSizeBytes,
-        );
-        final sizeStr = _formatBytes(totalBytes);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('OFFLINE STORAGE', style: AppTextStyles.sectionLabel),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.bg2,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Column(
-                children: [
-                  _InfoRow(label: 'Downloaded Tracks', value: '$count'),
-                  _InfoRow(label: 'Total Size', value: sizeStr),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: count > 0
-                            ? () => _confirmClear(context, ref)
-                            : null,
-                        icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                        label: const Text('Clear All Downloads'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.error,
-                          side: const BorderSide(color: AppColors.error),
-                        ),
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('OFFLINE STORAGE', style: AppTextStyles.sectionLabel),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.bg2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            children: [
+              _InfoRow(label: 'Downloaded Tracks', value: '$tracksCount'),
+              _InfoRow(label: 'Total Size', value: sizeStr),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: tracksCount > 0 ? onClearAll : null,
+                    icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                    label: const Text('Clear All Downloads'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (e, st) => const SizedBox.shrink(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -226,53 +252,22 @@ class _StorageSection extends ConsumerWidget {
     }
     return '${d.toStringAsFixed(1)} ${suffixes[i]}';
   }
-
-  void _confirmClear(BuildContext context, WidgetRef ref) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.bg3,
-        title: const Text('Clear all downloads?'),
-        content: const Text(
-          'This will delete all downloaded tracks and artwork from your device.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(downloadsRepositoryProvider).clearAll();
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Clear All',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _FailedDownloadsSection extends ConsumerWidget {
-  const _FailedDownloadsSection();
+class _FailedDownloadsSection extends StatelessWidget {
+  const _FailedDownloadsSection({
+    required this.failed,
+    required this.onRetry,
+    required this.onRemove,
+  });
+
+  final List<DownloadJob> failed;
+  final void Function(Track track) onRetry;
+  final void Function(int fileKey) onRemove;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final jobsState = ref.watch(downloadJobsProvider);
-
-    final failed = jobsState.value
-        ?.where((j) => j.state == DownloadState.failed)
-        .toList();
-
-    if (failed == null || failed.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final repo = ref.read(downloadsRepositoryProvider);
+  Widget build(BuildContext context) {
+    if (failed.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,8 +294,8 @@ class _FailedDownloadsSection extends ConsumerWidget {
                     failed[i].track.artist,
                     if (failed[i].error != null) failed[i].error!,
                   ].where((s) => s.isNotEmpty).join(' • '),
-                  onRetry: () => repo.enqueue(failed[i].track),
-                  onRemove: () => repo.removeJob(failed[i].fileKey),
+                  onRetry: () => onRetry(failed[i].track),
+                  onRemove: () => onRemove(failed[i].fileKey),
                 ),
               ],
             ],
