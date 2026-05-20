@@ -359,7 +359,7 @@ final class PlayerRepositoryProvider
   }
 }
 
-String _$playerRepositoryHash() => r'52d0f6df2755160f8cc84384a68c3ab420320bf0';
+String _$playerRepositoryHash() => r'050df0e1aa5a2f4e0d103e5577b7df83fc5df3e1';
 
 @ProviderFor(zoneRepository)
 final zoneRepositoryProvider = ZoneRepositoryProvider._();
@@ -400,7 +400,7 @@ final class ZoneRepositoryProvider
   }
 }
 
-String _$zoneRepositoryHash() => r'e324bb59445ffeda7527dc1854a49767c46ceb7e';
+String _$zoneRepositoryHash() => r'a3c9f04dad1f5d6afed15c71aef069ee2835c02b';
 
 @ProviderFor(queueRepository)
 final queueRepositoryProvider = QueueRepositoryProvider._();
@@ -442,7 +442,7 @@ final class QueueRepositoryProvider
   }
 }
 
-String _$queueRepositoryHash() => r'f2abbbc56d222899ca4cf67093b4a0cb4d512e9c';
+String _$queueRepositoryHash() => r'f57a07aa04193c781469e241a4cc8d08fc35346a';
 
 @ProviderFor(localQueueRepository)
 final localQueueRepositoryProvider = LocalQueueRepositoryProvider._();
@@ -490,7 +490,7 @@ final class LocalQueueRepositoryProvider
 }
 
 String _$localQueueRepositoryHash() =>
-    r'86ae1e3f9571a07c46c710848400e7c939154bda';
+    r'ecda4f9c954f7c4c089d09899e20421ffcb53e8a';
 
 @ProviderFor(libraryRepository)
 final libraryRepositoryProvider = LibraryRepositoryProvider._();
@@ -537,7 +537,7 @@ final class LibraryRepositoryProvider
   }
 }
 
-String _$libraryRepositoryHash() => r'7a335078c713aa4919def8925f5152dabf6f05ed';
+String _$libraryRepositoryHash() => r'3702786bd8e95a10248d0525fc3d5da854c0190b';
 
 @ProviderFor(favoritesRepository)
 final favoritesRepositoryProvider = FavoritesRepositoryProvider._();
@@ -585,7 +585,7 @@ final class FavoritesRepositoryProvider
 }
 
 String _$favoritesRepositoryHash() =>
-    r'9ba990dda14242b4e26b1635f215f9c70a357838';
+    r'6a7576869475c859e7df4a8aa775de2e22dd0c39';
 
 @ProviderFor(downloadsRepository)
 final downloadsRepositoryProvider = DownloadsRepositoryProvider._();

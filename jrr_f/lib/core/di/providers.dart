@@ -6,17 +6,23 @@ import 'package:talker/talker.dart';
 
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/favorites/data/repositories/favorites_repository.dart';
+import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/library/data/repositories/library_repository.dart';
+import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
+import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/player/services/android_auto_player_service.dart';
 import '../../features/player/services/jrr_audio_handler.dart';
 import '../../features/player/services/local_player_service.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
+import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
+import '../../features/queue/data/repositories/queue_repository_impl.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
+import '../../features/zones/data/repositories/zone_repository_impl.dart';
 import '../../features/zones/services/android_auto_session_service.dart';
 import '../db/app_database.dart';
 import '../network/mcws_client.dart';
@@ -55,24 +61,34 @@ ConnectionRepository connectionRepository(Ref ref) =>
     getIt<ConnectionRepository>();
 
 @Riverpod(keepAlive: true)
-PlayerRepository playerRepository(Ref ref) => getIt<PlayerRepository>();
+PlayerRepository playerRepository(Ref ref) =>
+    PlayerRepositoryImpl(client: () => ref.read(mcwsClientProvider));
 
 @Riverpod(keepAlive: true)
-ZoneRepository zoneRepository(Ref ref) => getIt<ZoneRepository>();
+ZoneRepository zoneRepository(Ref ref) => ZoneRepositoryImpl(
+  client: () => ref.read(mcwsClientProvider),
+  connectionRepository: ref.read(connectionRepositoryProvider),
+  prefs: ref.read(sharedPreferencesProvider),
+  autoSession: ref.read(androidAutoSessionServiceProvider),
+);
 
 @Riverpod(keepAlive: true)
-QueueRepository queueRepository(Ref ref) => getIt<QueueRepository>();
+QueueRepository queueRepository(Ref ref) =>
+    QueueRepositoryImpl(client: () => ref.read(mcwsClientProvider));
 
 @Riverpod(keepAlive: true)
-LocalQueueRepository localQueueRepository(Ref ref) =>
-    getIt<LocalQueueRepository>();
+LocalQueueRepository localQueueRepository(Ref ref) => LocalQueueRepositoryImpl(
+  db: ref.read(appDatabaseProvider),
+  talker: ref.read(talkerProvider),
+);
 
 @Riverpod(keepAlive: true)
-LibraryRepository libraryRepository(Ref ref) => getIt<LibraryRepository>();
+LibraryRepository libraryRepository(Ref ref) =>
+    LibraryRepositoryImpl(client: () => ref.read(mcwsClientProvider));
 
 @Riverpod(keepAlive: true)
 FavoritesRepository favoritesRepository(Ref ref) =>
-    getIt<FavoritesRepository>();
+    FavoritesRepositoryImpl(db: ref.read(appDatabaseProvider));
 
 @Riverpod(keepAlive: true)
 DownloadsRepository downloadsRepository(Ref ref) =>

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import '../db/app_database.dart';
 import '../logging/file_log_observer.dart';
+import '../network/mcws_client.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/connection/data/repositories/connection_repository_impl.dart';
@@ -63,14 +64,37 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Player, zone, queue, and library repositories — resolve McwsClient at call-time
-  getIt.registerSingleton<PlayerRepository>(PlayerRepositoryImpl());
-  getIt.registerSingleton<ZoneRepository>(ZoneRepositoryImpl());
-  getIt.registerSingleton<QueueRepository>(QueueRepositoryImpl());
-  getIt.registerSingleton<LocalQueueRepository>(
-    LocalQueueRepositoryImpl(getIt<AppDatabase>()),
+  // Android Auto session detection — flipped to "connected" the first time
+  // Auto calls into the audio handler's browse API and back to "disconnected"
+  // after a debounced inactivity timeout. Lives outside main.dart so
+  // AndroidAutoPlayerService can resolve it during its getChildren override.
+  getIt.registerSingleton<AndroidAutoSessionService>(
+    AndroidAutoSessionService(),
   );
-  getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
+
+  // Player, zone, queue, and library repositories — resolve McwsClient at
+  // call-time via getIt; the Riverpod providers construct equivalents that
+  // resolve through the mcwsClientProvider.
+  getIt.registerSingleton<PlayerRepository>(
+    PlayerRepositoryImpl(client: () => getIt<McwsClient>()),
+  );
+  getIt.registerSingleton<ZoneRepository>(
+    ZoneRepositoryImpl(
+      client: () => getIt<McwsClient>(),
+      connectionRepository: getIt<ConnectionRepository>(),
+      prefs: getIt<SharedPreferences>(),
+      autoSession: getIt<AndroidAutoSessionService>(),
+    ),
+  );
+  getIt.registerSingleton<QueueRepository>(
+    QueueRepositoryImpl(client: () => getIt<McwsClient>()),
+  );
+  getIt.registerSingleton<LocalQueueRepository>(
+    LocalQueueRepositoryImpl(db: getIt<AppDatabase>(), talker: getIt<Talker>()),
+  );
+  getIt.registerSingleton<LibraryRepository>(
+    LibraryRepositoryImpl(client: () => getIt<McwsClient>()),
+  );
 
   // Offline / Downloads
   getIt.registerSingleton<DownloadsRepository>(
@@ -89,14 +113,6 @@ Future<void> configureDependencies() async {
   // is initialized before the widget tree builds. Everything is registered
   // into getIt from there.
 
-  // Android Auto session detection — flipped to "connected" the first time
-  // Auto calls into the audio handler's browse API and back to "disconnected"
-  // after a debounced inactivity timeout. Lives outside main.dart so
-  // AndroidAutoPlayerService can resolve it during its getChildren override.
-  getIt.registerSingleton<AndroidAutoSessionService>(
-    AndroidAutoSessionService(),
-  );
-
   // Recently-played history backs the Android Auto "Recent" browse
   // category and (later) phone-side UI. Stored in SharedPreferences as a
   // capped list of file keys.
@@ -105,5 +121,7 @@ Future<void> configureDependencies() async {
   );
 
   // Favorites repository — manages favorite items from browse screen
-  getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
+  getIt.registerSingleton<FavoritesRepository>(
+    FavoritesRepositoryImpl(db: getIt<AppDatabase>()),
+  );
 }
