@@ -20,18 +20,10 @@ class Queue extends _$Queue {
     if (zone == null) return Tracks.empty;
 
     if (zone.isLocal || zone.isOffline || zone.isAndroidAuto) {
-      // Wait for the local player to finish loading the queue, but use
-      // `ref.read` — `ref.watch(localPlayerProvider.future)` re-fires
-      // queueProvider's build on every position tick (~5x/sec), causing
-      // a queueProvider AsyncLoading→AsyncData storm and visibly
-      // stuttering audio on slower devices. The sequence we actually
-      // care about is watched separately via localPlayerSequenceProvider,
-      // which only emits when the queue or current index actually
-      // changes.
-      await ref.read(localPlayerProvider.future);
-
-      final sequence = ref.watch(localPlayerSequenceProvider);
-      return sequence?.sequence ?? Tracks.empty;
+      final sequence = ref.watch(
+        localPlayerSequenceProvider.select((s) => s?.sequence),
+      );
+      return sequence ?? Tracks.empty;
     }
 
     ref.watch(
