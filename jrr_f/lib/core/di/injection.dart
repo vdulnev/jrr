@@ -64,6 +64,18 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  // McwsClient is owned by the active session. The connection repository
+  // exposes it through a ValueListenable; this factory bridges that to
+  // getIt for services and repos that still resolve through getIt. Throws
+  // when no session is bound — same contract as the previous scope-push.
+  getIt.registerFactory<McwsClient>(() {
+    final client = getIt<ConnectionRepository>().clientListenable.value;
+    if (client == null) {
+      throw StateError('McwsClient is not available — no active session');
+    }
+    return client;
+  });
+
   // Android Auto session detection — flipped to "connected" the first time
   // Auto calls into the audio handler's browse API and back to "disconnected"
   // after a debounced inactivity timeout. Lives outside main.dart so

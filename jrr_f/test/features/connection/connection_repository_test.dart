@@ -163,12 +163,12 @@ void main() {
 
       expect(result.isRight(), true);
       expect(repo.currentToken, isNotNull);
-      expect(getIt.isRegistered<McwsClient>(), isTrue);
+      expect(repo.clientListenable.value, isNotNull);
 
       await repo.clearSession();
 
       expect(repo.currentToken, isNull);
-      expect(getIt.isRegistered<McwsClient>(), isFalse);
+      expect(repo.clientListenable.value, isNull);
     });
   });
 }

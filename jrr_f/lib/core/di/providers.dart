@@ -53,8 +53,23 @@ SharedPreferences sharedPreferences(Ref ref) => getIt<SharedPreferences>();
 @Riverpod(keepAlive: true)
 McwsXmlParser mcwsXmlParser(Ref ref) => getIt<McwsXmlParser>();
 
+/// Reactive accessor to the active session's [McwsClient]. Invalidates
+/// itself whenever the connection repository swaps the client (connect,
+/// restore, clearSession), so repos that read this lazily always see the
+/// latest instance. Throws when no session is bound — callers should gate
+/// MCWS calls on the active zone not being a virtual one.
 @Riverpod(keepAlive: true)
-McwsClient mcwsClient(Ref ref) => getIt<McwsClient>();
+McwsClient mcwsClient(Ref ref) {
+  final listenable = ref.read(connectionRepositoryProvider).clientListenable;
+  void listener() => ref.invalidateSelf();
+  listenable.addListener(listener);
+  ref.onDispose(() => listenable.removeListener(listener));
+  final client = listenable.value;
+  if (client == null) {
+    throw StateError('McwsClient is not available — no active session');
+  }
+  return client;
+}
 
 @Riverpod(keepAlive: true)
 ConnectionRepository connectionRepository(Ref ref) =>

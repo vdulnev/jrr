@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/db/app_database.dart';
 import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/mcws_client.dart';
 import '../models/server_info.dart';
 
 /// Result of a JRiver Access Key lookup against webplay.jriver.com.
@@ -53,4 +55,9 @@ abstract interface class ConnectionRepository {
   /// Gets the most recently used saved server with its auth token.
   /// Returns null if no saved servers exist or if the most recent one has no token.
   Future<SavedServer?> getLastServerWithToken();
+
+  /// The active session's [McwsClient], or `null` when no session is bound.
+  /// Updated by [connect], [restoreSession], and [clearSession]; Riverpod
+  /// providers observe this to invalidate themselves on session changes.
+  ValueListenable<McwsClient?> get clientListenable;
 }
