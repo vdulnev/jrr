@@ -35,7 +35,7 @@ class Player extends _$Player {
     ref.listen(activeZoneProvider, (oldZone, newZone) {
       // Only fire a stop when switching between two real zones. A null newZone
       // means the session is being torn down (logout) — the McwsClient has
-      // already been removed from getIt, so a remote stop would crash.
+      // already been cleared, so a remote stop would crash.
       if (oldZone != null && newZone != null) {
         stop(zoneToRun: oldZone);
       }

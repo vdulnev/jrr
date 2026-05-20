@@ -47,7 +47,54 @@ final class TalkerProvider extends $FunctionalProvider<Talker, Talker, Talker>
   }
 }
 
-String _$talkerHash() => r'fca8df6c81d24d8b22422862c1d6e3c59529ed55';
+String _$talkerHash() => r'de964e6a098fb683a82bf8f48df47c274e878a60';
+
+@ProviderFor(sharedPreferences)
+final sharedPreferencesProvider = SharedPreferencesProvider._();
+
+final class SharedPreferencesProvider
+    extends
+        $FunctionalProvider<
+          SharedPreferences,
+          SharedPreferences,
+          SharedPreferences
+        >
+    with $Provider<SharedPreferences> {
+  SharedPreferencesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'sharedPreferencesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$sharedPreferencesHash();
+
+  @$internal
+  @override
+  $ProviderElement<SharedPreferences> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SharedPreferences create(Ref ref) {
+    return sharedPreferences(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SharedPreferences value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SharedPreferences>(value),
+    );
+  }
+}
+
+String _$sharedPreferencesHash() => r'5f667d1837f90bd9121b6f8f4fabef9df68e20d9';
 
 @ProviderFor(appDatabase)
 final appDatabaseProvider = AppDatabaseProvider._();
@@ -88,7 +135,7 @@ final class AppDatabaseProvider
   }
 }
 
-String _$appDatabaseHash() => r'193aa21459f5f42b50201f9b08731900b985db07';
+String _$appDatabaseHash() => r'98a09c6cfd43966155dfbdb0787fa18c85438e13';
 
 @ProviderFor(flutterSecureStorage)
 final flutterSecureStorageProvider = FlutterSecureStorageProvider._();
@@ -136,54 +183,7 @@ final class FlutterSecureStorageProvider
 }
 
 String _$flutterSecureStorageHash() =>
-    r'96ab64128d2c0f62618ce425153cc7bdde23a87c';
-
-@ProviderFor(sharedPreferences)
-final sharedPreferencesProvider = SharedPreferencesProvider._();
-
-final class SharedPreferencesProvider
-    extends
-        $FunctionalProvider<
-          SharedPreferences,
-          SharedPreferences,
-          SharedPreferences
-        >
-    with $Provider<SharedPreferences> {
-  SharedPreferencesProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'sharedPreferencesProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$sharedPreferencesHash();
-
-  @$internal
-  @override
-  $ProviderElement<SharedPreferences> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  SharedPreferences create(Ref ref) {
-    return sharedPreferences(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SharedPreferences value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<SharedPreferences>(value),
-    );
-  }
-}
-
-String _$sharedPreferencesHash() => r'47c0386dc8506211f977071bb359188d5e1662a9';
+    r'9dabaf04e2265a8783e07e01e36c360bb77ca3d3';
 
 @ProviderFor(mcwsXmlParser)
 final mcwsXmlParserProvider = McwsXmlParserProvider._();
@@ -224,14 +224,31 @@ final class McwsXmlParserProvider
   }
 }
 
-String _$mcwsXmlParserHash() => r'09b1687b305dc8f6925f1749384fca1658fa59f2';
+String _$mcwsXmlParserHash() => r'5ba452943346d15d2091d4ea3b1ae718cac99c48';
+
+/// Reactive accessor to the active session's [McwsClient]. Invalidates
+/// itself whenever the connection repository swaps the client (connect,
+/// restore, clearSession), so repos that read this lazily always see the
+/// latest instance. Throws when no session is bound — callers should gate
+/// MCWS calls on the active zone not being a virtual one.
 
 @ProviderFor(mcwsClient)
 final mcwsClientProvider = McwsClientProvider._();
 
+/// Reactive accessor to the active session's [McwsClient]. Invalidates
+/// itself whenever the connection repository swaps the client (connect,
+/// restore, clearSession), so repos that read this lazily always see the
+/// latest instance. Throws when no session is bound — callers should gate
+/// MCWS calls on the active zone not being a virtual one.
+
 final class McwsClientProvider
     extends $FunctionalProvider<McwsClient, McwsClient, McwsClient>
     with $Provider<McwsClient> {
+  /// Reactive accessor to the active session's [McwsClient]. Invalidates
+  /// itself whenever the connection repository swaps the client (connect,
+  /// restore, clearSession), so repos that read this lazily always see the
+  /// latest instance. Throws when no session is bound — callers should gate
+  /// MCWS calls on the active zone not being a virtual one.
   McwsClientProvider._()
     : super(
         from: null,
@@ -265,7 +282,7 @@ final class McwsClientProvider
   }
 }
 
-String _$mcwsClientHash() => r'11cf2946534a9809c4ecd89e70de71c1be01694b';
+String _$mcwsClientHash() => r'86952f92bd0f7e30e86795527e0cba08cf2169eb';
 
 @ProviderFor(connectionRepository)
 final connectionRepositoryProvider = ConnectionRepositoryProvider._();
@@ -313,7 +330,7 @@ final class ConnectionRepositoryProvider
 }
 
 String _$connectionRepositoryHash() =>
-    r'43844948d07d66265424ed026e0837b4aa231877';
+    r'b78acfb562781cf5ba5a420a81fad09ef3ffb414';
 
 @ProviderFor(playerRepository)
 final playerRepositoryProvider = PlayerRepositoryProvider._();
@@ -633,7 +650,7 @@ final class DownloadsRepositoryProvider
 }
 
 String _$downloadsRepositoryHash() =>
-    r'41b14b810fc076e48da15bebcdc80ac9f83d6e26';
+    r'17b9e8b2a5625be951d380cbce4063623435f901';
 
 @ProviderFor(downloadService)
 final downloadServiceProvider = DownloadServiceProvider._();
@@ -675,55 +692,7 @@ final class DownloadServiceProvider
   }
 }
 
-String _$downloadServiceHash() => r'46f6224de51f323dbcde2fc395f2c53a6003d0c9';
-
-@ProviderFor(androidAutoSessionService)
-final androidAutoSessionServiceProvider = AndroidAutoSessionServiceProvider._();
-
-final class AndroidAutoSessionServiceProvider
-    extends
-        $FunctionalProvider<
-          AndroidAutoSessionService,
-          AndroidAutoSessionService,
-          AndroidAutoSessionService
-        >
-    with $Provider<AndroidAutoSessionService> {
-  AndroidAutoSessionServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'androidAutoSessionServiceProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$androidAutoSessionServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<AndroidAutoSessionService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  AndroidAutoSessionService create(Ref ref) {
-    return androidAutoSessionService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AndroidAutoSessionService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<AndroidAutoSessionService>(value),
-    );
-  }
-}
-
-String _$androidAutoSessionServiceHash() =>
-    r'f250b4ee6ce043854ee632cb1934c3b14140f713';
+String _$downloadServiceHash() => r'47b61ef14984190a30e350cd2ee83141d25e98d6';
 
 @ProviderFor(recentlyPlayedRepository)
 final recentlyPlayedRepositoryProvider = RecentlyPlayedRepositoryProvider._();
@@ -771,7 +740,55 @@ final class RecentlyPlayedRepositoryProvider
 }
 
 String _$recentlyPlayedRepositoryHash() =>
-    r'cd15d9d672ac753d443d83d8f3ca0275f64d3831';
+    r'9514bcf1d35a2a7cd776dbe2a438bfb7998aa379';
+
+@ProviderFor(androidAutoSessionService)
+final androidAutoSessionServiceProvider = AndroidAutoSessionServiceProvider._();
+
+final class AndroidAutoSessionServiceProvider
+    extends
+        $FunctionalProvider<
+          AndroidAutoSessionService,
+          AndroidAutoSessionService,
+          AndroidAutoSessionService
+        >
+    with $Provider<AndroidAutoSessionService> {
+  AndroidAutoSessionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'androidAutoSessionServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$androidAutoSessionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AndroidAutoSessionService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AndroidAutoSessionService create(Ref ref) {
+    return androidAutoSessionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AndroidAutoSessionService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AndroidAutoSessionService>(value),
+    );
+  }
+}
+
+String _$androidAutoSessionServiceHash() =>
+    r'274f6b932c86c0128b1e3e1f217a20b418b64b3c';
 
 @ProviderFor(localPlayerInstance)
 final localPlayerInstanceProvider = LocalPlayerInstanceProvider._();
@@ -819,7 +836,7 @@ final class LocalPlayerInstanceProvider
 }
 
 String _$localPlayerInstanceHash() =>
-    r'fc12352c21ceebbb6d6f21e5262247798a746ccb';
+    r'2a3086e50b99b193385c1324c760bfa0ede176b9';
 
 @ProviderFor(androidAutoPlayerInstance)
 final androidAutoPlayerInstanceProvider = AndroidAutoPlayerInstanceProvider._();
@@ -867,7 +884,7 @@ final class AndroidAutoPlayerInstanceProvider
 }
 
 String _$androidAutoPlayerInstanceHash() =>
-    r'b1756f960e8d9a2caf1a64f3138b4f6f55ba3286';
+    r'7b2334062626934b322d99e5a3191e312bb5773c';
 
 @ProviderFor(jrrAudioHandler)
 final jrrAudioHandlerProvider = JrrAudioHandlerProvider._();
@@ -909,7 +926,7 @@ final class JrrAudioHandlerProvider
   }
 }
 
-String _$jrrAudioHandlerHash() => r'1267b02f4ae8ccacd8be8d0654eb3bd205d92849';
+String _$jrrAudioHandlerHash() => r'56d60c0b6ccef704525b468886130b1d3219ed1d';
 
 @ProviderFor(audioHandler)
 final audioHandlerProvider = AudioHandlerProvider._();
@@ -950,4 +967,4 @@ final class AudioHandlerProvider
   }
 }
 
-String _$audioHandlerHash() => r'f243ebba16956fceb7c4ee46a49260f5ab174379';
+String _$audioHandlerHash() => r'e9f9065cac678275ff97e0dee21b15da6e6b123c';

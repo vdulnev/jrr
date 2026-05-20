@@ -17,9 +17,6 @@ dependencies:
   # Routing
   auto_route: ^11.1.0
 
-  # DI
-  get_it: ^9.2.1
-
   # Functional
   fpdart: ^1.2.0
 
