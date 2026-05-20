@@ -20,6 +20,8 @@ import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
+import '../../features/player/services/android_auto_player_service.dart';
+import '../../features/player/services/jrr_audio_handler.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
@@ -80,8 +82,18 @@ Future<void> configureDependencies() async {
   // Auto calls into the audio handler's browse API and back to "disconnected"
   // after a debounced inactivity timeout. Lives outside main.dart so
   // AndroidAutoPlayerService can resolve it during its getChildren override.
+  // The handler resolvers are late-bound through getIt because the audio
+  // handlers are constructed in main.dart after configureDependencies.
   getIt.registerSingleton<AndroidAutoSessionService>(
-    AndroidAutoSessionService(),
+    AndroidAutoSessionService(
+      talker: getIt<Talker>(),
+      handlerResolver: () => getIt.isRegistered<JrrAudioHandler>()
+          ? getIt<JrrAudioHandler>()
+          : null,
+      autoPlayerResolver: () => getIt.isRegistered<AndroidAutoPlayerService>()
+          ? getIt<AndroidAutoPlayerService>()
+          : null,
+    ),
   );
 
   // Player, zone, queue, and library repositories — resolve McwsClient at

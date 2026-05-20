@@ -10,7 +10,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/network/mcws_client.dart';
 import '../../connection/data/repositories/connection_repository.dart';
 import '../../favorites/data/repositories/favorites_repository.dart';
@@ -36,6 +35,12 @@ import 'local_player_service_base.dart';
 class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   final AudioPlayer _player;
   final Talker _talker;
+  final DownloadsRepository _downloadsRepo;
+  final LibraryRepository _libraryRepo;
+  final FavoritesRepository _favoritesRepo;
+  final ConnectionRepository _connectionRepo;
+  final McwsClient Function() _mcwsClientResolver;
+  final bool Function() _hasActiveSession;
 
   /// Resolves the currently selected audio quality.
   LocalAudioQuality Function() qualityResolver;
@@ -55,9 +60,21 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   AndroidAutoPlayerService({
     required AudioPlayer player,
     required Talker talker,
+    required DownloadsRepository downloadsRepo,
+    required LibraryRepository libraryRepo,
+    required FavoritesRepository favoritesRepo,
+    required ConnectionRepository connectionRepo,
+    required McwsClient Function() mcwsClientResolver,
+    required bool Function() hasActiveSession,
     LocalAudioQuality Function()? qualityResolver,
   }) : _player = player,
        _talker = talker,
+       _downloadsRepo = downloadsRepo,
+       _libraryRepo = libraryRepo,
+       _favoritesRepo = favoritesRepo,
+       _connectionRepo = connectionRepo,
+       _mcwsClientResolver = mcwsClientResolver,
+       _hasActiveSession = hasActiveSession,
        qualityResolver = qualityResolver ?? (() => LocalAudioQuality.lossless) {
     // Seed with `ready` (not `idle`) so the audio_service plugin treats the
     // handler as foreground-eligible and promotes the service via
@@ -467,7 +484,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   ]) async {
     _talker.info('[AndroidAutoPlayerService] playFromSearch: "$query"');
 
-    final downloaded = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final downloaded = await _downloadsRepo.getDownloadedTracks();
     final intent = resolveVoiceIntent(
       query: query,
       extras: extras,
@@ -509,7 +526,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   /// hierarchy to keep the head-unit UI minimal while v1 still only
   /// serves downloaded content.
   Future<List<MediaItem>> _downloadsChildren(String parentPath) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final tracks = await _downloadsRepo.getDownloadedTracks();
     final artists = <String>{};
     for (final t in tracks) {
       final a = _artistOf(t);
@@ -621,7 +638,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<List<DownloadedTrack>> _albumTracks(String albumGroupId) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final tracks = await _downloadsRepo.getDownloadedTracks();
     return tracks.where((t) => t.albumGroupId == albumGroupId).toList()
       ..sort((a, b) {
         final cmp = a.discNumber.compareTo(b.discNumber);
@@ -631,7 +648,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<List<DownloadedTrack>> _artistTracks(String artistName) async {
-    final tracks = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final tracks = await _downloadsRepo.getDownloadedTracks();
     final filtered = tracks
         .where((t) => _artistOf(t).toLowerCase() == artistName.toLowerCase())
         .toList();
@@ -654,7 +671,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<DownloadedTrack?> _findDownloadedTrack(int fileKey) async {
-    final all = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final all = await _downloadsRepo.getDownloadedTracks();
     for (final t in all) {
       if (t.fileKey == fileKey) return t;
     }
@@ -663,7 +680,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
 
   Future<List<DownloadedTrack>> _searchDownloaded(String query) async {
     final q = query.trim().toLowerCase();
-    final all = await getIt<DownloadsRepository>().getDownloadedTracks();
+    final all = await _downloadsRepo.getDownloadedTracks();
     return all
         .where(
           (d) =>
@@ -731,7 +748,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<List<MediaItem>> _libArtistsChildren(String parentPath) async {
-    final result = await getIt<LibraryRepository>().getArtists();
+    final result = await _libraryRepo.getArtists();
     final artists = result.fold((_) => const <String>[], (l) => l);
     return [
       for (final name in artists)
@@ -743,13 +760,13 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<List<MediaItem>> _libRandomChildren(String parentPath) async {
-    final result = await getIt<LibraryRepository>().getRandomAlbums();
+    final result = await _libraryRepo.getRandomAlbums();
     final albums = result.fold((_) => const <Album>[], (a) => a.albums);
     return [for (final album in albums) _onlineAlbumNode(parentPath, album)];
   }
 
   Future<List<MediaItem>> _libFavoritesChildren(String parentPath) async {
-    final result = await getIt<FavoritesRepository>().getAll();
+    final result = await _favoritesRepo.getAll();
     final favs = result.fold((_) => const <Favorite>[], (l) => l);
     return [
       for (final f in favs)
@@ -764,9 +781,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     String parentPath,
     String artistName,
   ) async {
-    final result = await getIt<LibraryRepository>().getAlbumsByArtist(
-      artistName,
-    );
+    final result = await _libraryRepo.getAlbumsByArtist(artistName);
     final albums = result.fold((_) => const <Album>[], (a) => a.albums);
     return [for (final album in albums) _onlineAlbumNode(parentPath, album)];
   }
@@ -791,9 +806,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
     String parentPath,
     String mcwsId,
   ) async {
-    final childrenResult = await getIt<LibraryRepository>().browseChildren(
-      mcwsId,
-    );
+    final childrenResult = await _libraryRepo.browseChildren(mcwsId);
     final children = childrenResult.fold((_) => const <BrowseItem>[], (l) => l);
     if (children.isNotEmpty) {
       return [
@@ -813,17 +826,17 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   Future<List<Track>> _onlineAlbumTracks(Album album) async {
-    final result = await getIt<LibraryRepository>().getAlbumTracks(album);
+    final result = await _libraryRepo.getAlbumTracks(album);
     return result.fold((_) => const [], (t) => t.tracks);
   }
 
   Future<List<Track>> _onlineBrowseFiles(String mcwsId) async {
-    final result = await getIt<LibraryRepository>().browseFiles(mcwsId);
+    final result = await _libraryRepo.browseFiles(mcwsId);
     return result.fold((_) => const [], (t) => t.tracks);
   }
 
   Future<Track?> _findOnlineTrack(int fileKey) async {
-    final result = await getIt<LibraryRepository>().searchByFileKey(fileKey);
+    final result = await _libraryRepo.searchByFileKey(fileKey);
     return result.fold((_) => null, (t) => t);
   }
 
@@ -897,11 +910,9 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   /// because MediaItem.artUri carries no headers.
   Uri? _httpArtUri(int? fileKey) {
     if (fileKey == null || fileKey < 0) return null;
-    if (!getIt.isRegistered<McwsClient>()) return null;
-    final token = getIt.isRegistered<ConnectionRepository>()
-        ? getIt<ConnectionRepository>().currentToken
-        : null;
-    var base = getIt<McwsClient>().baseUrl;
+    if (!_hasActiveSession()) return null;
+    final token = _connectionRepo.currentToken;
+    var base = _mcwsClientResolver().baseUrl;
     if (base.isEmpty) return null;
     if (!base.endsWith('/')) base += '/';
     final tokenParam = (token == null || token.isEmpty) ? '' : '&Token=$token';
@@ -1049,7 +1060,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   // ─── Source factory ───────────────────────────────────────────────────
 
   AudioSource _createSource(Track track) {
-    final downloadsRepo = getIt<DownloadsRepository>();
+    final downloadsRepo = _downloadsRepo;
     final localPath = downloadsRepo.localPathFor(track.fileKey);
 
     if (localPath != null && File(localPath).existsSync()) {
@@ -1059,8 +1070,8 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
       return AudioSource.uri(Uri.file(localPath), tag: track);
     }
 
-    final client = getIt<McwsClient>();
-    final repo = getIt<ConnectionRepository>();
+    final client = _mcwsClientResolver();
+    final repo = _connectionRepo;
     final baseUrl = client.baseUrl;
     final token = repo.currentToken;
 
@@ -1089,7 +1100,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   void _bindPlayerToAudioServiceStreams() {
     // Listen for changes to downloaded tracks to refresh the AA Downloads view.
     _downloadsSubscription?.cancel();
-    _downloadsSubscription = getIt<DownloadsRepository>()
+    _downloadsSubscription = _downloadsRepo
         .watchDownloadedTracks()
         // Skip initial event to avoid refresh loop during startup.
         .skip(1)
@@ -1203,9 +1214,7 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
   }
 
   MediaItem _toMediaItem(Track track) {
-    final artworkPath = getIt<DownloadsRepository>().artworkPathFor(
-      track.fileKey,
-    );
+    final artworkPath = _downloadsRepo.artworkPathFor(track.fileKey);
     final artUri = artworkPath != null
         ? MediaItemMapper.artUriForPath(artworkPath)
         : _httpArtUri(track.fileKey);

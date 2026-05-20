@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/di/injection.dart';
 import '../../player/services/android_auto_player_service.dart';
 import '../../player/services/jrr_audio_handler.dart';
 
@@ -11,25 +10,39 @@ import '../../player/services/jrr_audio_handler.dart';
 class AndroidAutoSessionService {
   static const _channel = MethodChannel('com.jrr.jrr_f/android_auto');
 
-  AndroidAutoSessionService() {
+  final Talker _talker;
+
+  /// Resolves the [JrrAudioHandler] lazily. Returns `null` when the handler
+  /// isn't ready yet (e.g. early `onConnectionChanged` signals during the
+  /// audio_service.init bootstrap). Late wiring is unavoidable: this service
+  /// is constructed before the audio handlers exist so the zone repository
+  /// can read `isConnected` at any time.
+  final JrrAudioHandler? Function() _handlerResolver;
+  final AndroidAutoPlayerService? Function() _autoPlayerResolver;
+
+  AndroidAutoSessionService({
+    required Talker talker,
+    required JrrAudioHandler? Function() handlerResolver,
+    required AndroidAutoPlayerService? Function() autoPlayerResolver,
+  }) : _talker = talker,
+       _handlerResolver = handlerResolver,
+       _autoPlayerResolver = autoPlayerResolver {
     _setupMethodChannel();
 
     // We don't call _checkInitialConnection here anymore to avoid any
     // potential hang during startup, especially in the background isolate.
     // The native observer will send the state via onConnectionChanged.
 
-    if (getIt.isRegistered<Talker>()) {
-      getIt<Talker>().info(
-        '[AndroidAutoSessionService] constructed — waiting for signals',
-      );
-    }
+    _talker.info(
+      '[AndroidAutoSessionService] constructed — waiting for signals',
+    );
   }
 
   void _setupMethodChannel() {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onConnectionChanged') {
         final isConnectedArg = call.arguments as bool;
-        _talker?.info(
+        _talker.info(
           '[AndroidAutoSessionService] Native connection signal: $isConnectedArg',
         );
         if (isConnectedArg) {
@@ -46,11 +59,6 @@ class AndroidAutoSessionService {
   /// notifier so the zone list refreshes on connect/disconnect.
   final ValueNotifier<bool> isConnected = ValueNotifier<bool>(false);
 
-  // Lazy because the service is constructed inside configureDependencies(),
-  // and on its first construction Talker may not be registered yet on some
-  // code paths (e.g. tests that build the service directly).
-  Talker? get _talker => getIt.isRegistered<Talker>() ? getIt<Talker>() : null;
-
   /// Called when the native `CarConnection` observer reports a connected
   /// head unit.
   ///
@@ -60,12 +68,12 @@ class AndroidAutoSessionService {
   /// changing the surface.
   void markActive({bool isDirectSignal = false}) {
     if (isConnected.value) {
-      _talker?.debug(
+      _talker.debug(
         '[AndroidAutoSessionService] markActive: state refreshed (direct=$isDirectSignal)',
       );
       return;
     }
-    _talker?.info(
+    _talker.info(
       '[AndroidAutoSessionService] markActive: session connected (direct=$isDirectSignal)',
     );
     // Swap the active audio handler synchronously, before Riverpod has a
@@ -79,16 +87,18 @@ class AndroidAutoSessionService {
   }
 
   void _activateAutoHandler() {
-    if (!getIt.isRegistered<JrrAudioHandler>() ||
-        !getIt.isRegistered<AndroidAutoPlayerService>()) {
-      // DI may not be fully wired up on early signals; fall through and let
-      // the Riverpod-driven swap handle it. No FGS contract is open yet.
+    final handler = _handlerResolver();
+    final autoPlayer = _autoPlayerResolver();
+    if (handler == null || autoPlayer == null) {
+      // Audio handlers may not be constructed yet on early signals; fall
+      // through and let the Riverpod-driven swap handle it. No FGS contract
+      // is open yet.
       return;
     }
     try {
-      getIt<JrrAudioHandler>().switchTo(getIt<AndroidAutoPlayerService>());
+      handler.switchTo(autoPlayer);
     } catch (e, st) {
-      _talker?.error(
+      _talker.error(
         '[AndroidAutoSessionService] _activateAutoHandler failed',
         e,
         st,
@@ -99,7 +109,7 @@ class AndroidAutoSessionService {
   /// Explicit disconnect from the native `CarConnection` observer.
   void markInactive() {
     if (!isConnected.value) return;
-    _talker?.info('[AndroidAutoSessionService] Session disconnected');
+    _talker.info('[AndroidAutoSessionService] Session disconnected');
     isConnected.value = false;
   }
 

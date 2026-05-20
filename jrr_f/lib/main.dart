@@ -13,8 +13,14 @@ import 'app.dart';
 import 'core/di/injection.dart';
 import 'core/di/providers.dart';
 import 'core/logging/file_log_observer.dart';
+import 'core/network/mcws_client.dart';
 import 'core/network/ssl_trust.dart';
+import 'features/connection/data/repositories/connection_repository.dart';
+import 'features/favorites/data/repositories/favorites_repository.dart';
+import 'features/library/data/repositories/library_repository.dart';
+import 'features/offline/data/repositories/downloads_repository.dart';
 import 'features/player/data/models/local_audio_quality.dart';
+import 'features/player/data/repositories/recently_played_repository.dart';
 import 'features/player/services/local_player_service.dart';
 import 'features/player/services/android_auto_player_service.dart';
 import 'features/player/services/jrr_audio_handler.dart';
@@ -50,20 +56,41 @@ void main() async {
   final localAudioPlayer = AudioPlayer();
   final autoAudioPlayer = AudioPlayer();
 
+  final connectionRepo = getIt<ConnectionRepository>();
+  final downloadsRepo = getIt<DownloadsRepository>();
+  final recentlyPlayedRepo = getIt<RecentlyPlayedRepository>();
+  final libraryRepo = getIt<LibraryRepository>();
+  final favoritesRepo = getIt<FavoritesRepository>();
+  McwsClient resolveMcwsClient() {
+    final client = connectionRepo.clientListenable.value;
+    if (client == null) {
+      throw StateError('McwsClient is not available — no active session');
+    }
+    return client;
+  }
+
   final localHandler = LocalPlayerService(
     player: localAudioPlayer,
     talker: talker,
-    qualityResolver: () => LocalAudioQuality.fromName(
-      getIt<SharedPreferences>().getString('local_audio_quality'),
-    ),
+    downloadsRepo: downloadsRepo,
+    connectionRepo: connectionRepo,
+    recentlyPlayedRepo: recentlyPlayedRepo,
+    mcwsClientResolver: resolveMcwsClient,
+    qualityResolver: () =>
+        LocalAudioQuality.fromName(prefs.getString('local_audio_quality')),
   );
 
   final autoHandler = AndroidAutoPlayerService(
     player: autoAudioPlayer,
     talker: talker,
-    qualityResolver: () => LocalAudioQuality.fromName(
-      getIt<SharedPreferences>().getString('local_audio_quality'),
-    ),
+    downloadsRepo: downloadsRepo,
+    libraryRepo: libraryRepo,
+    favoritesRepo: favoritesRepo,
+    connectionRepo: connectionRepo,
+    mcwsClientResolver: resolveMcwsClient,
+    hasActiveSession: () => connectionRepo.clientListenable.value != null,
+    qualityResolver: () =>
+        LocalAudioQuality.fromName(prefs.getString('local_audio_quality')),
   );
 
   final mainHandler = await AudioService.init(
