@@ -56,8 +56,8 @@ void main() {
 
   test('surfaces queue errors via QueueViewState.error', () async {
     final c = open(
-      queue: AsyncValue.error(
-        const AppException.unauthorized(),
+      queue: const AsyncValue<Tracks>.error(
+        AppException.unauthorized(),
         StackTrace.empty,
       ),
     );
