@@ -3,10 +3,11 @@
 Language-agnostic specification for a remote control application
 for JRiver Media Center via MCWS (Media Center Web Service).
 
-**Version:** 0.8.0
-**Status:** Draft — implemented in `jrr_f/` (Flutter)
+**Version:** 0.9.0
+**Status:** Draft — aligned with `jrr_f/` implementation (Flutter v2.7.0)
 
 ---
+
 
 ## 1. Overview
 
@@ -59,7 +60,7 @@ It communicates with MCWS v1 over HTTP on a local network.
 
 The user provides the server address as either:
 
-- a manual `host:port` (default MCWS port `52199`), or
+- a manual `host:port` (default MCWS port `52199` for HTTP, `52200` for HTTPS), or
 - a 6-character **JRiver Access Key**, resolved through the public
   registry at `http://webplay.jriver.com/libraryserver/lookup?id=<key>`.
 
@@ -70,14 +71,13 @@ format):
 <Response>
   <ip>1.2.3.4</ip>
   <port>52199</port>
+  <httpsport>52200</httpsport>
   <localiplist>10.0.0.5,192.168.1.5</localiplist>
   ...
 </Response>
 ```
 
-Clients should prefer the first reachable address from `<localiplist>`,
-falling back to `<ip>`. The lookup call carries no auth and must not be
-routed through the MCWS auth interceptor.
+Clients should prefer the first reachable address from `<localiplist>`, falling back to `<ip>`. The `<port>` field should be used for HTTP connections, and `<httpsport>` should be used for HTTPS connections if secure communication is enabled/preferred. JRiver Media Center serves a self-signed TLS/SSL certificate by default for HTTPS connections (default port `52200`), so custom TLS certificate verification is required (see §2.7). The lookup call carries no auth and must not be routed through the MCWS auth interceptor.
 
 ### 2.2 Authentication Flow
 
@@ -117,31 +117,8 @@ The client must handle:
 - `Status="Failure"` — command rejected by server
 
 ---
-
-### 3.9 Case-Insensitivity 
-
-Many MCWS metadata tags (Artist, Album, Genre, Name) are inconsistent in their 
-casing across different files or server responses. Clients should treat these 
-fields case-insensitively for comparison and grouping. 
-
-| Field             | Comparison Policy | Used In                       | 
-|-------------------|-------------------|-------------------------------| 
-| name              | Case-Insensitive  | Track/Album equality, grouping| 
-| artist            | Case-Insensitive  | Track/Album equality, filtering| 
-| album             | Case-Insensitive  | Track/Album equality, grouping| 
-| genre             | Case-Insensitive  | Track equality, filtering     | 
-| fileType          | Case-Insensitive  | Track equality                | 
-| albumArtist       | Case-Insensitive  | Album equality, filtering     | 
-| folderPath        | Case-Insensitive  | Album equality, grouping      | 
-| parentFolderPath  | Case-Insensitive  | Album/Track grouping          | 
-
-Normalization. Values used as keys for internal grouping or identification 
-(e.g., albumGroupId) must be normalized to a consistent case (prefer 
-lowercase) before use. 
-
-
-
 ## 2.5 Offline Mode (Server-less)
+
 
 Clients may allow users to enter the application without connecting to a server.
 This mode is useful for accessing downloaded content on the device.
@@ -165,6 +142,66 @@ If the last active zone was 'Offline', the app should skip the initial network
 'Alive' check and 'Authenticate' call on launch, booting directly into the
 offline shell using the synthetic session. This allows for immediate music
 access even without internet or server availability.
+
+### 2.7 SSL/TLS & Self-Signed Certificates
+
+JRiver Media Center serves a self-signed TLS/SSL certificate by default for HTTPS connections (default port `52200`). To prevent SSL handshake failures, clients must support overriding standard TLS verification:
+- Implement a host-scoped certificate trust policy (e.g. accepting self-signed certificates strictly for the targeted JRiver host).
+- Allow the user to toggle SSL (`use_ssl` flag) and specify a custom `ssl_port` (default `52200`).
+
+### 2.8 Local Persistence Schema
+
+To support offline mode, per-track downloads, server profiles, and virtual zone queue persistence, clients must implement a local relational database. The schema must support the following entities:
+
+#### Saved Servers (`saved_servers`)
+Stores connection profiles for multiple JRiver servers.
+- `id` (string, Primary Key)
+- `host` (string)
+- `port` (integer, default `52199`)
+- `username` (string)
+- `password_key` (string) — key to lookup password in secure device storage
+- `friendly_name` (string, nullable)
+- `last_used_at` (timestamp, nullable)
+- `auth_token` (string, nullable) — persisted fresh token to attempt silent reconnect
+- `use_ssl` (boolean, default `false`)
+- `ssl_port` (integer, default `52200`)
+
+#### Favorites (`favorites`)
+Stores user-pinned browse-tree nodes.
+- `id` (integer, Primary Key)
+- `type` (string, e.g., `'browse_item'`)
+- `identifier` (string) — browse node ID
+- `display_name` (string)
+- `added_at` (timestamp)
+
+#### Local Queue Tracks (`local_queue_tracks`)
+Backing store for each virtual zone's local playback queue.
+- `id` (integer, Primary Key)
+- `zone_id` (string) — zone identifier (e.g., `'local'`, `'offline'`, `'android-auto'`)
+- `file_key` (string)
+- `track_json` (string) — full serialized track metadata
+- `position` (integer) — 0-based ordering position
+
+#### Local Queue State (`local_queue_state`)
+Stores playhead state per virtual zone.
+- `zone_id` (string, Primary Key)
+- `current_index` (integer, default `-1`)
+
+#### Downloaded Tracks (`downloaded_tracks`)
+Metadata for files stored locally on the client.
+- `file_key` (string/integer, Primary Key)
+- `file_path` (string) — absolute local file path on the device
+- [Metadata Fields] — denormalized canonical track metadata (Title, Artist, Album, etc.)
+
+#### Download Jobs (`download_jobs`)
+Queue of background download tasks.
+- `id` (integer, Primary Key)
+- `file_key` (string/integer)
+- `state` (string/enum: `queued`, `running`, `failed`)
+- `bytes_downloaded` (integer)
+- `bytes_total` (integer)
+- `enqueued_at` (timestamp)
+- `started_at` (timestamp, nullable)
 
 ## 3. Domain Model
 
@@ -276,10 +313,9 @@ Metadata for the currently playing track.
 | sampleRate | int    | Playback/Info → SampleRate (Hz)   |
 | channels   | int    | Playback/Info → Channels          |
 
-`Playback/Info` is intentionally minimal. For richer metadata
-(`Date (readable)`, `File Type`, `Album Artist (auto)`, `Total Discs`,
-etc.) clients fetch the full track via `File/GetInfo` (§4.10) keyed on
-`fileKey`.
+`Playback/Info` is flat in its native XML/JSON structure. Although modeled hierarchically here with `trackInfo`, client implementations (such as the Flutter client) may choose to represent this as a single flat `PlayerStatus` object containing all track metadata fields directly to simplify state mapping.
+
+For richer metadata (`Date (readable)`, `File Type`, `Album Artist (auto)`, `Total Discs`, etc.) clients fetch the full track via `File/GetInfo` (§4.10) keyed on `fileKey`.
 
 ### 3.8 PlayingNowItem
 
@@ -292,6 +328,23 @@ An entry in the Playing Now queue.
 | name    | string | Name field                          |
 | artist  | string | Artist field                        |
 | album   | string | Album field                         |
+
+### 3.9 Case-Insensitivity
+
+Many MCWS metadata tags (Artist, Album, Genre, Name) are inconsistent in their casing across different files or server responses. Clients should treat these fields case-insensitively for comparison and grouping.
+
+| Field | Comparison Policy | Used In |
+|---|---|---|
+| name | Case-Insensitive | Track/Album equality, grouping |
+| artist | Case-Insensitive | Track/Album equality, filtering |
+| album | Case-Insensitive | Track/Album equality, grouping |
+| genre | Case-Insensitive | Track equality, filtering |
+| fileType | Case-Insensitive | Track equality |
+| albumArtist | Case-Insensitive | Album equality, filtering |
+| folderPath | Case-Insensitive | Album equality, grouping |
+| parentFolderPath | Case-Insensitive | Album/Track grouping |
+
+Normalization: Values used as keys for internal grouping or identification (e.g., `albumGroupId`) must be normalized to lowercase before use.
 
 ---
 
@@ -649,6 +702,16 @@ full metadata for the now-playing screen.
 | Conversion  | string | `wav` (lossless) or `opus` (lossy)     |
 | Quality     | string | `high`, `normal`, or `low`             |
 | Token       | string | auth token (query param, like other endpoints) |
+
+**Quality Presets:**
+Clients should implement the following streaming quality options:
+
+| Preset Name | Conversion | Quality | Format / Codec |
+|-------------|------------|---------|----------------|
+| Lossless    | `wav`      | `high`  | WAV            |
+| Lossy (high)| `opus`     | `high`  | Opus           |
+| Lossy (normal)| `opus`   | `normal`| Opus           |
+| Lossy (low) | `opus`     | `low`   | Opus           |
 
 Returns the file as a continuous binary HTTP stream suitable for
 direct consumption by a media player (e.g. just_audio, ExoPlayer,
@@ -1099,6 +1162,20 @@ Flutter implementation (`jrr_f/`). They apply to any client.
 21. **Per-zone queue persistence.** Local, Offline, and Android Auto
     each have an independent queue and playhead. Persist them
     keyed by zone id, not as a single global queue.
+
+22. **Recursive Async Synchronization.** When performing operations that modify player state asynchronously (such as reloading a queue), use synchronization/guard flags (e.g. `_isReloading`) to make the operations atomic and prevent overlapping concurrent executions.
+
+23. **Repository Interception via Synthetic Sessions.** When the active session is synthetic (e.g. "Offline" mode), repositories should intercept server-bound calls at the boundary, returning locally stored or cached results rather than attempting network operations.
+
+24. **Awaiting Media Operations.** All asynchronous commands dispatched to the media player (e.g. queue mutation, playback/pause commands) must be fully awaited before updating client state to avoid race conditions.
+
+25. **Session/Zone Decoupling.** Decouple authentication sessions from the active zone state. Do not create direct circular dependencies where the active zone provider relies directly on the session provider's auth state; instead, use persistence (like shared preferences/local storage) as a side-channel to save, restore, and communicate the active zone on login or offline entry.
+
+26. **Case-Insensitive Normalization of Keys.** Normalize compound keys and IDs (such as `albumGroupId`) to lowercase prior to using them as keys in grouping, comparison, or lookup maps to ensure consistency across varying responses.
+
+27. **Android Auto Startup Constraints.** Avoid loading persisted queues during Android Auto service startup. System media browser services have strict OS binding deadlines (typically ~5 seconds); executing blocking database reads on startup can lead to ANRs or foreground service crashes. The queue for the car interface should be loaded on-demand via media item selection or search intents.
+
+28. **Artwork Exposure for External Interfaces.** When exposing artwork to system processes (like Android Auto or lock screen handlers), use local file paths or content URIs (e.g., `content://`) instead of remote `http(s)://` URLs, as the external system processes may not have access to the app's network state or authentication tokens.
 
 ---
 
