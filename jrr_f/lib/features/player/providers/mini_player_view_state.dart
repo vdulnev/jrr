@@ -17,4 +17,11 @@ abstract class MiniPlayerViewState with _$MiniPlayerViewState {
     required double progress,
     required bool hasTracks,
   }) = _MiniPlayerViewState;
+
+  const MiniPlayerViewState._();
+
+  /// MCWS reports `Volume = -1` for streams where the server can't apply
+  /// software volume (e.g. DSD bit-stream playback). Hide the slider in
+  /// that case rather than render a slider whose value is meaningless.
+  bool get hasVolumeControl => volume >= 0;
 }

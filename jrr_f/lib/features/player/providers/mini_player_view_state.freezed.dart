@@ -212,8 +212,8 @@ return $default(_that.fileKey,_that.name,_that.artist,_that.volume,_that.isMuted
 /// @nodoc
 
 
-class _MiniPlayerViewState implements MiniPlayerViewState {
-  const _MiniPlayerViewState({required this.fileKey, required this.name, required this.artist, required this.volume, required this.isMuted, required this.isPlaying, required this.progress, required this.hasTracks});
+class _MiniPlayerViewState extends MiniPlayerViewState {
+  const _MiniPlayerViewState({required this.fileKey, required this.name, required this.artist, required this.volume, required this.isMuted, required this.isPlaying, required this.progress, required this.hasTracks}): super._();
   
 
 @override final  int? fileKey;
