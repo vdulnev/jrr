@@ -37,4 +37,9 @@ abstract class NowPlayingViewState with _$NowPlayingViewState {
 
   /// True when there is an active zone and a real track is loaded.
   bool get hasTrack => activeZone != null && fileKey >= 0;
+
+  /// MCWS reports `Volume = -1` for streams where the server can't apply
+  /// software volume (e.g. DSD bit-stream playback). Hide the slider in
+  /// that case rather than render a slider whose value is meaningless.
+  bool get hasVolumeControl => volume >= 0;
 }

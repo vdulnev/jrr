@@ -27,6 +27,7 @@ class MiniPlayerPanel extends ConsumerWidget {
           isMuted: s.isMuted,
           isPlaying: s.isPlaying,
           hasTracks: s.hasTracks,
+          hasVolumeControl: s.hasVolumeControl,
         ),
       ),
     );
@@ -52,6 +53,7 @@ typedef _MiniPlayerSlice = ({
   bool isMuted,
   bool isPlaying,
   bool hasTracks,
+  bool hasVolumeControl,
 });
 
 class _Data extends StatelessWidget {
@@ -155,13 +157,15 @@ class _Data extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  _Volume(
-                    volume: state.volume,
-                    isMuted: state.isMuted,
-                    onSetVolumeTap: onSetVolumeTap,
-                    onMuteToggleTap: onMuteToggleTap,
-                  ),
+                  if (state.hasVolumeControl) ...[
+                    const SizedBox(height: 2),
+                    _Volume(
+                      volume: state.volume,
+                      isMuted: state.isMuted,
+                      onSetVolumeTap: onSetVolumeTap,
+                      onMuteToggleTap: onMuteToggleTap,
+                    ),
+                  ],
                 ],
               ),
             ),

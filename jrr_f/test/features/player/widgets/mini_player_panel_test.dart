@@ -90,4 +90,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(player.calls, ['next']);
   });
+
+  testWidgets(
+    'volume slider is hidden when MCWS reports volume = -1 (DSD stream)',
+    (tester) async {
+      await pump(
+        tester,
+        player: TestPlayer(
+          status: stoppedStatus(
+            state: PlaybackState.playing,
+            fileKey: 7,
+            name: 'DSD Track',
+            artist: 'X',
+            volume: -1.0,
+            playingNowTracks: 1,
+          ),
+        ),
+      );
+      // Mute/volume icons are inside the VolumeSlider — none should appear.
+      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+      expect(find.byIcon(Icons.volume_off_rounded), findsNothing);
+    },
+  );
+
+  testWidgets('volume slider is shown for normal volume values', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      player: TestPlayer(
+        status: stoppedStatus(
+          state: PlaybackState.playing,
+          fileKey: 7,
+          name: 'PCM Track',
+          artist: 'X',
+          volume: 0.5,
+          playingNowTracks: 1,
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+  });
 }

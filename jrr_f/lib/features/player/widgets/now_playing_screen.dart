@@ -33,6 +33,7 @@ class NowPlayingScreen extends ConsumerWidget {
           album: s.album,
           volume: s.volume,
           isMuted: s.isMuted,
+          hasVolumeControl: s.hasVolumeControl,
           isPlaying: s.isPlaying,
           repeatMode: s.repeatMode,
           shuffleMode: s.shuffleMode,
@@ -183,13 +184,17 @@ class NowPlayingScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _VolumeControl(
-                    volume: state.volume,
-                    isMuted: state.isMuted,
-                    onChanged: vm.setVolume,
-                    onMuteToggle: vm.toggleMute,
-                  ),
-                  const SizedBox(height: 16),
+                  // Hide the slider on streams where MCWS can't apply
+                  // software volume (e.g. DSD bit-stream → Volume == -1).
+                  if (state.hasVolumeControl) ...[
+                    _VolumeControl(
+                      volume: state.volume,
+                      isMuted: state.isMuted,
+                      onChanged: vm.setVolume,
+                      onMuteToggle: vm.toggleMute,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
               ),
             ),
