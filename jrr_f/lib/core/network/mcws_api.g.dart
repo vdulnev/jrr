@@ -661,7 +661,7 @@ class _McwsApi implements McwsApi {
   Future<String> playByKey({
     required String zoneId,
     required String key,
-    int? location,
+    String? location,
     String zoneType = 'ID',
   }) async {
     final _extra = <String, dynamic>{};

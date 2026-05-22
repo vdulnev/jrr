@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:jrr_f/core/network/models/location.dart';
 
 import '../error/app_exception.dart';
 import '../../features/library/data/models/album.dart';
@@ -249,18 +250,6 @@ class McwsClient {
     ),
   );
 
-  Future<Either<AppException, Unit>> addToQueue(
-    String zoneId,
-    List<int> fileKeys, {
-    int location = 0,
-  }) => _command(
-    () => _api.playByKey(
-      zoneId: zoneId,
-      key: fileKeys.join(','),
-      location: location,
-    ),
-  );
-
   Future<Either<AppException, Unit>> clearQueue(String zoneId) =>
       _command(() => _api.clearQueue(zoneId: zoneId));
 
@@ -376,7 +365,7 @@ class McwsClient {
   Future<Either<AppException, Unit>> playByKey(
     String zoneId,
     List<int> fileKeys, {
-    int? location,
+    Location location = Location.start,
   }) => _command(
     () => _api.playByKey(
       zoneId: zoneId,

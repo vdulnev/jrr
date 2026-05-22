@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:jrr_f/core/network/models/location.dart';
 
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
@@ -58,13 +59,13 @@ class LibraryRepositoryImpl implements LibraryRepository {
   Future<Either<AppException, Unit>> playNext(
     String zoneId,
     List<int> fileKeys,
-  ) => _client().playByKey(zoneId, fileKeys, location: -1);
+  ) => _client().playByKey(zoneId, fileKeys, location: Location.next);
 
   @override
   Future<Either<AppException, Unit>> addToQueue(
     String zoneId,
     List<int> fileKeys,
-  ) => _client().addToQueue(zoneId, fileKeys, location: 0);
+  ) => _client().playByKey(zoneId, fileKeys, location: Location.end);
 
   @override
   Future<Either<AppException, Track?>> searchByFileKey(int fileKey) =>

@@ -216,26 +216,10 @@ void main() {
       expect(params['Target'], '7');
     });
 
-    test('addToQueue joins fileKeys with commas', () async {
-      stubOk();
-      await client.addToQueue('z', [11, 22, 33], location: 1);
-      final params = capturedUri().queryParameters;
-      expect(params['Key'], '11,22,33');
-      expect(params['Location'], '1');
-    });
-
     test('clearQueue hits ClearPlaylist', () async {
       stubOk();
       await client.clearQueue('z');
       expect(capturedUri().path, endsWith('Playback/ClearPlaylist'));
-    });
-
-    test('playByKey optional Location omitted when null', () async {
-      stubOk();
-      await client.playByKey('z', [1, 2]);
-      final params = capturedUri().queryParameters;
-      expect(params['Key'], '1,2');
-      expect(params.containsKey('Location'), isFalse);
     });
   });
 
