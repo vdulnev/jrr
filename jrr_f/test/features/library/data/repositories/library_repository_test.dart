@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:jrr_f/core/error/app_exception.dart';
 import 'package:jrr_f/core/network/mcws_client.dart';
+import 'package:jrr_f/core/network/models/location.dart';
 import 'package:jrr_f/features/library/data/models/album.dart';
 import 'package:jrr_f/features/library/data/models/albums.dart';
 import 'package:jrr_f/features/library/data/models/browse_item.dart';
@@ -112,20 +113,12 @@ void main() {
     verify(() => client.playByKey('z', [1, 2])).called(1);
   });
 
-  test('playNext sets location to -1', () async {
+  test('playNext sets location to next', () async {
     when(
-      () => client.playByKey('z', [1], location: -1),
+      () => client.playByKey('z', [1], location: Location.next),
     ).thenAnswer((_) async => right(unit));
     await repo.playNext('z', [1]);
-    verify(() => client.playByKey('z', [1], location: -1)).called(1);
-  });
-
-  test('addToQueue sets location to 0', () async {
-    when(
-      () => client.addToQueue('z', [1, 2], location: 0),
-    ).thenAnswer((_) async => right(unit));
-    await repo.addToQueue('z', [1, 2]);
-    verify(() => client.addToQueue('z', [1, 2], location: 0)).called(1);
+    verify(() => client.playByKey('z', [1], location: Location.next)).called(1);
   });
 
   test('searchByFileKey delegates to client', () async {
